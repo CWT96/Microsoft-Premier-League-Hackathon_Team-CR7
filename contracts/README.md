@@ -180,7 +180,7 @@ During the match the UI shows only ✓/coin animations. It never shows point num
 
 | Method | Path | Returns |
 |---|---|---|
-| GET | `/api/matches` | `[{match_id, home, away, kickoff_label}]` |
+| GET | `/api/matches` | `[{match_id, home, away, home_name, away_name, kickoff_label}]` (`home`/`away` are team codes, `*_name` the display names) |
 | GET | `/api/matches/{match_id}/players` | `[{player_id, name, team, position}]`, position ∈ GK, DF, MF, FW |
 | POST | `/api/rooms` | `{room_id, join_url}`. Frontend renders `join_url` as a QR code. |
 | POST | `/api/signup` | body `{user_id, email}` → `{member_id, card_url}`. **Mock: nothing is sent or stored outside memory.** |
