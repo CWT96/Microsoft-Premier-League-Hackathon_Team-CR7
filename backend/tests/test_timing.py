@@ -515,13 +515,13 @@ def test_m_water_break_full_moment_list():
 def test_p_q_r_full_details():
     p, _ = drive(S.scenario_p_referee())
     assert [(m.open_at, m.lock_at, m.lock_rule, m.situation) for m in p] == [
-        (800, 806, "fixed", "referee_decision")]
+        (800, 800 + R.CARD_WINDOW_S, "fixed", "referee_decision")]
     q, _ = drive(S.scenario_q_stalled())
     assert [(m.open_at, m.lock_at, m.lock_rule, m.situation) for m in q] == [
-        (900, 906, "fixed", "stalled_near_box")]
+        (900, 900 + R.CARD_WINDOW_S, "fixed", "stalled_near_box")]
     r, _ = drive(S.scenario_r_penalty())
     assert [(m.open_at, m.lock_at, m.lock_rule, m.situation, m.situation_detail) for m in r] == [
-        (1000, 1006, "on_restart", "set_piece_wait", {"restart": "penalty"})]
+        (1000, 1000 + R.CARD_WINDOW_S, "on_restart", "set_piece_wait", {"restart": "penalty"})]
 
 
 def test_q_negative_cases_do_not_make_stalled_moments():
