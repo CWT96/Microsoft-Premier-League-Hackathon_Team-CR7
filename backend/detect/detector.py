@@ -24,15 +24,8 @@ from collections.abc import Iterable, Iterator
 from dataclasses import dataclass, field
 from typing import Any
 
-from backend.core.constants import (
-    FINAL_THIRD_MIN_X,
-    GOAL_CENTRE,
-    OWN_THIRD_MAX_X,
-    PITCH_LENGTH_M,
-    PITCH_WIDTH_M,
-    RESTART_TYPES,
-    SECOND_HALF_START_S,
-)
+from backend.core.constants import GOAL_CENTRE, RESTART_TYPES, SECOND_HALF_START_S
+from backend.core.geometry import flip_xy, in_final_third, zone_of
 from backend.core.types import (
     BallZone,
     BreakKind,
@@ -86,18 +79,6 @@ def _ramp(value: float, lo: float, hi: float) -> float:
     return min(max((value - lo) / (hi - lo), 0.0), 1.0)
 
 
-def _flip(xy: tuple[float, float]) -> tuple[float, float]:
-    """Mirror a position between the two teams' attacking frames."""
-    return (PITCH_LENGTH_M - xy[0], PITCH_WIDTH_M - xy[1])
-
-
-def zone_of(x: float) -> BallZone:
-    """Third of the pitch for a position in the possession team's attacking frame."""
-    if x < OWN_THIRD_MAX_X:
-        return "own_third"
-    return "final_third" if x >= FINAL_THIRD_MIN_X else "middle_third"
-
-
 @dataclass
 class _Rec:
     """One on-ball event in the rolling window (acting team's frame)."""
@@ -138,6 +119,7 @@ class Detector:
         self._half: int | None = None
         self._h1_last = 0.0
         self._score = {home: 0, away: 0}
+        self._goals: dict[str, str] = {}  # goal event id -> scoring team, for amends
         self._last_shot_clock = 0.0
         self._last_attack_end_t: float | None = None
         self._start_half(1)
@@ -261,10 +243,14 @@ class Detector:
 
     def _apply_event(self, ev: MatchEvent, c: float, flags: _Flags) -> None:
         typ = ev.type
+        old_goal_team = self._goals.pop(ev.amends, None) if ev.amends else None
+        if old_goal_team is not None:  # a corrected or overturned goal is not counted twice
+            self._score[old_goal_team] -= 1
         if typ in ON_BALL_TYPES:
             self._on_ball(ev, c, flags)
         elif typ == "goal":
             self._score[ev.team] = self._score.get(ev.team, 0) + 1
+            self._goals[ev.id] = ev.team
             flags.goal = flags.dead = True
             self._last_attack_end_t = ev.t
             self._after_goal = ev.team
@@ -389,11 +375,11 @@ class Detector:
         if self._possession is None:
             return None
         if ball_track is not None:
-            return _flip(ball_track) if self._frame_of(self._possession) else ball_track
+            return flip_xy(*ball_track) if self._frame_of(self._possession) else ball_track
         if self._ball_ev is None:
             return None
         xy, team = self._ball_ev
-        return xy if team == self._possession else _flip(xy)
+        return xy if team == self._possession else flip_xy(*xy)
 
     def _threat(self, clock: float) -> float:
         lo = clock + 1.0 - THREAT_WINDOW_S
@@ -409,7 +395,7 @@ class Detector:
         return {
             "pass_rate": _ramp(passes * 60.0 / WINDOW_S, PASS_RATE_ZERO_PER_MIN,
                                PASS_RATE_FULL_PER_MIN),
-            "not_final_third": (sum(1 for r in recs if r.x < FINAL_THIRD_MIN_X) / len(recs)
+            "not_final_third": (sum(1 for r in recs if not in_final_third(r.x)) / len(recs)
                                 if recs else 0.0),
             "low_threat": 1.0 - _ramp(max_xt, LOW_THREAT_FULL_XT, LOW_THREAT_ZERO_XT),
             "shot_gap": min(max(clock - self._last_shot_clock, 0.0) / SHOT_GAP_FULL_S, 1.0),

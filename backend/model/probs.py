@@ -25,9 +25,10 @@ import math
 from typing import Any, Mapping
 
 from backend.core.constants import HALF_LENGTH_S, NOMINAL_HALF_END_S
+from backend.core.geometry import zone_of
 from backend.core.types import BallZone, DetectorState
 from backend.model.model import (PASS_DIRECTIONS, YES_NO, Context, Counts, Model, get_model,
-                                 pass_bucket, zone_of)
+                                 pass_bucket)
 from backend.model.registry import get_prob, register_prob
 from backend.resolve.rules import STAT_BY_POSITION
 

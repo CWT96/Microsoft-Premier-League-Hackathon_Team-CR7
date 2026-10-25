@@ -21,7 +21,8 @@ from __future__ import annotations
 from typing import Any
 
 from backend.app.models import Question
-from backend.core.constants import FINAL_THIRD_MIN_X, RESTART_TYPES
+from backend.core.constants import RESTART_TYPES
+from backend.core.geometry import in_final_third
 from backend.core.constants import NOMINAL_HALF_END_S
 from backend.core.types import MatchEvent, Roster
 from backend.resolve.registry import Key, RuleContext, Verdict, event_key, register
@@ -219,13 +220,13 @@ def _x_points(e: MatchEvent) -> list[float]:
 
 
 def _is_attacking_restart(e: MatchEvent) -> bool:
-    """A corner, or a free kick awarded beyond x=70, already puts the ball in the final third."""
+    """A corner, or a free kick awarded from x=70, already puts the ball in the final third."""
     return e.type == "corner" or (
-        e.type == "free_kick" and e.start is not None and e.start[0] > FINAL_THIRD_MIN_X)
+        e.type == "free_kick" and e.start is not None and in_final_third(e.start[0]))
 
 
 def reach_final_third(q: Question, ctx: RuleContext) -> Verdict | None:
-    """Yes if the team on the ball is beyond x=70 within 20 s, before losing it."""
+    """Yes if the team on the ball is at x=70 or beyond within 20 s, before losing it."""
     if _no_known_team(q, ctx):
         return _void(ctx.now[1])
     first = next((e for e in _window(ctx, FINAL_THIRD_WINDOW_S)
@@ -240,7 +241,7 @@ def reach_final_third(q: Question, ctx: RuleContext) -> Verdict | None:
             return Verdict("no", (), {"window_s": _num(FINAL_THIRD_WINDOW_S)}, e.t)
         if kind == "goal_for":
             return Verdict("yes", (e.id,), {"seconds_to_reach": _elapsed(ctx, e)}, e.t)
-        if any(x > FINAL_THIRD_MIN_X for x in _x_points(e)):
+        if any(in_final_third(x) for x in _x_points(e)):
             return Verdict("yes", (e.id,), {"seconds_to_reach": _elapsed(ctx, e)}, e.t)
     end = _deadline(ctx, FINAL_THIRD_WINDOW_S)[1]
     missed = Verdict("no", (), {"window_s": _num(FINAL_THIRD_WINDOW_S)}, end)

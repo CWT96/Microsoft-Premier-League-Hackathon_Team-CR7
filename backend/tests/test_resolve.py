@@ -253,9 +253,12 @@ def test_reach_final_third_yes() -> None:
     assert o.facts["seconds_to_reach"] == 10
 
 
-def test_reach_final_third_x_exactly_70_is_not_enough() -> None:
+def test_reach_final_third_x_exactly_70_counts() -> None:
     carry = ev(110, "carry", start=(60, 30), end=(70, 30))
-    assert only(run(yes_no("reach_final_third"), [last_nbr_touch(), carry])).correct_option == "no"
+    assert only(run(yes_no("reach_final_third"), [last_nbr_touch(), carry])).correct_option == "yes"
+
+    below = ev(110, "carry", start=(60, 30), end=(69.9, 30))
+    assert only(run(yes_no("reach_final_third"), [last_nbr_touch(), below])).correct_option == "no"
 
 
 def test_reach_final_third_no_on_turnover_before_reaching() -> None:

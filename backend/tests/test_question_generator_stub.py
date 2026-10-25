@@ -2,21 +2,17 @@
 
 import pytest
 
+from backend.agents import question_generator_stub as stub
 from backend.agents.question_generator_stub import CATALOG_IDS, propose
 from backend.app.models import dump
 from backend.core.types import DetectorState, Moment, Player, Roster, player_qid
 from backend.tests.contract_utils import validate
+from backend.tests.fixtures.states import make_state
 
 
 def _state(**kw) -> DetectorState:
-    base = dict(
-        t=500.0, half=1, mode="live", break_kind=None, score_home=0, score_away=0,
-        situation="open_play", dull_score=0.7, threat=0.1, movement=None, pressure_m=None,
-        ball_xy=(50.0, 34.0), ball_zone="middle_third", possession_team="NBR",
-        seconds_since_shot=120.0, last_attack_end_t=None, attack_active=False,
-        restart_pending=False, restart_taken=False)
-    base.update(kw)
-    return DetectorState(**base)
+    base = dict(t=500.0, dull_score=0.7, threat=0.1, seconds_since_shot=120.0, dull_parts={})
+    return make_state(**{**base, **kw})
 
 
 def _moment(mid: str = "q-1", category: str = "instant", kind: str = "instant",
@@ -62,15 +58,67 @@ def test_fields_copied_from_moment() -> None:
         "q-9", 700.0, 730.0, "on_restart", "throw_in", "Throw-in!", "instant")
 
 
-def test_next_pass_dir_uses_forward_backward_and_dead_zone() -> None:
+def test_next_pass_dir_options_are_the_model_top2_and_dead_zone() -> None:
     qs = [propose(_state(), _moment(f"q-{i}", situation="throw_in"), None, _roster())
           for i in range(20)]
     npd = [q for q in qs if q.template_id == "next_pass_dir"]
     assert npd
     for q in npd:
-        assert [o.id for o in q.options] == ["forward", "backward"]
+        ids = [o.id for o in q.options]
+        assert len(ids) == 2 and set(ids) <= {"forward", "sideways", "backward"}
         assert q.params == {"dead_zone_m": 5}
         assert q.text == "Next pass: forward or back?"
+
+
+def test_next_pass_dir_shows_sideways_when_the_model_ranks_it(monkeypatch) -> None:
+    seen = {}
+
+    def fake_top2(template_id, state, params=None, **kw):
+        seen.update(template_id=template_id, state=state, params=params)
+        return ("sideways", "backward"), (0.6, 0.4)
+    monkeypatch.setattr(stub, "top2", fake_top2)
+    st = _state(situation="throw_in")
+    q = propose(st, _moment("q-1", situation="throw_in"), None, _roster())
+    assert q.template_id == "next_pass_dir"
+    assert [(o.id, o.label) for o in q.options] == [("sideways", "Sideways"),
+                                                    ("backward", "Back")]
+    assert seen == {"template_id": "next_pass_dir", "state": st, "params": {"dead_zone_m": 5}}
+
+
+def test_next_pass_dir_falls_back_to_forward_back_without_a_model(monkeypatch, caplog) -> None:
+    def no_model(*a, **k):
+        raise FileNotFoundError("no match")
+    monkeypatch.setattr(stub, "top2", no_model)
+    q = propose(_state(), _moment("q-1", situation="goal_kick"), None, _roster())
+    assert [o.id for o in q.options] == ["forward", "backward"]
+    assert "model unavailable" in caplog.text
+
+
+def test_corner_wait_always_asks_about_a_shot() -> None:
+    for i in range(30):
+        m = _moment(f"q-{i}", situation="set_piece_wait", lock_rule="on_restart",
+                    situation_detail={"restart": "corner", "team": "NBR"})
+        q = propose(_state(situation="corner", restart_pending=True), m, None, _roster())
+        assert q.template_id == "shot_soon"
+
+
+def test_possession_templates_only_in_plain_play_situations() -> None:
+    quiet = ("after_goal", "substitution", "injury", "referee_decision", "set_piece_wait")
+    for situation in quiet:
+        for i in range(40):
+            q = propose(_state(), _moment(f"q-{i}", situation=situation), None, _roster())
+            assert q.template_id in {"shot_soon", "next_pass_dir"}, situation
+    seen = {propose(_state(), _moment(f"q-{i}", situation="calm_play"), None,
+                    _roster()).template_id for i in range(60)}
+    assert {"keep_ball", "reach_final_third"} <= seen
+
+
+def test_kickoff_stack_forecasts_get_different_templates() -> None:
+    for first in range(1, 12):
+        ms = [_moment(f"q-{first + k}", category="forecast", kind="kickoff_stack",
+                      situation="kickoff", lock_at=560.0) for k in range(2)]
+        ids = [propose(_state(), m, None, _roster()).template_id for m in ms]
+        assert sorted(ids) == ["goals_over", "team_wins"]
 
 
 def test_stalled_near_box_asks_about_a_shot() -> None:

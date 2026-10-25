@@ -16,12 +16,14 @@ CAUTION: this file invents no question content. Do not extend it with new templa
 from __future__ import annotations
 
 import logging
+import re
 import zlib
 
 from pydantic import ValidationError
 
 from backend.app.models import Option, Question
 from backend.core.types import DetectorState, Moment, Roster, player_qid
+from backend.model import top2
 
 logger = logging.getLogger(__name__)
 
@@ -31,6 +33,8 @@ CATALOG_IDS = frozenset({
 
 YES_NO = (Option(id="yes", label="Yes"), Option(id="no", label="No"))
 FORWARD_BACK = (Option(id="forward", label="Forward"), Option(id="backward", label="Back"))
+PASS_LABELS = {"forward": "Forward", "sideways": "Sideways", "backward": "Back"}
+PASS_ORDER = tuple(PASS_LABELS)  # display order of the two shown options
 DEAD_ZONE_M = 5
 MAX_TONE_CHARS = 40
 
@@ -43,7 +47,9 @@ INSTANT_TEXT = {
 }
 INSTANT_WINDOW_S = {"next_pass_dir": 15, "keep_ball": 15, "reach_final_third": 20,
                     "shot_soon": 60}
-NEEDS_POSSESSION = ("next_pass_dir", "keep_ball", "reach_final_third")
+# Possession templates only make sense while the ball is in ordinary play or a plain restart.
+POSSESSION_SITUATIONS = frozenset({"calm_play", "stalled_near_box", "throw_in", "goal_kick"})
+POSSESSION_TEMPLATES = ("keep_ball", "reach_final_third")
 RESTART_SITUATIONS = frozenset({"throw_in", "goal_kick", "set_piece_wait"})
 
 KICKOFF_FORECAST_IDS = ("goals_over", "team_wins")
@@ -84,22 +90,38 @@ def _base(moment: Moment, **kw) -> dict:
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
+def _pass_options(state: DetectorState) -> list[Option]:
+    """The two likeliest pass directions (model top-2), shown in forward/sideways/back order."""
+    try:
+        shown, _ = top2("next_pass_dir", state, {"dead_zone_m": DEAD_ZONE_M})
+    except (FileNotFoundError, ValueError) as exc:
+        logger.warning("stub: model unavailable for next_pass_dir (%s); forward or back",
+                       type(exc).__name__)
+        return list(FORWARD_BACK)
+    return [Option(id=o, label=PASS_LABELS[o]) for o in PASS_ORDER if o in shown]
+
+
 def _instant(state: DetectorState, moment: Moment) -> Question:
     candidates = list(INSTANT_TEXT)
     if state.possession_team is None:
         candidates = ["shot_soon"]
-    elif state.ball_zone == "final_third":
-        candidates.remove("reach_final_third")
-    if moment.situation == "stalled_near_box" and "shot_soon" in candidates:
-        tid = "shot_soon"
+    else:
+        if state.ball_zone == "final_third":
+            candidates.remove("reach_final_third")
+        if moment.situation not in POSSESSION_SITUATIONS:
+            candidates = [t for t in candidates if t not in POSSESSION_TEMPLATES]
+    corner = (moment.situation == "set_piece_wait"
+              and moment.situation_detail.get("restart") == "corner")
+    if (moment.situation == "stalled_near_box" or corner) and "shot_soon" in candidates:
+        tid = "shot_soon"  # corners go backward in the data, so never ask the pass question
     elif moment.situation in RESTART_SITUATIONS and "next_pass_dir" in candidates:
         tid = "next_pass_dir"
     else:
         tid = _pick(moment.moment_id, candidates)
-    options = FORWARD_BACK if tid == "next_pass_dir" else YES_NO
+    options = _pass_options(state) if tid == "next_pass_dir" else list(YES_NO)
     params = {"dead_zone_m": DEAD_ZONE_M} if tid == "next_pass_dir" else {}
     return Question(**_base(
-        moment, template_id=tid, text=INSTANT_TEXT[tid], options=list(options),
+        moment, template_id=tid, text=INSTANT_TEXT[tid], options=options,
         resolve_by=moment.lock_at + INSTANT_WINDOW_S[tid], params=params))
 
 
@@ -107,7 +129,12 @@ def _forecast(state: DetectorState, moment: Moment, roster: Roster | None) -> Qu
     team = roster.home if roster else state.possession_team
     ids = KICKOFF_FORECAST_IDS + (HT_FORECAST_IDS if moment.kind == "ht_stack" else ())
     candidates = [t for t in ids if not (t == "team_wins" and team is None)]
-    tid = _pick(moment.moment_id, candidates)
+    seq = re.search(r"(\d+)$", moment.moment_id)
+    if moment.kind == "kickoff_stack" and seq and len(candidates) == len(KICKOFF_FORECAST_IDS):
+        # consecutive ids in a stack: parity gives the two forecasts different templates
+        tid = KICKOFF_FORECAST_IDS[int(seq.group(1)) % 2]
+    else:
+        tid = _pick(moment.moment_id, candidates)
     params: dict = {}
     if tid == "goals_over":
         line = max(MIN_GOALS_LINE, state.score_home + state.score_away + 1)

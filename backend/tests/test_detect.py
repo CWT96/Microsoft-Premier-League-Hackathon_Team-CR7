@@ -590,3 +590,34 @@ def test_possession_and_ball_reset_at_new_half() -> None:
     d.step(1, 10.0, [ev(10.5, "NBR", "pass", (40, 30), (45, 30))])
     s = d.step(2, 2700.0)
     assert s.possession_team is None and s.ball_xy is None
+
+
+def test_amended_goal_is_not_double_counted() -> None:
+    goal = ev(10.0, "NBR", "goal", (100, 34))
+    fix = MatchEvent(id="g2", t=12.0, half=1, team="NBR", type="goal", start=(100.0, 34.0),
+                     amends=goal.id)
+    s = drive(new(), [goal, fix], 9, 14)
+    assert (s[11].score_home, s[11].score_away) == (1, 0)
+    assert (s[14].score_home, s[14].score_away) == (1, 0)
+
+
+def test_goal_amended_to_other_team_moves_the_goal() -> None:
+    goal = ev(10.0, "NBR", "goal", (100, 34))
+    fix = MatchEvent(id="g2", t=12.0, half=1, team="CAL", type="goal", start=(100.0, 34.0),
+                     amends=goal.id)
+    s = drive(new(), [goal, fix], 9, 14)
+    assert (s[14].score_home, s[14].score_away) == (0, 1)
+
+
+def test_goal_overturned_by_a_non_goal_amend_is_removed() -> None:
+    goal = ev(10.0, "NBR", "goal", (100, 34))
+    var = MatchEvent(id="v1", t=12.0, half=1, team="NBR", type="var_check", amends=goal.id)
+    s = drive(new(), [goal, var], 9, 14)
+    assert (s[11].score_home, s[14].score_home) == (1, 0)
+
+
+def test_amend_of_unknown_event_changes_nothing() -> None:
+    goal = ev(10.0, "NBR", "goal", (100, 34))
+    other = MatchEvent(id="x", t=12.0, half=1, team="CAL", type="foul", amends="nope")
+    s = drive(new(), [goal, other], 9, 14)
+    assert (s[14].score_home, s[14].score_away) == (1, 0)
