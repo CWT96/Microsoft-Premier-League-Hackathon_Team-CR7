@@ -319,3 +319,4 @@ class Answer:
     option: str | None  # None = shown but not answered
     answer_latency_s: float | None
     used_hint: bool = False
+    seq: int = 0  # delivery order for this user (0, 1, 2, ...); scoring orders by it first

@@ -16,6 +16,7 @@ CAUTION: Radar axes read moment situation, category, latency and streak only, ne
 from __future__ import annotations
 
 import math
+import re
 import statistics
 from collections.abc import Mapping, Sequence
 
@@ -68,13 +69,19 @@ SMALL_STREAK_MIN = 2
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
+def _natural(qid: str) -> tuple:
+    """Sort key that reads digit runs as numbers, so q-9 comes before q-10."""
+    return tuple((0, int(p), "") if p.isdigit() else (1, 0, p) for p in re.split(r"(\d+)", qid)
+                 if p)
+
+
 def _scored(answers: Sequence[Answer], outcomes: Mapping[str, Outcome]) -> list[dict]:
     """Per-card record for every non-void shown card, in issue order.
 
     Keys: answer, answered, correct, points, streak (streak after this card).
     Unanswered cards carry 0 points and do not touch the streak.
     """
-    ordered = sorted(answers, key=lambda a: (a.half, a.open_at, a.qid))
+    ordered = sorted(answers, key=lambda a: (a.seq, a.half, a.open_at, _natural(a.qid)))
     rows: list[dict] = []
     streak = 0
     for a in ordered:
@@ -182,14 +189,25 @@ def _radar(rows: list[dict], best_streak: int) -> Radar:
     )
 
 
-def _best_streak(rows: list[dict]) -> int:
-    best = run = 0
+def _streak_run(rows: list[dict]):
+    """Running streak after each answered card, in issue order."""
+    run = 0
     for r in rows:
-        if not r["answered"]:
-            continue
-        run = run + 1 if r["correct"] else 0
-        best = max(best, run)
-    return best
+        if r["answered"]:
+            run = run + 1 if r["correct"] else 0
+            yield run
+
+
+def _best_streak(rows: list[dict]) -> int:
+    return max(_streak_run(rows), default=0)
+
+
+def current_streak(answers: Sequence[Answer], outcomes: Mapping[str, Outcome]) -> int:
+    """Streak after the last resolved answered card (same rule as ``best_streak``)."""
+    last = 0
+    for last in _streak_run(_scored(answers, outcomes)):
+        pass
+    return last
 
 
 def best_moment(answers: Sequence[Answer], outcomes: Mapping[str, Outcome]) -> dict:

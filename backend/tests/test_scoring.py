@@ -425,3 +425,56 @@ def test_dump_with_ranks_and_partial_radar_validates():
     assert d["rank"] == {"room": 1, "global": 1, "friends": 1}
     assert d["radar"]["crystal_ball"] is None and d["radar"]["galaxy_brain"]["score"] == 100
     validate("score", d)
+
+
+# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+#
+# Delivery order and the public current streak
+#
+# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+def resolved(*qids):
+    return {q: Outcome(q, "resolved", "A", ()) for q in qids}
+
+
+def seq_ans(qid, correct, seq, open_at=0.0):
+    return Answer(qid=qid, category="instant", situation="calm_play", open_at=open_at,
+                  lock_at=0.0, half=1, option="A" if correct else "B", answer_latency_s=1.0,
+                  seq=seq)
+
+
+def test_current_streak_is_the_run_after_the_last_answered_card():
+    from backend.scoring import current_streak
+    answers = [ans("q1", True), ans("q2", True), ans("q3", False), ans("q4", True),
+               ans("q5", True), ans("q6", answered=False)]
+    assert current_streak(answers, resolved("q1", "q2", "q3", "q4", "q5", "q6")) == 2
+    assert current_streak([], {}) == 0
+    assert current_streak(answers, {}) == 0  # nothing resolved yet
+
+
+def test_current_streak_ends_at_best_streak_for_an_unbroken_run():
+    from backend.scoring import current_streak
+    answers = [ans(f"q{i}", True) for i in range(1, 6)]
+    outs = resolved(*[a.qid for a in answers])
+    fs = final_score("u", "m", answers, outs, n_typical=5)
+    assert current_streak(answers, outs) == fs.best_streak == 5
+
+
+def test_delivery_seq_orders_before_open_at():
+    from backend.scoring import current_streak
+    # q1 was delivered last although it opened first: the wrong card (seq 1) breaks the run
+    answers = [seq_ans("q1", False, seq=2, open_at=1), seq_ans("q2", True, seq=0, open_at=2),
+               seq_ans("q3", True, seq=1, open_at=3)]
+    assert current_streak(answers, resolved("q1", "q2", "q3")) == 0
+    shuffled = [answers[2], answers[0], answers[1]]
+    assert current_streak(shuffled, resolved("q1", "q2", "q3")) == 0
+
+
+def test_qids_sort_naturally_so_q9_comes_before_q10():
+    from backend.scoring import current_streak
+    # same seq, half and open_at: q9 (wrong) must come before q10 (right)
+    a9, a10 = seq_ans("q-9", False, 0), seq_ans("q-10", True, 0)
+    assert current_streak([a10, a9], resolved("q-9", "q-10")) == 1
+    a9r, a10r = seq_ans("q-9", True, 0), seq_ans("q-10", False, 0)
+    assert current_streak([a9r, a10r], resolved("q-9", "q-10")) == 0
