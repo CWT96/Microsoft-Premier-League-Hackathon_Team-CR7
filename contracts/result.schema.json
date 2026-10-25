@@ -1,0 +1,125 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "result.schema.json",
+  "title": "QuestionResult",
+  "description": "Payload of the question.result message, sent per user. Contains no point values: points are only shown on the final score card.",
+  "type": "object",
+  "required": [
+    "qid",
+    "status",
+    "correct_option",
+    "message",
+    "evidence",
+    "crowd_split"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "qid": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "resolved",
+        "void"
+      ],
+      "description": "void = excluded third outcome, play stopped before the qualifying event, or window timeout (shared questions only; player templates never void). UI never shows the word void."
+    },
+    "correct_option": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Option id; null when void"
+    },
+    "message": {
+      "type": "string",
+      "description": "Short headline. For void, a playful line (e.g. 'Plot twist, he went sideways!')"
+    },
+    "explanation": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "1-2 sentences from the explainer agent, number-guarded"
+    },
+    "new_term": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Concept taught this round, e.g. line-breaking pass"
+    },
+    "evidence": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Event ids proving the result"
+    },
+    "facts": {
+      "type": "object",
+      "description": "Numbers the explainer was allowed to use"
+    },
+    "crowd_split": {
+      "type": "object",
+      "description": "Share (0-100) choosing each option id, per social scope",
+      "properties": {
+        "global": {
+          "$ref": "#/$defs/split"
+        },
+        "room": {
+          "$ref": "#/$defs/split"
+        },
+        "friends": {
+          "$ref": "#/$defs/split"
+        }
+      },
+      "additionalProperties": false
+    },
+    "you": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "required": [
+        "answered"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "answered": {
+          "type": "boolean"
+        },
+        "option": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "correct": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "used_hint": {
+          "type": "boolean"
+        },
+        "streak": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    }
+  },
+  "$defs": {
+    "split": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "number",
+        "minimum": 0,
+        "maximum": 100
+      }
+    }
+  }
+}

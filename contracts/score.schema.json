@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "score.schema.json",
+  "title": "FinalScore",
+  "description": "Payload of score.final and GET /api/score/{user_id}. final_score is on a 0-1000 scale for every user.",
+  "type": "object",
+  "required": ["user_id", "match_id", "final_score", "issued", "answered", "correct", "hit_rate", "by_category", "best_streak", "hints_used"],
+  "additionalProperties": false,
+  "properties": {
+    "user_id": {"type": "string"},
+    "match_id": {"type": "string"},
+    "final_score": {"type": "integer", "minimum": 0, "maximum": 1000},
+    "issued": {"type": "integer", "minimum": 0, "description": "Non-void questions issued to this user (the denominator)"},
+    "answered": {"type": "integer", "minimum": 0},
+    "correct": {"type": "integer", "minimum": 0},
+    "hit_rate": {"type": "number", "minimum": 0, "maximum": 1, "description": "correct / answered"},
+    "by_category": {
+      "type": "object",
+      "required": ["instant", "forecast", "player"],
+      "additionalProperties": false,
+      "properties": {
+        "instant": {"$ref": "#/$defs/cat"},
+        "forecast": {"$ref": "#/$defs/cat"},
+        "player": {"$ref": "#/$defs/cat"}
+      }
+    },
+    "best_streak": {"type": "integer", "minimum": 0},
+    "hints_used": {"type": "integer", "minimum": 0},
+    "terms_learned": {"type": "array", "items": {"type": "string"}},
+    "rank": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "room": {"type": ["integer", "null"]},
+        "global": {"type": ["integer", "null"]},
+        "friends": {"type": ["integer", "null"]}
+      }
+    },
+    "summary": {"type": ["string", "null"], "description": "One-paragraph summary written by the scoring agent (LLM); numbers guarded"}
+  },
+  "$defs": {
+    "cat": {
+      "type": "object",
+      "required": ["issued", "correct", "points"],
+      "additionalProperties": false,
+      "properties": {
+        "issued": {"type": "integer", "minimum": 0},
+        "correct": {"type": "integer", "minimum": 0},
+        "points": {"type": "integer", "minimum": 0, "description": "Contribution to final_score"}
+      }
+    }
+  }
+}
