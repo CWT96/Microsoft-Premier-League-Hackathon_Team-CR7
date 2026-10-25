@@ -41,7 +41,9 @@ def test_candidate_carries_the_context_it_was_asked_in():
 
 def test_keep_ball_is_no_when_opponent_wins_the_ball():
     c = _cand("instant", "keep_ball")  # lock 1206, window to 1221
-    events = [_ev(1208, "AAA"), _ev(1210, "BBB", "interception"), _ev(1214, "BBB")]
+    # Only team B acts after the lock: a Ctx rebuilt from the later state
+    # (possession B, "opponent" = A) would wrongly give "yes".
+    events = [_ev(1210, "BBB", "interception"), _ev(1214, "BBB")]
     assert settle_candidate(c, events, BANK) == "no"
 
 
