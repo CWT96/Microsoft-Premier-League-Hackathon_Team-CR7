@@ -29,10 +29,10 @@
     "rare": false,
     "positions": null,
     "guards": [
-      "no_repeat"
+      "no_repeat",
+      "prob_band"
     ],
-    "teaches": "line-breaking pass",
-    "v2_no_band": true
+    "teaches": "line-breaking pass"
   },
   {
     "id": "keep_ball",
@@ -68,10 +68,10 @@
     "rare": false,
     "positions": null,
     "guards": [
-      "no_repeat"
+      "no_repeat",
+      "prob_band"
     ],
     "teaches": "possession",
-    "v2_no_band": true,
     "team_from": "possession"
   },
   {
@@ -100,10 +100,10 @@
     "rare": false,
     "positions": null,
     "guards": [
-      "no_repeat"
+      "no_repeat",
+      "prob_band"
     ],
-    "teaches": "final third",
-    "v2_no_band": true
+    "teaches": "final third"
   },
   {
     "id": "shot_soon",
@@ -130,10 +130,10 @@
     "rare": false,
     "positions": null,
     "guards": [
-      "no_repeat"
+      "no_repeat",
+      "prob_band"
     ],
-    "teaches": "shot",
-    "v2_no_band": true
+    "teaches": "shot"
   },
   {
     "id": "next_pass_complete",

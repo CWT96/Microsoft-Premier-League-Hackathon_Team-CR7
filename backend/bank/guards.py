@@ -55,8 +55,6 @@ def window_for(template: Template, params: dict, state: MatchState, lock_at: flo
 
 def band_for(template: Template) -> tuple[float, float] | None:
     """Allowed range for the leading option's probability, or None for no band."""
-    if template.v2_no_band:
-        return None
     if template.rare:
         return (0.20, 0.80)
     if template.kind == "player":

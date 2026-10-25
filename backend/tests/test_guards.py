@@ -143,9 +143,11 @@ def test_p_none_below_035():
                     probs={"home": 0.3, "away": 0.3, "none": 0.4})
 
 
-def test_v2_instant_has_no_band():
-    assert band_for(BANK["next_pass_dir"]) is None
-    assert GUARDS["prob_band"](BANK["next_pass_dir"], {}, _state(), None, {"forward": 0.99})
+def test_instant_questions_use_the_normal_band():
+    for tid in ("next_pass_dir", "keep_ball", "shot_soon"):
+        assert band_for(BANK[tid]) == (0.15, 0.85)
+        assert "prob_band" in BANK[tid].guards
+    assert not GUARDS["prob_band"](BANK["shot_soon"], {}, _state(), None, {"yes": 0.11, "no": 0.89})
 
 
 def test_window_for():

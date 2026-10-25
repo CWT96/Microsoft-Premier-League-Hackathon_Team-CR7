@@ -50,6 +50,12 @@ def test_window_candidates_at_80min_exclude_20m_and_match():
         assert c.params.get("window") not in ("20m", "match")
 
 
+
+def test_near_certain_instant_questions_are_not_asked():
+    ids = {c.template_id for c in build_candidates("instant", _state(), BANK, 1200)}
+    assert not ids & {"next_pass_complete", "switch_play", "shot_soon"}
+    assert {"keep_ball", "reach_final_third", "next_pass_long", "back_to_keeper"} <= ids
+
 def test_next_pass_dir_shows_top2_renormalised():
     c = only(build_candidates("instant", _state(), BANK, 1200), "next_pass_dir")
     assert c.options == ["backward", "forward"]

@@ -29,7 +29,6 @@ class Template:
     guards: list[str]
     teaches: str
     team_from: Literal["none", "possession", "trailing", "each"] = "none"
-    v2_no_band: bool = False
 
 
 @dataclass(frozen=True)

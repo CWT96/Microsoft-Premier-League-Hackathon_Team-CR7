@@ -115,7 +115,7 @@ A `filter` selects events by `type`, `outcome`, `team` (`home` / `away` / `in_po
 
 Window labels render as "the next 5 minutes", "the next 10 minutes", "the next 20 minutes", "the rest of this half" and "this match".
 
-**Instant (8):** windows are seconds, and no band applies unless noted.
+**Instant (8):** windows are seconds. All use the normal band (0.15–0.85). With the measured rates in section 7, `next_pass_complete` (94% yes), `switch_play` (89% no) and `shot_soon` (89% no) never pass it, so they stay dormant until rates depend on the situation.
 
 | ID | Question | Options | Rule | Teaches |
 |---|---|---|---|---|
@@ -123,7 +123,7 @@ Window labels render as "the next 5 minutes", "the next 10 minutes", "the next 2
 | `keep_ball` *(v2)* | Will they keep the ball for 15 seconds? | yes / no | no turnover | possession |
 | `reach_final_third` *(v2)* | Will they reach the final third? | yes / no | ball x > 70 within 20s | final third |
 | `shot_soon` *(v2)* | Shot in the next 60 seconds? | yes / no | any shot | shot |
-| `next_pass_complete` | Will the next pass find a teammate? | yes / no | next pass `complete`; band applies | completed pass |
+| `next_pass_complete` | Will the next pass find a teammate? | yes / no | next pass `complete` | completed pass |
 | `next_pass_long` | Next pass: long or short? | long / short | next pass length > 25m | long ball |
 | `switch_play` | Will the ball switch to the other side of the pitch in the next 15 seconds? | yes / no | y crosses from one outer third to the other | switching play |
 | `back_to_keeper` | Will the ball go back to {team}'s goalkeeper in the next 30 seconds? | yes / no | a pass received by that team's GK | playing out from the back |
@@ -168,7 +168,7 @@ In a kickoff or half-time stack, window labels read "the first N minutes" (at ha
 |---|---|---|
 | `fits_clock` | window, player | The window must end before the half ends (45:00 / 90:00 nominal). `half` is allowed until 10 minutes before the half ends; `match` until 75:00. |
 | `not_decided` | templates with `counts_from` ≠ `lock` | Run the resolver on the events so far. If the answer is already Yes, or can no longer change, skip it. |
-| `prob_band` | all except the v2 instant templates | P(yes), or P of the leading option, from [3] must lie in the band: **normal 0.15–0.85**, **rare 0.20–0.80** (loosened from 0.35–0.65 on 2026-10-25, because real-world rates never reach it), **player 0.40–0.60** (v2 rule). For a rare template, try windows from shortest to longest and use the first that lands in the band. If none does, skip it. |
+| `prob_band` | all templates | P(yes), or P of the leading option, from [3] must lie in the band: **normal 0.15–0.85**, **rare 0.20–0.80** (loosened from 0.35–0.65 on 2026-10-25, because real-world rates never reach it), **player 0.40–0.60** (v2 rule). For a rare template, try windows from shortest to longest and use the first that lands in the band. If none does, skip it. |
 | `no_repeat` | all | The template isn't currently open and wasn't the last one asked. |
 | `max_open_windows` | window | At most 2 window questions waiting to settle at once. |
 | `player_active` | player | The favourite player has an event in the last 10 minutes and hasn't been sent off. *This approximates substitutions, which the event schema doesn't have.* |
@@ -216,7 +216,7 @@ Timing [2b] opens a slot (existing rules: cooldown 45s, cap 8 per half, never du
 
 ### 7. Probability model inputs ([3])
 
-**My call:** window templates are priced with a **Poisson model using fixed, hard-coded rates per 90 minutes**. Starting values: goals 2.7, shots 25, shots on target 9, cards 4, red cards 0.15, penalties 0.3, fouls 22, saves 6. These are scaled to the window length and optionally nudged by the rate so far in this match.
+**My call:** window templates are priced with a **Poisson model using fixed, hard-coded rates per 90 minutes**. Starting values: goals 2.7, shots 25, shots on target 9, cards 3.5, red cards 0.15, penalties 0.3, fouls 22, saves 7 (cards and saves nudged from 4 and 6 after the team's 7-match check). These are scaled to the window length and optionally nudged by the rate so far in this match.
 
 The rates are **not** taken from the dataset, because the dataset is the same match being replayed. Rates computed from it would leak the future into the questions.
 
@@ -225,11 +225,11 @@ The rates are **not** taken from the dataset, because the dataset is the same ma
 | Position | Touches | Saves | Clearances | Completed passes | Shots | Tackles + interceptions | Goals |
 |---|---|---|---|---|---|---|---|
 | GK | 35 | 3 | — | 25 | — | — | — |
-| DF | 60 | — | 4 | 40 | 0.5 | 3 | 0.05 |
+| DF | 60 | — | 4 | 40 | 0.5 | 2.0 | 0.05 |
 | MF | 70 | — | 1 | 45 | 1.2 | 2.5 | 0.15 |
 | FW | 40 | — | 0.3 | 20 | 2.5 | 0.8 | 0.4 |
 
-**Instant questions** keep v2's frequency tables built from the dataset. They aggregate over thousands of situations rather than looking ahead in time, so the leak is small and accepted for the hackathon.
+**Instant questions** use fixed rates measured inside slow spells of real matches (`INSTANT_DEFAULTS`), not our synthetic data, so the model stays tied to real football. Touch rates are deliberately below raw touch counts: touches come in bursts, and the lower values are what make touch questions land near 50/50 on real data. They are tuning values, not head counts.
 
 ### 8. Changes to other parts of the design
 

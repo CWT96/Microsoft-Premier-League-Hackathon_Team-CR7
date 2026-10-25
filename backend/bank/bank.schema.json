@@ -42,8 +42,7 @@
         },
         "guards": { "type": "array", "items": { "type": "string" } },
         "teaches": { "type": "string" },
-        "team_from": { "enum": ["none", "possession", "trailing", "each"] },
-        "v2_no_band": { "type": "boolean" }
+        "team_from": { "enum": ["none", "possession", "trailing", "each"] }
       }
     }
   }
