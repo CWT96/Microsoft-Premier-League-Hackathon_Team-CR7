@@ -26,7 +26,8 @@ backend/             Python 3.11 + FastAPI                       stephenwzkong, 
   social/            rooms + simulated users: global crowd, bot friends, ops funnel
   tests/             pytest, one file per module
 frontend/            phone UI, framework chosen by CWT96         CWT96
-data/source/         simulated MATCH dataset, uploaded by a teammate (pending)  uploader + backend
+data/source/         simulated MATCH dataset (Hudl/StatsBomb format), generated  backend
+data/generator/      seeded match simulator + validator that builds data/source/ backend
 data/generated/      derived files, gitignored                    backend
 infra/               .env.example, Dockerfile, ACA notes          backend
 .github/CODEOWNERS   auto-assigns reviewers per folder
@@ -75,6 +76,8 @@ python -m venv .venv && source .venv/bin/activate
 pip install -r backend/requirements.txt
 uvicorn backend.app.main:app --reload      # http://localhost:8000
 pytest backend/tests                        # must pass before every PR
+python -m data.generator.generate           # rebuild data/source/ (deterministic)
+python -m data.generator.check              # validate the dataset (must-haves + realism)
 # frontend: see frontend/README.md once CWT96 picks the stack
 ```
 
@@ -82,7 +85,7 @@ pytest backend/tests                        # must pass before every PR
 
 **Branches**
 - `main` must always run and be demo-able. **No direct pushes to `main`.**
-- Work on short-lived branches named `<area>/<topic>`, where area is `backend`, `frontend`, `contracts`, `docs` or `infra`. Examples: `backend/resolver`, `frontend/question-card`, `contracts/catchup-card`.
+- Work on short-lived branches named `<area>/<topic>`, where area is `backend`, `frontend`, `contracts`, `docs`, `infra` or `data`. Examples: `backend/resolver`, `frontend/question-card`, `contracts/catchup-card`.
 - One branch = one focused change. Merge it within a day. Do not keep long-lived personal branches.
 
 **Daily sync**

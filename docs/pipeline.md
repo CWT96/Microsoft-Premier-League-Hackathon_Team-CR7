@@ -82,7 +82,7 @@ There are two kinds of simulated data, and they never mix:
 
 - `t` is match seconds (34:26 = 2066). Coordinates are in metres on a 105×68 pitch, normalised so the acting team attacks left to right. The adapter rescales and flips coordinates if the dataset uses another convention.
 - **Fixed data, so every replay is identical.** That makes the demo reproducible, gives known answers for tests, and lets every LLM output be cached.
-- **Hand-labelled stretches for evaluation.** We mark about 10–20 dull stretches and attacks in the dataset by hand in `data/labels.json` (committed), so we can measure the detector's hits and misses.
+- **Labelled stretches for evaluation.** The generator writes every dull stretch and attack it played to `data/source/extras/labels/<match_id>.json` (committed), so we can measure the detector's hits and misses. These are generated ground truth, not hand labels.
 - **Position-realistic player stats are required.** Goalkeepers make saves, defenders clear, forwards shoot. Favourite-player questions depend on this; without it, the fair lines in [3] cannot be computed. If the dataset lacks it, flag it in the ingest PR.
 - Also produces rosters with positions (GK, DF, MF, FW) for the entry screen.
 
@@ -98,7 +98,7 @@ Every second, it computes features over a rolling 25-second window:
 | Time since the last shot | More than 3 minutes |
 | Current possession length | More than 6 passes |
 
-`dull_score` is the mean of five sub-scores, each in [0, 1] *(starting weights; tune them against the hand-labelled stretches in `data/labels.json`)*:
+`dull_score` is the mean of five sub-scores, each in [0, 1] *(starting weights; tune them against the labelled stretches in `data/source/extras/labels/`)*:
 
 | Sub-score | Formula |
 |---|---|
@@ -115,7 +115,7 @@ Every second, it computes features over a rolling 25-second window:
 - **Attack end:** a shot, goal, save, foul, ball out of play, or the ball back in the middle third for 5 seconds. This triggers the **catch-up card** (see [5]).
 - Emits `match.state` once per second: `{t, half, score, mode, dull_score}`, where `mode` is `live`, `game`, `attack` or `break`.
 
-It's deterministic and can be tested against the hand-labelled stretches. Report the misses as well as the hits.
+It's deterministic and can be tested against the labelled stretches. Report the misses as well as the hits.
 
 ### [2b] Timing agent (LLM decides format; code enforces the schedule)
 
@@ -438,7 +438,7 @@ The scope is larger than 3 people can build in 3 days, and only one of them work
 | 0:50–1:05 | Half time: forecast + favourite-player question (show GK vs ST windows side by side) |
 | 1:05–1:30 | Skip to FT: score card → sign-up → membership card |
 | 1:30–1:45 | Ops funnel dashboard (enterprise value) |
-| 1:45–1:58 | Evidence slide: detector hits/misses on hand-labelled stretches; favourite-player P(yes) per position ≈ 0.5 (fairness); agent diagram |
+| 1:45–1:58 | Evidence slide: detector hits/misses on labelled stretches; favourite-player P(yes) per position ≈ 0.5 (fairness); agent diagram |
 
 ## Risks
 

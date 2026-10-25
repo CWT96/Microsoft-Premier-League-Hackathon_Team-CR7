@@ -1,0 +1,26 @@
+[
+  {
+    "team_id": 9101,
+    "name": "Northbridge FC",
+    "code": "NBR",
+    "formation": 433
+  },
+  {
+    "team_id": 9102,
+    "name": "Calder Town",
+    "code": "CAL",
+    "formation": 4231
+  },
+  {
+    "team_id": 9103,
+    "name": "Harrowgate Athletic",
+    "code": "HAR",
+    "formation": 442
+  },
+  {
+    "team_id": 9104,
+    "name": "Wexmoor Rovers",
+    "code": "WEX",
+    "formation": 352
+  }
+]

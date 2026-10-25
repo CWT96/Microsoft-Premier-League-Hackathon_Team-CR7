@@ -78,7 +78,7 @@ Email, wallet pass and rewards are mocked. LLM outputs are cached, so the demo r
 
 | Criterion (20% each) | Where to look |
 |---|---|
-| Technical implementation | Fixed simulated match dataset with hand-labelled dull stretches (detector hits and misses reported); simulated users; schema contracts in `contracts/`; tests in `backend/tests/` |
+| Technical implementation | Fixed simulated match dataset with labelled dull stretches (generator ground truth) (detector hits and misses reported); simulated users; schema contracts in `contracts/`; tests in `backend/tests/` |
 | Agent design | 4 Foundry agents with tools (timing, question generator, explainer, scoring summary). See `docs/pipeline.md` § Agents |
 | Real-world impact | Non-fans as the target user; sign-up funnel for clubs |
 | UX / demo | Mobile second screen, phone goes quiet during attacks, catch-up card, under-2-minute video |
