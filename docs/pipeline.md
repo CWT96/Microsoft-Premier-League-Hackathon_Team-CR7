@@ -230,7 +230,7 @@ The stacked cards appear together and the user swipes through them. Each locks a
 - Each room, including a solo player's private room, runs its **own replay instance**. Only the room creator (the host) can send `control`.
 - The replay runs at 1× whenever cost ≤ 0.45, so "8 seconds to answer" is 8 real seconds. Otherwise it runs at the host's chosen speed (default 15×). A multi-user room runs at 1× while any member has an open card.
 - **Time units:** `open_at`, `lock_at` and `resolve_by` are match seconds. Answer windows are real time.
-- **Skip has one action, `next`:** jump to 3 s before the next calm spell or scheduled moment (player slot, water break, half time, full time), whichever comes first. It never jumps past a designed moment, and skipped events still reach the resolver. Unanswered cards cost nothing, so skipping never hurts the score.
+- **Skip has one action, `next`:** jump to 3 s before the next scheduled moment (player slot, water break, half time, full time). It never jumps past one, and calm play (about 89 % of the placeholder match) resumes within seconds after every jump, so the feed is always seen. Skipped events still reach the resolver. Unanswered cards cost nothing, so skipping never hurts the score.
 
 **Timing simulator.** `backend/agents/timing_sim.py` replays the whole match through detector → timing → pacer with simulated users (fast, normal, hesitant, drifting) and writes `data/generated/timing_report.md`. Starting targets, to tune against the report:
 
@@ -526,7 +526,7 @@ The scope is larger than 3 people can build in 3 days, and only one of them work
 
 **Judge try-out:**
 - Runs at the host's speed (15× by default) and drops to 1× in calm play, so there is time to answer. The run time depends on how much of the match is calm (see `data/generated/timing_report.md`); the next button keeps the try-out short.
-- One "next" button skips to the next calm spell or scheduled moment (player slot, water break, half time, full time), never past one.
+- One "next" button skips to the next scheduled moment (player slot, water break, half time, full time), never past one. A full try-out is about six taps: 22' water break, 40' player slot, half time, 67' water break, 70' player slot, full time, with the calm-play feed running between them.
 - Bot friends make the room feel alive even with one player.
 
 **Video (under 2 minutes, scripted edit):**
