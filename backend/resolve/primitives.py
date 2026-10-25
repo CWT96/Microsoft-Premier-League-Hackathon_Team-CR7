@@ -220,13 +220,21 @@ PRIMITIVES = {
 }
 
 
+def _after_start(e: dict, window: Window) -> bool:
+    """True if the event comes after the window start (by half and time when it has a half)."""
+    if window.half is None and window.start_half is not None and e.get("half") is not None:
+        return (e["half"], e["t"]) > (window.start_half, window.start_t)
+    return e["t"] > window.start_t
+
+
 def settle(spec: dict, events: list[dict], window: Window, ctx: Ctx,
            closed: bool, params: dict | None = None) -> str | None:
     """Return an option id, "void", or None while the question is still open."""
-    ordered = sorted(events, key=lambda e: e["t"])
+    # Order by (half, t): the clock restarts at 2700 in half 2, after half-1 added time.
+    ordered = sorted(events, key=lambda e: (e.get("half") or 0, e["t"]))
     if window.half is not None:
         ordered = [e for e in ordered if e.get("half") == window.half]
-    after_start = [e for e in ordered if e["t"] > window.start_t]
+    after_start = [e for e in ordered if _after_start(e, window)]
     win_events = [e for e in after_start
                   if window.end_t is None or e["t"] <= window.end_t]
     if window.end_t is not None and len(win_events) < len(after_start):

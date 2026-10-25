@@ -73,8 +73,10 @@ def test_deterministic_and_varies_by_match():
 def _half_time_state(**kw):
     events = [_ev(1, 300.0, 1, "AAA", "goal", "a8"), _ev(2, 900.0, 1, "BBB", "goal", "b9"),
               _ev(3, 2000.0, 1, "AAA", "pass", "a8", "complete"),
-              {"id": "he", "t": 2700.0, "half": 1, "type": "half_end"}]
-    return _state(t=2760.0, half=1, events=events, score={"AAA": 1, "BBB": 1}, **kw)
+              _ev(4, 2750.0, 1, "AAA", "goal", "a8"),  # first-half added time
+              _ev(5, 2760.0, 1, "BBB", "shot", "b9", "off_target"),
+              {"id": "he", "t": 2790.0, "half": 1, "type": "half_end"}]
+    return _state(t=2800.0, half=1, events=events, score={"AAA": 2, "BBB": 1}, **kw)
 
 
 def test_half_time_stack():
@@ -128,21 +130,42 @@ def test_empty_stack_is_none():
 
 def test_stack_candidates_settle():
     rng = random.Random(1)
-    for i in range(20):
-        d = select_stack(_state(match_id=f"s{i}"), "kickoff", USERS, BANK)
-        later = [_ev(n, float(rng.randint(1, 3000)), 1, rng.choice(["AAA", "BBB"]),
-                     rng.choice(["pass", "shot", "save", "foul"]), rng.choice(list(ROSTER)),
-                     rng.choice([None])) for n in range(30)]
-        later.append({"id": "he", "t": 2701.0, "half": 1, "type": "half_end"})
-        for c in d.shared:
-            r = settle_candidate(c, later, BANK, closed=True)
-            assert r == "void" or r in c.options
-        for c in d.per_user.values():
-            assert settle_candidate(c, later, BANK, closed=True) in c.options
+    for phase, mk, half, lo in (("kickoff", _state, 1, 1), ("half_time", _half_time_state, 2, 2701)):
+        for i in range(20):
+            d = select_stack(mk(match_id=f"s{i}"), phase, USERS, BANK)
+            later = [_ev(100 + n, float(rng.randint(lo, lo + 2000)), half,
+                         rng.choice(["AAA", "BBB"]), rng.choice(["pass", "shot", "save", "foul"]),
+                         rng.choice(list(ROSTER)), rng.choice(["complete", "on_target"]))
+                     for n in range(30)]
+            later.append({"id": "he2", "t": 5400.0, "half": 2, "type": "full_end"})
+            later.append({"id": "he3", "t": 5400.0, "half": 2, "type": "half_end"})
+            for c in d.shared:
+                r = settle_candidate(c, later, BANK, closed=True)
+                assert r is not None and (r == "void" or r in c.options)
+            for c in d.per_user.values():
+                assert settle_candidate(c, later, BANK, closed=True) in c.options
+
+
+def test_half_time_added_time_events_do_not_settle_stack():
+    st = _half_time_state()
+    for i in range(40):
+        d = select_stack(_half_time_state(match_id=f"a{i}"), "half_time", USERS, BANK)
+        for c in d.shared + list(d.per_user.values()):
+            if BANK[c.template_id].counts_from == "kickoff":
+                continue
+            assert settle_candidate(c, st.events, BANK, closed=False) is None, c.template_id
+
+
+def test_half_label_in_stacks():
+    from backend.bank.loader import window_label
+    assert window_label("half", "half_time") == "the second half"
+    assert window_label("half", "kickoff") == "the first half"
+    assert window_label("half") == "the rest of this half"
+    assert window_label("match", "half_time") == "this match"
 
 
 def test_restart_state():
     s = restart_state(_half_time_state(open_window_count=2), "half_time")
     assert (s.t, s.half, s.possession_team, s.open_window_count) == (2700.0, 2, None, 0)
     assert s.open_template_ids == [] and s.last_template_id is None
-    assert s.score == {"AAA": 1, "BBB": 1} and len(s.events) == 4
+    assert s.score == {"AAA": 2, "BBB": 1} and len(s.events) == 6

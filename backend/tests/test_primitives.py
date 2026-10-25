@@ -178,3 +178,33 @@ def test_every_template_spec_accepted_on_empty_events(tid):
     params = {"line": 2, "team": "NBR"}
     assert settle(spec, [], WIN, CTX, False, params) in (None, "yes", "no", "void", "short", "long")
     assert settle(spec, [], WIN, CTX, True, params) is not None
+
+
+def _h(t, half, type_="shot", team="NBR", **kw):
+    return {"id": f"h{half}{t}", "t": t, "half": half, "team": team, "type": type_, **kw}
+
+
+def test_match_window_counts_half2_events_after_half1_added_time_lock():
+    # Locked at 2750 in half 1 (added time): a half-2 event at t=2710 is still after the start.
+    spec = {"primitive": "count_at_least", "filter": {"type": "goal"}, "n": 1}
+    win = Window(2750, None, "full_end", None, 1)
+    assert settle(spec, [_h(2710, 2, "goal")], win, CTX, closed=False) == "yes"
+    assert settle(spec, [_h(2740, 1, "goal")], win, CTX, closed=False) is None
+
+
+def test_match_window_ignores_half1_added_time_after_half2_restart():
+    spec = {"primitive": "count_at_least", "filter": {"type": "goal"}, "n": 1}
+    win = Window(2700, None, "full_end", None, 2)
+    assert settle(spec, [_h(2750, 1, "goal")], win, CTX, closed=False) is None
+
+
+def test_ordering_is_half_then_time():
+    win = Window(2700, None, "full_end", None, 1)
+    events = [_h(2710, 2, "shot", "TGT"), _h(2750, 1, "shot", "NBR")]
+    first = {"primitive": "first_of", "filter_a": {"type": "shot", "team": "home"},
+             "filter_b": {"type": "shot", "team": "away"}, "options": ["home", "away"]}
+    assert settle(first, events, win, CTX, closed=False) == "home"
+    nxt = {"primitive": "next_matching", "filter": {"type": "shot"},
+           "test": {"complete": True}, "no_event": "no"}
+    ev_a = [_h(2710, 2, "shot", outcome="incomplete"), _h(2750, 1, "shot", outcome="complete")]
+    assert settle(nxt, ev_a, win, CTX, closed=False) == "yes"

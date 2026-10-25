@@ -43,12 +43,14 @@ def window_for(template: Template, params: dict, state: MatchState, lock_at: flo
     else:
         start = 0.0
     half = None if template.counts_from == "kickoff" else state.half
+    # Kickoff counting starts at half 1, t=0; anything else starts in the state's half.
+    start_half = 1 if template.counts_from == "kickoff" else state.half
     secs = _seconds(params)
     if secs is not None:
-        return Window(start, lock_at + secs, None, half)
+        return Window(start, lock_at + secs, None, half, start_half)
     if _kind(params) == "match":
-        return Window(start, None, "full_end")
-    return Window(start, None, "half_end", half)
+        return Window(start, None, "full_end", None, start_half)
+    return Window(start, None, "half_end", half, start_half)
 
 
 def band_for(template: Template) -> tuple[float, float] | None:

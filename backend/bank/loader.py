@@ -53,6 +53,8 @@ def window_label(window: str | int, phase: str | None = None) -> str:
     if isinstance(window, str):
         if window in _MINUTE_WINDOWS:
             window = _MINUTE_WINDOWS[window]
+        elif window == "half" and phase:
+            return "the second half" if phase == "half_time" else "the first half"
         else:
             return _WINDOW_LABELS[window]
     if window % 60 == 0:

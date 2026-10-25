@@ -150,13 +150,13 @@ def test_v2_instant_has_no_band():
 
 def test_window_for():
     st = _state(t=600)
-    assert window_for(BANK["goal_window"], {"window": "5m"}, st, 610) == Window(610, 910, None, 1)
-    assert window_for(BANK["goal_window"], {"window": "half"}, st, 610) == Window(610, None, "half_end", 1)
-    assert window_for(BANK["goals_over"], {"window": "match"}, st, 610) == Window(0, None, "full_end")
-    assert window_for(BANK["shot_soon"], {"window_s": 60}, st, 610) == Window(610, 670, None, 1)
+    assert window_for(BANK["goal_window"], {"window": "5m"}, st, 610) == Window(610, 910, None, 1, 1)
+    assert window_for(BANK["goal_window"], {"window": "half"}, st, 610) == Window(610, None, "half_end", 1, 1)
+    assert window_for(BANK["goals_over"], {"window": "match"}, st, 610) == Window(0, None, "full_end", None, 1)
+    assert window_for(BANK["shot_soon"], {"window_s": 60}, st, 610) == Window(610, 670, None, 1, 1)
     h2 = _state(t=3000, half=2)
-    assert window_for(BANK["player_stat_over"], {"line": 2}, h2, 3010) == Window(2700, None, "half_end", 2)
-    assert window_for(BANK["player_stat_over"], {"line": 2}, st, 610) == Window(0, None, "half_end", 1)
+    assert window_for(BANK["player_stat_over"], {"line": 2}, h2, 3010) == Window(2700, None, "half_end", 2, 2)
+    assert window_for(BANK["player_stat_over"], {"line": 2}, st, 610) == Window(0, None, "half_end", 1, 1)
 
 
 def test_window_for_sets_half_except_match_and_kickoff():
