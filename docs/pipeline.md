@@ -385,7 +385,7 @@ Alex now knows why the room shouted, and that it involved their own player. No n
 
 A friend who picked striker Doyle, in the same dull slot, gets "…in the next 90 seconds?". The question count and difficulty are the same for both.
 
-**⑧ Half time, then more dull slots.** The replay pauses at half time and a stack appears: two shared forecast (window) questions such as `card_second_half` ("Any card in the first 10 minutes of the second half?") and `second_half_goal`, plus Ward's `player_stat_over` "2+ saves this half?" (P=0.44) as the player question. It locks after 60 real seconds, or when the host resumes. Dull slots after the restart carry on as before.
+**⑧ Half time, then more dull slots.** The replay pauses at half time and a stack appears: two shared forecast (window) questions such as `card_window` ("Any card in the first 10 minutes of the second half?", P(yes)=0.36) and `goal_window` ("Goal in the first 10 minutes of the second half?", P(yes)=0.26), plus Ward's `player_stat_over` "2+ saves this half?" (P=0.44) as the player question. It locks after 60 real seconds, or when the host resumes. Dull slots after the restart carry on as before.
 
 **⑨ Full time.** In issue order Alex got 22 non-void questions: 14 instant, 4 forecast and 4 player (the kickoff and half-time stacks supply 2 forecast and 1 player each). So per_q is 400/14 ≈ 28.6, 300/4 = 75 and 300/4 = 75. A perfect run would earn max_possible = 1440.
 
