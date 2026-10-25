@@ -69,13 +69,15 @@ Suggested backend split (the two owners may swap): **core** = `ingest/ detect/ m
 - **Env vars:** see `infra/.env.example`. Copy it to `.env` at the repo root. **Never commit `.env` or keys.**
 
 ## Commands
-Not yet runnable. Add the real commands here as code lands.
 ```bash
 # backend
 python -m venv .venv && source .venv/bin/activate
 pip install -r backend/requirements.txt
-uvicorn backend.app.main:app --reload      # http://localhost:8000
-pytest backend/tests                        # must pass before every PR
+uvicorn backend.app.main:app --reload       # http://localhost:8000, single worker only
+pytest                                      # fast suite (~15 s); must pass before every PR
+pytest -m slow                              # full-match WebSocket end-to-end run (~3 min)
+python -m backend.ingest.sim_placeholder     # regenerate the PLACEHOLDER match in data/source/sim-placeholder/
+python -m backend.agents.timing_sim          # timing simulator → data/generated/timing_report.md
 # frontend: see frontend/README.md once CWT96 picks the stack
 ```
 
