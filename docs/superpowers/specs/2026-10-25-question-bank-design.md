@@ -148,6 +148,8 @@ Window labels render as "the next 5 minutes", "the next 10 minutes", "the next 2
 
 The v2 templates `card_second_half` and `second_half_goal` become `card_window` and `goal_window` with window `half`, asked in the second half.
 
+In a kickoff or half-time stack, window labels read "the first N minutes" (at half time "the first N minutes of the second half") and the named half window reads "the first half" (at half time "the second half"); the match label is unchanged.
+
 **Player (7):** each uses its `fair_line` / window tuning from [3] so P(yes) ≈ 0.5.
 
 | ID | Question | Positions | Rule | Rare |

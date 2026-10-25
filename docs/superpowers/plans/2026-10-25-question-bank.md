@@ -372,7 +372,7 @@ def test_candidate_category_mapping(): ...   # window → "forecast"
 **Files:**
 - Create: `backend/bank/select.py`
 - Modify: `docs/pipeline.md`:
-  - §[2b]: replace the "Hard rules" table rows for Forecast, Favourite-player forecast and Favourite-player instant with "All kinds come through dull slots; kind drawn at random, see `backend/bank/`". Delete the "Kickoff and half time" stack paragraph.
+  - §[2b]: replace the "Hard rules" table rows for Forecast, Favourite-player forecast and Favourite-player instant with "All kinds come through dull slots; kind drawn at random, see `backend/bank/`". Delete the "Kickoff and half time" stack paragraph. *(Superseded: the kickoff and half-time stacks were kept and built in `backend/bank/stack.py`; see `docs/pipeline.md` §[2b].)*
   - §[2]: above the catalog table, add "Source of truth: `backend/bank/templates.json` (28 templates); this table lists the v2 originals."
 - Test: `backend/tests/test_select.py`
 
@@ -411,7 +411,7 @@ def test_late_match_window_draw_falls_back_to_instant(): ...  # t=4560, only ins
 - [ ] **Step 3: Implement** `select.py`, then edit `docs/pipeline.md` as listed above.
 - [ ] **Step 4: Run** `pytest backend/tests -v`. Expected: all PASS.
 - [ ] **Step 5: Commit** `[backend] Add slot selection for question bank; Docs pipeline: all questions via dull slots`
-- [ ] **Step 6:** Push `backend/question-bank` and open a PR with the CLAUDE.md checklist (stages [2] [2b] [3] [4], tier P1). Tell CWT96 that the kickoff/half-time stack UI is no longer needed.
+- [ ] **Step 6:** Push `backend/question-bank` and open a PR with the CLAUDE.md checklist (stages [2] [2b] [3] [4], tier P1). Tell CWT96 that the kickoff/half-time stack UI is no longer needed. *(Superseded: the stack UI is still needed, see `backend/bank/stack.py`.)*
 
 ---
 
