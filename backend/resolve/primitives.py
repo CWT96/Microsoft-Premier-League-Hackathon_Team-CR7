@@ -222,6 +222,8 @@ def settle(spec: dict, events: list[dict], window: Window, ctx: Ctx,
            closed: bool, params: dict | None = None) -> str | None:
     """Return an option id, "void", or None while the question is still open."""
     ordered = sorted(events, key=lambda e: e["t"])
+    if window.half is not None:
+        ordered = [e for e in ordered if e.get("half") == window.half]
     after_start = [e for e in ordered if e["t"] > window.start_t]
     win_events = [e for e in after_start
                   if window.end_t is None or e["t"] <= window.end_t]

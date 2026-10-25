@@ -127,7 +127,7 @@ def test_half_and_match_windows_use_clock():
 
 def test_goals_over_subtracts_goals_already_scored():
     t = load_bank()["goals_over"]
-    ev = [{"type": "goal", "team": "H", "t": 300.0, "player_id": "x"}]
+    ev = [{"type": "goal", "team": "H", "t": 300.0, "half": 1, "player_id": "x"}]
     fresh = PRICERS["poisson_count"](t, {"window": "match", "line": 2}, _state(), None)
     after = PRICERS["poisson_count"](t, {"window": "match", "line": 2},
                                      _state(events=ev, score={"H": 1, "A": 0}), None)
@@ -159,8 +159,8 @@ def test_player_next_pass_from_position():
 def test_player_stat_over_counts_since_half_start():
     t = load_bank()["player_stat_over"]
     pl = Player("p", "P", "H", "FW")
-    ev = [{"type": "shot", "team": "H", "t": 100.0, "player_id": "p"},
-          {"type": "shot", "team": "H", "t": 200.0, "player_id": "p"}]
+    ev = [{"type": "shot", "team": "H", "t": 100.0, "half": 1, "player_id": "p"},
+          {"type": "shot", "team": "H", "t": 200.0, "half": 1, "player_id": "p"}]
     p = PRICERS["player"](t, {"line": 3}, _state(events=ev), pl)
     expect = p_at_least(POSITION_RATES_90["FW"]["shot"], (2700 - 600) / 60, 1)
     assert p["yes"] == pytest.approx(expect)

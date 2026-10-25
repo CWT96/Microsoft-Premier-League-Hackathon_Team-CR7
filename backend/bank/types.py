@@ -41,6 +41,7 @@ class Window:
     start_t: float  # events with t > start_t count
     end_t: float | None  # None = closes on half_end (half) or full_end (match) event
     end_marker: Literal["half_end", "full_end"] | None
+    half: int | None = None  # set: only events with this "half" count (the clock restarts at 2700)
 
 
 @dataclass

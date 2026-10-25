@@ -95,22 +95,28 @@ def _window_minutes(params: dict, state: MatchState) -> float:
     return float(str(w).rstrip("m"))
 
 
-def _window_start(template: Template, state: MatchState) -> float | None:
-    """Event start time for pre-counted events, or None for counts_from lock."""
+def _window_start(template: Template, state: MatchState) -> tuple[float, int | None] | None:
+    """(start time, half filter) for pre-counted events, or None for counts_from lock.
+
+    Matches guards.window_for: kickoff counts both halves, half_start only this half.
+    """
     if template.counts_from == "kickoff":
-        return 0.0
+        return 0.0, None
     if template.counts_from == "half_start":
-        return 0.0 if state.half == 1 else HALF_END_S[1]
+        return (0.0 if state.half == 1 else HALF_END_S[1]), state.half
     return None
 
 
 def _already(template: Template, params: dict, state: MatchState,
              player: Player | None, flt: dict) -> int:
-    start = _window_start(template, state)
-    if start is None:
+    window = _window_start(template, state)
+    if window is None:
         return 0
+    start, half = window
     ctx = ctx_for(template, params, state, player)
-    return sum(1 for e in state.events if e["t"] > start and event_matches(e, flt, ctx))
+    return sum(1 for e in state.events
+               if e["t"] > start and (half is None or e.get("half") == half)
+               and event_matches(e, flt, ctx))
 
 
 def _yes_no(template: Template, p_yes: float) -> dict[str, float]:

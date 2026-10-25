@@ -1,5 +1,7 @@
 from dataclasses import replace
 
+import pytest
+
 from backend.bank.guards import GUARDS, band_for, window_for
 from backend.bank.loader import load_bank
 from backend.bank.types import MatchState, Player, Window
@@ -148,10 +150,66 @@ def test_v2_instant_has_no_band():
 
 def test_window_for():
     st = _state(t=600)
-    assert window_for(BANK["goal_window"], {"window": "5m"}, st, 610) == Window(610, 910, None)
-    assert window_for(BANK["goal_window"], {"window": "half"}, st, 610) == Window(610, None, "half_end")
+    assert window_for(BANK["goal_window"], {"window": "5m"}, st, 610) == Window(610, 910, None, 1)
+    assert window_for(BANK["goal_window"], {"window": "half"}, st, 610) == Window(610, None, "half_end", 1)
     assert window_for(BANK["goals_over"], {"window": "match"}, st, 610) == Window(0, None, "full_end")
-    assert window_for(BANK["shot_soon"], {"window_s": 60}, st, 610) == Window(610, 670, None)
+    assert window_for(BANK["shot_soon"], {"window_s": 60}, st, 610) == Window(610, 670, None, 1)
     h2 = _state(t=3000, half=2)
-    assert window_for(BANK["player_stat_over"], {"line": 2}, h2, 3010) == Window(2700, None, "half_end")
-    assert window_for(BANK["player_stat_over"], {"line": 2}, st, 610) == Window(0, None, "half_end")
+    assert window_for(BANK["player_stat_over"], {"line": 2}, h2, 3010) == Window(2700, None, "half_end", 2)
+    assert window_for(BANK["player_stat_over"], {"line": 2}, st, 610) == Window(0, None, "half_end", 1)
+
+
+def test_window_for_sets_half_except_match_and_kickoff():
+    st = _state(t=600)
+    assert window_for(BANK["goal_window"], {"window": "5m"}, st, 610).half == 1
+    assert window_for(BANK["goal_window"], {"window": "half"}, st, 610).half == 1
+    assert window_for(BANK["equaliser_window"], {"window": "match", "team": "AAA"}, st, 610).half is None
+    assert window_for(BANK["goals_over"], {"window": "match"}, st, 610).half is None
+    assert window_for(BANK["player_stat_over"], {"line": 2}, _state(t=3000, half=2), 3010).half == 2
+
+
+# F1: the second-half clock restarts at 2700, but first-half added time runs to ~2827.
+def _first_half_added_time():
+    shots = [{"id": f"s{t}", "t": float(t), "half": 1, "team": "AAA", "type": "shot",
+              "player_id": "p9"} for t in (2710, 2760, 2800, 2820)]
+    return shots + [{"id": "he1", "t": 2827.0, "half": 1, "type": "half_end"}]
+
+
+def test_second_half_player_stat_over_ignores_first_half_added_time():
+    from backend.bank.context import ctx_for
+    from backend.resolve.primitives import settle
+    t = BANK["player_stat_over"]
+    events = _first_half_added_time()
+    st = _state(t=2760, half=2, events=events)
+    params = {"line": 2, "stat": "shot"}
+    win = window_for(t, params, st, 2766)
+    ctx = ctx_for(t, params, st, FW)
+    assert settle(t.resolve, events, win, ctx, closed=False, params=params) is None
+    h2 = [{"id": "x1", "t": 2790.0, "half": 2, "team": "AAA", "type": "shot", "player_id": "p9"},
+          {"id": "x2", "t": 2900.0, "half": 2, "team": "AAA", "type": "shot", "player_id": "p9"}]
+    assert settle(t.resolve, events + h2[:1], win, ctx, closed=False, params=params) is None
+    assert settle(t.resolve, events + h2, win, ctx, closed=False, params=params) == "yes"
+    end2 = {"id": "he2", "t": 5500.0, "half": 2, "type": "half_end"}
+    assert settle(t.resolve, events + h2[:1] + [end2], win, ctx, closed=False, params=params) == "no"
+
+
+def test_second_half_pricing_ignores_first_half_added_time():
+    from backend.model.poisson import p_at_least
+    from backend.model.priors import POSITION_RATES_90
+    t = BANK["player_stat_over"]
+    st = _state(t=2760, half=2, events=_first_half_added_time())
+    p = PRICERS["player"](t, {"line": 1, "stat": "shot"}, st, FW)
+    expect = p_at_least(POSITION_RATES_90["FW"]["shot"], (5400 - 2760) / 60, 1)
+    assert p["yes"] == pytest.approx(expect)
+
+
+def test_second_half_goal_window_not_closed_by_first_half_end():
+    from backend.bank.context import ctx_for
+    from backend.resolve.primitives import settle
+    t = BANK["goal_window"]
+    events = [{"id": "he1", "t": 2827.0, "half": 1, "type": "half_end"}]
+    st = _state(t=2760, half=2, events=events)
+    params = {"window": "half"}
+    win = window_for(t, params, st, 2766)
+    ctx = ctx_for(t, params, st, None)
+    assert settle(t.resolve, events, win, ctx, closed=False, params=params) is None
