@@ -48,8 +48,9 @@ def test_three_nil_win_is_near_certain():
 
 
 def test_both_score_and_equalise():
-    assert p_final("both_score", {"H": 1, "A": 1}, None, None, 10) == pytest.approx(1.0)
-    assert 0 < p_final("both_score", {"H": 0, "A": 0}, None, None, 90) < 0.7
+    assert p_final("both_score", {"H": 1, "A": 1}, None, None, 10,
+                   home="H", away="A") == pytest.approx(1.0)
+    assert 0 < p_final("both_score", {"H": 0, "A": 0}, None, None, 90, home="H", away="A") < 0.7
     assert p_final("equalise", {"H": 0, "A": 1}, "H", "A", 10) == pytest.approx(0.139, abs=0.002)
 
 
@@ -177,3 +178,23 @@ def test_count_already_matches_half_and_filter():
     assert count_already(t, {"line": 3}, _state(events=ev), pl) == 2
     assert count_already(t, {"line": 3}, _state(t=2900, half=2, events=ev), pl) == 1
     assert count_already(load_bank()["goal_window"], {"window": "5m"}, _state(events=ev), None) == 0
+
+
+def test_goal_grid_prices_with_empty_score():
+    bank = load_bank()
+    s = _state()
+    s.score = {}
+    for tid, params in (("both_teams_score", {"window": "match"}),
+                        ("team_wins", {"window": "match", "team": "H"}),
+                        ("equaliser_window", {"window": "10m", "team": "H"})):
+        p = PRICERS["goal_grid"](bank[tid], params, s, None)
+        assert p["yes"] + p["no"] == pytest.approx(1.0)
+
+
+def test_both_score_reads_home_and_away_not_dict_order():
+    s = _state()
+    s.score = {"A": 1}  # home missing, away first
+    p = PRICERS["goal_grid"](load_bank()["both_teams_score"], {"window": "match"}, s, None)
+    fresh = PRICERS["goal_grid"](load_bank()["both_teams_score"], {"window": "match"}, _state(), None)
+    assert p["yes"] > fresh["yes"]
+    assert p["yes"] < 1.0

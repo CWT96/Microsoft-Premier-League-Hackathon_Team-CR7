@@ -49,20 +49,25 @@ def p_more(rate_a90: float, rate_b90: float, minutes: float) -> float:
 
 
 def p_final(predicate: str, score: dict[str, int], team: str | None, other: str | None,
-            minutes_left: float) -> float:
-    """Probability of a final-state predicate given the score and time left."""
+            minutes_left: float, home: str | None = None, away: str | None = None) -> float:
+    """Probability of a final-state predicate given the score and time left.
+
+    both_score needs home and away; missing score keys count as 0.
+    """
     mean = TEAM_GOALS_90 * max(minutes_left, 0.0) / 90.0
     if predicate == "equalise":
-        deficit = max(score[other] - score[team], 1)
+        deficit = max(score.get(other, 0) - score.get(team, 0), 1)
         return p_at_least(TEAM_GOALS_90, minutes_left, deficit)
     pmf = _pmf(mean, GRID_MAX)
     if predicate == "both_score":
-        a, b = list(score.values())[:2]
+        if home is None or away is None:
+            raise ValueError("both_score needs home and away")
+        a, b = score.get(home, 0), score.get(away, 0)
         pa = 1.0 if a > 0 else 1.0 - pmf[0]
         pb = 1.0 if b > 0 else 1.0 - pmf[0]
         return pa * pb
     if predicate == "team_wins":
-        mine, theirs = score[team], score[other]
+        mine, theirs = score.get(team, 0), score.get(other, 0)
         return sum(pmf[i] * pmf[j] for i in range(GRID_MAX + 1) for j in range(GRID_MAX + 1)
                    if mine + i > theirs + j)
     raise ValueError(f"unknown predicate: {predicate}")
@@ -171,8 +176,10 @@ def _price_grid(t: Template, params: dict, state: MatchState,
     other = None
     if team is not None:
         other = state.away if team == state.home else state.home
-    yes = p_final(t.resolve["predicate"], state.score, team, other,
-                  _window_minutes(params, state))
+    score = {state.home: state.score.get(state.home, 0),
+             state.away: state.score.get(state.away, 0)}
+    yes = p_final(t.resolve["predicate"], score, team, other,
+                  _window_minutes(params, state), home=state.home, away=state.away)
     return {"yes": yes, "no": 1.0 - yes}
 
 
