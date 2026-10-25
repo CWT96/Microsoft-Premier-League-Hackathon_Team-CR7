@@ -1,20 +1,19 @@
 """test_model.py — tests for the probability model [3]: tables, API, fair lines, calibration.
 
 Last Modified: 2026-10-24 23:10, first version.
-Inputs:  hand-built matches; the placeholder dataset when MODEL_EVAL_DATA_ROOT is set
+Inputs:  hand-built matches; data/source/sim-placeholder (MODEL_EVAL_DATA_ROOT overrides the repo root)
 Outputs: none
 
 Workflow:
   - unit tests on a small hand-built match (sum to 1, top2, hint, registry, determinism)
-  - dataset tests (skipped without MODEL_EVAL_DATA_ROOT): fair lines for every player, calibration
+  - dataset tests (run on the repo dataset): fair lines for every player, calibration
 
-CAUTION: MODEL_EVAL_DATA_ROOT points at the data/source folder parent of the sim-data worktree
+CAUTION: MODEL_EVAL_DATA_ROOT, if set, points at a repo root that holds data/source
 checkout, i.e. the directory that holds ``data/source`` is ``<root>``.
 """
 
 from __future__ import annotations
 
-import importlib.util
 import math
 import os
 from pathlib import Path
@@ -326,23 +325,20 @@ def test_get_model_loads_once_under_threads(monkeypatch):
 #
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-DATA_ROOT = os.environ.get("MODEL_EVAL_DATA_ROOT")
+REPO_ROOT = Path(__file__).resolve().parents[2]
+DATA_ROOT = Path(os.environ.get("MODEL_EVAL_DATA_ROOT", REPO_ROOT))
 CALIBRATION_TOL = 0.15
 
 
-def _load_dataset() -> Match:
-    root = Path(DATA_ROOT)
-    spec = importlib.util.spec_from_file_location("sim_loader", root / "backend/ingest/loader.py")
-    mod = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(mod)
-    return mod.load_match("nbr-cal-seed42", root=root / "data/source", with_tracking=False)
-
-
 @pytest.fixture(scope="module")
-def dataset():
-    if not DATA_ROOT or not (Path(DATA_ROOT) / "data/source").exists():
-        pytest.skip("MODEL_EVAL_DATA_ROOT not set")
-    return _load_dataset()
+def dataset() -> Match:
+    """The placeholder match (repo data by default; MODEL_EVAL_DATA_ROOT overrides)."""
+    from backend.ingest import load_match
+
+    source = DATA_ROOT / "data/source"
+    if not (source / "sim-placeholder").exists():
+        pytest.skip(f"no dataset under {source}")
+    return load_match("nbr-cal-seed42", root=source, with_tracking=False)
 
 
 def test_dataset_fair_lines_for_every_player(dataset):
