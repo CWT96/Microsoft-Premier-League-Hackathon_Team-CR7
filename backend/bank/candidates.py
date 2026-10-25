@@ -110,6 +110,9 @@ def build_candidates(kind: Kind, state: MatchState, bank: dict[str, Template],
         if kind == "player":
             stat = (t.resolve["filter"].get("stat")
                     or t.resolve.get("stat_by_position", {}).get(pl.position))
+            needs_stat = "stat_by_position" in t.resolve or "stat" in t.resolve["filter"]
+            if needs_stat and stat is None:
+                continue
         found: list[Candidate] = []
         for team in teams:
             for key, val in _window_values(t):

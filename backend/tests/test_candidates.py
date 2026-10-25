@@ -1,7 +1,10 @@
 import pytest
 
+from dataclasses import replace
+
 from backend.bank.candidates import build_candidates
 from backend.bank.loader import load_bank
+from backend.model.poisson import PRICERS
 from backend.bank.types import CATEGORY, MatchState, Player
 
 BANK = load_bank()
@@ -32,11 +35,13 @@ def only(cands, tid):
 
 def test_dull_midfield_at_20min_has_instant_window_player_candidates():
     s = _state(events=[_touch("p8", 1150)])
-    assert {c.template_id for c in build_candidates("instant", s, BANK, 1200)} >= {"next_pass_dir"}
-    assert all(c.kind == "instant" for c in build_candidates("instant", s, BANK, 1200))
-    assert build_candidates("window", s, BANK, 1200)
+    inst = build_candidates("instant", s, BANK, 1200)
+    assert "next_pass_dir" in {c.template_id for c in inst}
+    assert all(c.kind == "instant" for c in inst)
+    assert "goal_window" in {c.template_id for c in build_candidates("window", s, BANK, 1200)}
     pl = build_candidates("player", s, BANK, 1200, MF)
-    assert pl and all(c.player_id == "p8" for c in pl)
+    assert "player_touch_window" in {c.template_id for c in pl}
+    assert all(c.player_id == "p8" for c in pl)
 
 
 def test_window_candidates_at_80min_exclude_20m_and_match():
@@ -53,10 +58,12 @@ def test_next_pass_dir_shows_top2_renormalised():
     assert c.resolve_by == 1200 + 6 + 15
 
 
-def test_penalty_offered_once_with_shortest_passing_window():
-    cands = build_candidates("window", _state(), BANK, 1200)
+def test_penalty_offered_once_with_shortest_passing_window(monkeypatch):
+    monkeypatch.setitem(PRICERS, "poisson_count", lambda *a: {"yes": 0.5, "no": 0.5})
+    cands = build_candidates("window", _state(t=600.0), BANK, 600)
     pens = [c for c in cands if c.template_id == "penalty_window"]
-    assert len(pens) <= 1
+    assert len(pens) == 1
+    assert pens[0].params["window"] == "half"
 
 
 def test_goalkeeper_gets_only_gk_templates():
@@ -97,5 +104,14 @@ def test_player_stat_over_sets_stat_and_tuned_line():
     s = _state(events=[_touch("p8", 1150)])
     c = [x for x in build_candidates("player", s, BANK, 1200, MF)
          if x.template_id == "player_stat_over"]
+    assert c
     for x in c:
         assert x.params["stat"] == "pass_complete" and isinstance(x.params["line"], int)
+
+
+def test_player_template_with_no_stat_for_position_is_skipped():
+    t = BANK["player_stat_over"]
+    res = {**t.resolve, "stat_by_position": {}}
+    bank = {"player_stat_over": replace(t, resolve=res)}
+    s = _state(events=[_touch("p8", 1150)])
+    assert build_candidates("player", s, bank, 1200, MF) == []
