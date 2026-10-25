@@ -395,6 +395,27 @@ def test_second_half_opening_calm_label_names_the_team_with_the_ball(
         (DEFAULT_OUT_DIR / "README.md").read_text().split())
 
 
+PASS_MIX = {"MF": (0.40, 0.50), "DF": (0.25, 0.35), "FW": (0.08, 0.15), "GK": (0.03, 0.06)}
+MIN_STARTER_TOUCHES, MIN_SUB_TOUCHES = 25, 8
+
+
+def test_pass_mix_routes_the_ball_through_defenders(match: Match) -> None:
+    by_id = match.roster.by_id()
+    passes = Counter(by_id[e.player_id].position for e in match.events if e.type == "pass")
+    total = sum(passes.values())
+    for pos, (lo, hi) in PASS_MIX.items():
+        assert lo <= passes[pos] / total <= hi, (pos, passes[pos] / total)
+
+
+def test_every_player_touches_the_ball_often_enough(match: Match) -> None:
+    touches = Counter(e.player_id for e in match.events if e.player_id and e.start)
+    for p in match.roster.players:
+        if p.position == "GK":
+            continue
+        need = MIN_STARTER_TOUCHES if p.starter else MIN_SUB_TOUCHES
+        assert touches[p.player_id] >= need, (p.player_id, touches[p.player_id])
+
+
 def test_source_lines_stay_within_100_characters() -> None:
     root = Path(__file__).resolve().parents[1]
     for f in (root / "ingest" / "sim_placeholder.py", root / "ingest" / "loader.py",

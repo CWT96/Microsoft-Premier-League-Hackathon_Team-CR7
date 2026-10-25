@@ -23,6 +23,7 @@ import bisect
 import json
 import math
 import random
+from collections import Counter
 from pathlib import Path
 
 from backend.core.constants import (DEFAULT_MATCH_ID, PITCH_LENGTH_M, PITCH_WIDTH_M,
@@ -68,9 +69,9 @@ TRACK_KINDS = {
 }
 
 ZONES = {"back": (2.0, 34.0), "mid": (36.0, 68.0)}  # x range of circulation, acting frame
-W_BACK = {"GK": 0.08, "DF": 0.5, "MF": 0.37, "FW": 0.05}
-W_MID = {"GK": 0.02, "DF": 0.25, "MF": 0.55, "FW": 0.18}
-W_ATTACK = {"MF": 0.42, "FW": 0.45, "DF": 0.13}
+W_BACK = {"GK": 0.08, "DF": 0.52, "MF": 0.35, "FW": 0.05}
+W_MID = {"GK": 0.04, "DF": 0.44, "MF": 0.38, "FW": 0.14}
+W_ATTACK = {"MF": 0.40, "FW": 0.35, "DF": 0.25}
 W_SHOT = {"FW": 0.7, "MF": 0.27, "DF": 0.03}
 W_RESTART = {"DF": 0.6, "MF": 0.4}
 
@@ -104,6 +105,7 @@ SAVE_X = 103.5  # a saved shot is met this far up the pitch
 LEAD_S = 10  # the acting player starts running to the ball this many seconds early
 ACTOR_RUN_MS = 8.0
 KICKOFF_LEAD_S = 2  # a player acting this soon after the half starts begins on the ball
+TOUCH_SCALE = 8.0  # receivers with fewer touches are favoured
 RUN_MS = 5.0  # speed assumed when choosing who can reach the next action
 MAX_SPEED_MS = 9.5
 POSSESSION_TYPES = frozenset({"pass", "carry", "shot", "goal", "kickoff", "throw_in", "goal_kick",
@@ -240,6 +242,7 @@ class _Sim:
         self.sub_count = {HOME: 0, AWAY: 0}
         self.last_foul: tuple[str, str, tuple[float, float]] | None = None
         self.last_actor: str | None = None
+        self.touches: dict[str, int] = {}
         self.recent: dict[str, tuple[float, tuple[float, float]]] = {}  # pid -> (t, fixed spot)
         self.ball: tuple[float, float] = CENTRE  # fixed frame
         self.poss: str | None = None
@@ -299,6 +302,7 @@ class _Sim:
         if outcome is not None:
             ev["outcome"] = outcome
         if player is not None and start is not None:
+            self.touches[player] = self.touches.get(player, 0) + 1
             self.recent[player] = (t, self._fixed(team, start))
         if typ in POSSESSION_TYPES:
             self.poss = team
@@ -316,15 +320,36 @@ class _Sim:
         self.labels.append({"kind": kind, "half": self.half, "t_start": round(t0, 1),
                             "t_end": round(t1, 1), "note": note})
 
-    def _slot_dist(self, team: str, pid: str, at: tuple[float, float]) -> float:
-        """Distance from the player's formation spot (shifted to a ball at `at`) to `at`."""
+    def _slot_target(self, team: str, pid: str, at: tuple[float, float]) -> tuple[float, float]:
+        """Formation spot of the player, shifted as for a ball at `at` (acting frame)."""
         slot = self.initial_slots[team].index(pid) if pid in self.initial_slots[team] else None
         if slot is None:  # a substitute takes over the slot of the player he replaced
             slot = next(s for h, t, tm, s, new in self.sub_log if new == pid)
         bx, by = SLOT_BASE[slot]
         tx = bx + SLOT_BALL_PULL[slot] * (at[0] - CENTRE[0])
         ty = by + LATERAL_PULL * (at[1] - CENTRE[1])
-        return math.dist((tx, ty), at)
+        return (tx, ty)
+
+    def _slot_dist(self, team: str, pid: str, at: tuple[float, float]) -> float:
+        """Distance from the player's formation spot (shifted to a ball at `at`) to `at`."""
+        return math.dist(self._slot_target(team, pid, at), at)
+
+    def _receiver(self, team: str, weights: dict[str, float], exclude: str | None,
+                  allow_gk: bool, spot: tuple[float, float], t: float) -> str:
+        """Next player in a circulation; the ball is then moved to him.
+
+        Only players who can run from their last action to `spot` (acting frame) by time `t`.
+        """
+        size = Counter(self.pos_of[p] for p in self.on_pitch[team])
+        fixed_spot = self._fixed(team, spot)
+        cands = [p for p in self.on_pitch[team]
+                 if p != exclude and (allow_gk or self.pos_of[p] != "GK")]
+        near = [p for p in cands if p not in self.recent or math.dist(
+            self.recent[p][1], fixed_spot) <= RUN_MS * max(t - self.recent[p][0], 0.5)]
+        cands = near or cands
+        w = [weights[self.pos_of[p]] / size[self.pos_of[p]]
+             / (1 + self.touches.get(p, 0) / TOUCH_SCALE) for p in cands]
+        return self.rng.choices(cands, weights=w)[0]
 
     def pick(self, team: str, weights: dict[str, float], at: tuple[float, float] | None = None
              ) -> str:
@@ -361,7 +386,9 @@ class _Sim:
             self.last_actor = min(outfield, key=lambda p: self._slot_dist(team, p, at or CENTRE))
             return self.last_actor
         pos = self.rng.choices(list(pools), weights=[weights[p] for p in pools])[0]
-        self.last_actor = self.rng.choice(pools[pos])
+        pool = pools[pos]
+        self.last_actor = self.rng.choices(
+            pool, weights=[1 / (1 + self.touches.get(p, 0) / TOUCH_SCALE) for p in pool])[0]
         return self.last_actor
 
     def of_pos(self, team: str, pos: str) -> str:
@@ -443,13 +470,19 @@ class _Sim:
         if until - self.t < MIN_CALM_S:
             raise ValueError(f"calm spell at t={self.t:.0f} would be under {MIN_CALM_S:.0f} s")
         t0, team0 = self.t, team
+        nxt: str | None = None  # the receiver of the previous pass acts next
         while True:
             dt = self.rng.uniform(*CALM_DT)
             if self.t + dt > until:
                 break
-            nx = _clamp(x + self.rng.gauss(0, 8), lo, hi)
-            ny = _clamp(y + self.rng.gauss(0, 13), 6, 62)
-            who = self.of_pos(team, "GK") if x <= GK_HOLD_X else self.pick(team, weights, (x, y))
+            who = nxt or (self.of_pos(team, "GK") if x <= GK_HOLD_X
+                          else self.pick(team, weights, (x, y)))
+            nxt = self._receiver(team, weights, who, zone == "back", (x, y), self.t + 2 * dt)
+            hx, hy = self._slot_target(team, nxt, (x, y))
+            nx = _clamp(hx + self.rng.gauss(0, 3), lo, hi)
+            ny = _clamp(hy + self.rng.gauss(0, 4), 6, 62)
+            if self.pos_of[nxt] == "GK":
+                nx = min(nx, GK_HOLD_X)
             if self.rng.random() < CALM_CARRY_P:
                 self.emit("carry", team, who, _pt(x, y), _pt(nx, ny), "complete", dt=dt)
             elif zone == "mid" and self.rng.random() < CALM_INCOMPLETE_P:
@@ -459,7 +492,7 @@ class _Sim:
                 self.t += dt
                 self.emit("interception", other, self.pick(other, W_MID, (mx, my)),
                           _pt(mx, my))
-                team, x, y = other, _clamp(mx, lo, hi), my
+                team, x, y, nxt = other, _clamp(mx, lo, hi), my, None
                 continue
             else:
                 self.emit("pass", team, who, _pt(x, y), _pt(nx, ny), "complete", dt=dt)
@@ -478,12 +511,14 @@ class _Sim:
         t0 = self.t
         x, y = self.bpos(team)
         n = self.rng.randint(4, 5)
+        nxt: str | None = None
         for i in range(n):
             dt = self.rng.uniform(*BUILD_DT)
             nx = x + (BUILD_END_X - x) / (n - i) + self.rng.gauss(0, 1.5)
             ny = _clamp(y + self.rng.gauss(0, 8), 6, 62)
-            self.emit("pass", team, self.pick(team, W_MID, (x, y)), _pt(x, y), _pt(nx, ny),
-                      "complete", dt=dt)
+            who = nxt or self.pick(team, W_MID, (x, y))
+            nxt = self._receiver(team, W_MID, who, False, (nx, ny), self.t + 2 * dt)
+            self.emit("pass", team, who, _pt(x, y), _pt(nx, ny), "complete", dt=dt)
             x, y = nx, ny
             self.t += dt
         self.seg("build", t0, self.t, team)
@@ -628,12 +663,14 @@ class _Sim:
         self._take(team)
         t0 = self.t
         x, y = self.bpos(team)
+        nxt: str | None = None
         for _ in range(SHORT_PLAY_PASSES):
             dt = self.rng.uniform(*SHORT_PLAY_DT)
             nx = x + (CENTRE[0] - x) * 0.6 + self.rng.gauss(0, 5)
             ny = _clamp(y + self.rng.gauss(0, 10), 6, 62)
-            self.emit("pass", team, self.pick(team, W_MID, (x, y)), _pt(x, y), _pt(nx, ny),
-                      "complete", dt=dt)
+            who = nxt or self.pick(team, W_MID, (x, y))
+            nxt = self._receiver(team, W_MID, who, False, (nx, ny), self.t + 2 * dt)
+            self.emit("pass", team, who, _pt(x, y), _pt(nx, ny), "complete", dt=dt)
             x, y = nx, ny
             self.t += dt
         self.seg("calm", t0, self.t, team)

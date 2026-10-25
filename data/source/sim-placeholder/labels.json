@@ -9,105 +9,105 @@
  {
   "kind": "attack",
   "half": 1,
-  "t_start": 105.3,
-  "t_end": 119.6,
+  "t_start": 108.5,
+  "t_end": 120.3,
   "note": "NBR fast attack ending in corner"
  },
  {
   "kind": "set_piece_wait",
   "half": 1,
-  "t_start": 121.8,
-  "t_end": 142.8,
+  "t_start": 122.7,
+  "t_end": 144.4,
   "note": "NBR corner"
  },
  {
   "kind": "calm",
   "half": 1,
-  "t_start": 145.8,
+  "t_start": 147.4,
   "t_end": 270.0,
   "note": "CAL circulation in the back third"
  },
  {
   "kind": "attack",
   "half": 1,
-  "t_start": 380.3,
-  "t_end": 393.8,
+  "t_start": 387.2,
+  "t_end": 395.4,
   "note": "CAL fast attack ending in off"
  },
  {
   "kind": "calm",
   "half": 1,
-  "t_start": 468.5,
+  "t_start": 474.9,
   "t_end": 520.0,
   "note": "NBR circulation in the mid third"
  },
  {
   "kind": "attack",
   "half": 1,
-  "t_start": 530.4,
-  "t_end": 543.7,
+  "t_start": 532.7,
+  "t_end": 544.4,
   "note": "NBR fast attack ending in foul"
  },
  {
   "kind": "set_piece_wait",
   "half": 1,
-  "t_start": 546.7,
-  "t_end": 571.5,
+  "t_start": 547.4,
+  "t_end": 570.6,
   "note": "NBR free kick near the box"
  },
  {
   "kind": "stoppage",
   "half": 1,
-  "t_start": 601.7,
-  "t_end": 623.2,
-  "note": "CAL foul, free kick"
+  "t_start": 594.7,
+  "t_end": 616.6,
+  "note": "NBR foul, free kick"
  },
  {
   "kind": "stoppage",
   "half": 1,
-  "t_start": 632.8,
-  "t_end": 651.2,
+  "t_start": 625.6,
+  "t_end": 647.1,
   "note": "NBR foul, free kick"
  },
  {
   "kind": "calm",
   "half": 1,
-  "t_start": 662.4,
+  "t_start": 661.8,
   "t_end": 700.0,
   "note": "CAL circulation in the back third"
  },
  {
   "kind": "attack",
   "half": 1,
-  "t_start": 712.5,
-  "t_end": 719.7,
+  "t_start": 711.6,
+  "t_end": 719.3,
   "note": "CAL fast attack ending in out"
  },
  {
   "kind": "calm",
   "half": 1,
-  "t_start": 820.5,
+  "t_start": 823.1,
   "t_end": 880.0,
-  "note": "NBR circulation in the mid third"
+  "note": "NBR circulation in the mid third, CAL wins the ball and keeps it"
  },
  {
   "kind": "attack",
   "half": 1,
-  "t_start": 892.0,
-  "t_end": 900.2,
+  "t_start": 893.5,
+  "t_end": 899.8,
   "note": "NBR fast attack ending in goal_var"
  },
  {
   "kind": "stoppage",
   "half": 1,
-  "t_start": 905.2,
-  "t_end": 950.2,
+  "t_start": 904.8,
+  "t_end": 949.8,
   "note": "VAR check, goal stands"
  },
  {
   "kind": "calm",
   "half": 1,
-  "t_start": 951.7,
+  "t_start": 951.3,
   "t_end": 1100.0,
   "note": "CAL circulation in the mid third, NBR wins the ball and keeps it"
  },
@@ -115,13 +115,13 @@
   "kind": "stoppage",
   "half": 1,
   "t_start": 1101.0,
-  "t_end": 1120.3,
+  "t_end": 1122.0,
   "note": "NBR foul, free kick"
  },
  {
   "kind": "calm",
   "half": 1,
-  "t_start": 1126.8,
+  "t_start": 1126.0,
   "t_end": 1315.0,
   "note": "NBR circulation in the mid third, CAL wins the ball and keeps it"
  },
@@ -135,56 +135,56 @@
  {
   "kind": "calm",
   "half": 1,
-  "t_start": 1413.5,
+  "t_start": 1411.0,
   "t_end": 1520.0,
   "note": "CAL circulation in the back third"
  },
  {
   "kind": "attack",
   "half": 1,
-  "t_start": 1532.6,
-  "t_end": 1544.0,
+  "t_start": 1532.5,
+  "t_end": 1547.0,
   "note": "CAL fast attack ending in corner"
  },
  {
   "kind": "set_piece_wait",
   "half": 1,
-  "t_start": 1550.7,
-  "t_end": 1570.9,
+  "t_start": 1553.7,
+  "t_end": 1575.7,
   "note": "CAL corner"
  },
  {
   "kind": "attack",
   "half": 1,
-  "t_start": 1586.3,
+  "t_start": 1592.3,
   "t_end": 1600.0,
   "note": "NBR fast attack ending in deflect"
  },
  {
   "kind": "set_piece_wait",
   "half": 1,
-  "t_start": 1602.2,
-  "t_end": 1622.4,
+  "t_start": 1602.3,
+  "t_end": 1624.3,
   "note": "NBR corner"
  },
  {
   "kind": "calm",
   "half": 1,
-  "t_start": 1628.9,
+  "t_start": 1630.8,
   "t_end": 1715.0,
-  "note": "NBR circulation in the mid third"
+  "note": "NBR circulation in the mid third, CAL wins the ball and keeps it"
  },
  {
   "kind": "attack",
   "half": 1,
-  "t_start": 1724.7,
-  "t_end": 1735.0,
+  "t_start": 1728.6,
+  "t_end": 1736.9,
   "note": "NBR fast attack ending in save"
  },
  {
   "kind": "calm",
   "half": 1,
-  "t_start": 1800.2,
+  "t_start": 1803.7,
   "t_end": 1880.0,
   "note": "CAL circulation in the back third"
  },
@@ -192,41 +192,41 @@
   "kind": "stalled",
   "half": 1,
   "t_start": 1892.5,
-  "t_end": 1909.1,
+  "t_end": 1909.8,
   "note": "CAL passing around the box, no shot"
  },
  {
   "kind": "attack",
   "half": 1,
-  "t_start": 1924.6,
-  "t_end": 1931.3,
+  "t_start": 1923.0,
+  "t_end": 1932.8,
   "note": "CAL fast attack ending in goal"
  },
  {
   "kind": "stoppage",
   "half": 1,
-  "t_start": 1932.3,
-  "t_end": 1961.3,
+  "t_start": 1933.8,
+  "t_end": 1962.8,
   "note": "goal celebration and restart"
  },
  {
   "kind": "attack",
   "half": 1,
-  "t_start": 1973.1,
-  "t_end": 1979.7,
+  "t_start": 1975.7,
+  "t_end": 1985.8,
   "note": "NBR fast attack ending in deflect"
  },
  {
   "kind": "set_piece_wait",
   "half": 1,
-  "t_start": 1982.0,
-  "t_end": 2002.4,
+  "t_start": 1988.1,
+  "t_end": 2006.7,
   "note": "NBR corner"
  },
  {
   "kind": "calm",
   "half": 1,
-  "t_start": 2091.8,
+  "t_start": 2095.1,
   "t_end": 2195.0,
   "note": "NBR circulation in the mid third"
  },
@@ -234,22 +234,22 @@
   "kind": "stalled",
   "half": 1,
   "t_start": 2202.5,
-  "t_end": 2218.5,
+  "t_end": 2220.4,
   "note": "NBR passing around the box, no shot"
  },
  {
   "kind": "stoppage",
   "half": 1,
-  "t_start": 2219.5,
-  "t_end": 2282.0,
+  "t_start": 2221.4,
+  "t_end": 2282.2,
   "note": "CAL injury stoppage"
  },
  {
   "kind": "stoppage",
   "half": 1,
-  "t_start": 2289.5,
-  "t_end": 2307.5,
-  "note": "CAL foul, free kick"
+  "t_start": 2287.7,
+  "t_end": 2307.6,
+  "note": "NBR foul, free kick"
  },
  {
   "kind": "calm",
@@ -261,21 +261,21 @@
  {
   "kind": "attack",
   "half": 1,
-  "t_start": 2473.9,
-  "t_end": 2483.8,
+  "t_start": 2473.7,
+  "t_end": 2487.9,
   "note": "CAL fast attack ending in foul"
  },
  {
   "kind": "set_piece_wait",
   "half": 1,
-  "t_start": 2486.8,
-  "t_end": 2511.4,
+  "t_start": 2490.9,
+  "t_end": 2515.1,
   "note": "CAL free kick near the box"
  },
  {
   "kind": "calm",
   "half": 1,
-  "t_start": 2611.4,
+  "t_start": 2620.3,
   "t_end": 2740.0,
   "note": "NBR circulation in the back third"
  },
@@ -283,13 +283,13 @@
   "kind": "attack",
   "half": 1,
   "t_start": 2743.0,
-  "t_end": 2756.0,
+  "t_end": 2755.9,
   "note": "CAL fast attack ending in save"
  },
  {
   "kind": "calm",
   "half": 1,
-  "t_start": 2764.5,
+  "t_start": 2764.4,
   "t_end": 2788.0,
   "note": "NBR circulation in the mid third"
  },
@@ -303,147 +303,147 @@
  {
   "kind": "attack",
   "half": 2,
-  "t_start": 2812.9,
-  "t_end": 2820.7,
+  "t_start": 2813.3,
+  "t_end": 2822.8,
   "note": "CAL fast attack ending in out"
  },
  {
   "kind": "calm",
   "half": 2,
-  "t_start": 2967.4,
+  "t_start": 2966.3,
   "t_end": 3065.0,
   "note": "NBR circulation in the back third"
  },
  {
   "kind": "attack",
   "half": 2,
-  "t_start": 3078.4,
-  "t_end": 3090.0,
+  "t_start": 3075.4,
+  "t_end": 3087.3,
   "note": "NBR fast attack ending in corner"
  },
  {
   "kind": "set_piece_wait",
   "half": 2,
-  "t_start": 3092.4,
-  "t_end": 3113.1,
+  "t_start": 3089.7,
+  "t_end": 3111.3,
   "note": "NBR corner"
  },
  {
   "kind": "stoppage",
   "half": 2,
-  "t_start": 3116.1,
-  "t_end": 3141.1,
+  "t_start": 3114.3,
+  "t_end": 3139.3,
   "note": "NBR substitution"
  },
  {
   "kind": "attack",
   "half": 2,
-  "t_start": 3150.3,
-  "t_end": 3160.2,
+  "t_start": 3149.3,
+  "t_end": 3160.6,
   "note": "CAL fast attack ending in deflect"
  },
  {
   "kind": "set_piece_wait",
   "half": 2,
-  "t_start": 3166.8,
-  "t_end": 3184.8,
+  "t_start": 3167.3,
+  "t_end": 3187.2,
   "note": "CAL corner"
  },
  {
   "kind": "stoppage",
   "half": 2,
-  "t_start": 3194.4,
-  "t_end": 3213.1,
+  "t_start": 3195.4,
+  "t_end": 3216.0,
   "note": "CAL foul, free kick"
  },
  {
   "kind": "stoppage",
   "half": 2,
-  "t_start": 3223.1,
-  "t_end": 3242.1,
+  "t_start": 3226.5,
+  "t_end": 3246.9,
   "note": "NBR foul, free kick"
  },
  {
   "kind": "stoppage",
   "half": 2,
-  "t_start": 3252.2,
-  "t_end": 3274.1,
-  "note": "CAL foul, free kick"
+  "t_start": 3255.5,
+  "t_end": 3274.3,
+  "note": "NBR foul, free kick"
  },
  {
   "kind": "calm",
   "half": 2,
-  "t_start": 3284.1,
+  "t_start": 3283.0,
   "t_end": 3315.0,
   "note": "CAL circulation in the mid third"
  },
  {
   "kind": "attack",
   "half": 2,
-  "t_start": 3327.8,
-  "t_end": 3338.6,
+  "t_start": 3328.7,
+  "t_end": 3335.4,
   "note": "CAL fast attack ending in save"
  },
  {
   "kind": "stoppage",
   "half": 2,
-  "t_start": 3339.6,
-  "t_end": 3364.6,
+  "t_start": 3336.4,
+  "t_end": 3361.4,
   "note": "CAL substitution"
  },
  {
   "kind": "calm",
   "half": 2,
-  "t_start": 3427.6,
+  "t_start": 3422.4,
   "t_end": 3500.0,
   "note": "NBR circulation in the mid third"
  },
  {
   "kind": "attack",
   "half": 2,
-  "t_start": 3512.8,
-  "t_end": 3526.7,
+  "t_start": 3509.1,
+  "t_end": 3517.1,
   "note": "NBR fast attack ending in foul_box"
  },
  {
   "kind": "set_piece_wait",
   "half": 2,
-  "t_start": 3529.7,
-  "t_end": 3588.6,
+  "t_start": 3520.1,
+  "t_end": 3581.6,
   "note": "NBR penalty"
  },
  {
   "kind": "stoppage",
   "half": 2,
-  "t_start": 3589.6,
-  "t_end": 3618.6,
+  "t_start": 3582.6,
+  "t_end": 3611.6,
   "note": "goal celebration and restart"
  },
  {
   "kind": "stoppage",
   "half": 2,
-  "t_start": 3627.3,
-  "t_end": 3647.3,
+  "t_start": 3620.2,
+  "t_end": 3639.8,
   "note": "CAL foul, free kick"
  },
  {
   "kind": "stoppage",
   "half": 2,
-  "t_start": 3657.0,
-  "t_end": 3677.4,
+  "t_start": 3650.4,
+  "t_end": 3669.4,
   "note": "NBR foul, free kick"
  },
  {
   "kind": "stoppage",
   "half": 2,
-  "t_start": 3685.8,
-  "t_end": 3707.3,
-  "note": "NBR foul, free kick"
+  "t_start": 3679.3,
+  "t_end": 3699.8,
+  "note": "CAL foul, free kick"
  },
  {
   "kind": "calm",
   "half": 2,
-  "t_start": 3716.3,
+  "t_start": 3709.5,
   "t_end": 3800.0,
   "note": "CAL circulation in the mid third"
  },
@@ -464,7 +464,7 @@
  {
   "kind": "calm",
   "half": 2,
-  "t_start": 3945.1,
+  "t_start": 3942.2,
   "t_end": 4015.0,
   "note": "NBR circulation in the back third"
  },
@@ -478,126 +478,126 @@
  {
   "kind": "calm",
   "half": 2,
-  "t_start": 4119.5,
+  "t_start": 4114.5,
   "t_end": 4350.0,
   "note": "CAL circulation in the mid third"
  },
  {
   "kind": "attack",
   "half": 2,
-  "t_start": 4361.2,
-  "t_end": 4370.6,
+  "t_start": 4362.7,
+  "t_end": 4371.1,
   "note": "CAL fast attack ending in foul"
  },
  {
   "kind": "set_piece_wait",
   "half": 2,
-  "t_start": 4373.6,
-  "t_end": 4399.5,
+  "t_start": 4374.1,
+  "t_end": 4399.3,
   "note": "CAL free kick near the box"
  },
  {
   "kind": "calm",
   "half": 2,
-  "t_start": 4505.7,
+  "t_start": 4498.2,
   "t_end": 4550.0,
   "note": "NBR circulation in the mid third"
  },
  {
   "kind": "attack",
   "half": 2,
-  "t_start": 4563.3,
-  "t_end": 4573.6,
+  "t_start": 4562.6,
+  "t_end": 4570.7,
   "note": "NBR fast attack ending in save"
  },
  {
   "kind": "stoppage",
   "half": 2,
-  "t_start": 4574.6,
-  "t_end": 4599.6,
+  "t_start": 4571.7,
+  "t_end": 4596.7,
   "note": "NBR substitution"
  },
  {
   "kind": "stoppage",
   "half": 2,
-  "t_start": 4599.6,
-  "t_end": 4624.6,
+  "t_start": 4596.7,
+  "t_end": 4621.7,
   "note": "CAL substitution"
  },
  {
   "kind": "stoppage",
   "half": 2,
-  "t_start": 4631.4,
-  "t_end": 4652.4,
+  "t_start": 4629.1,
+  "t_end": 4648.5,
   "note": "CAL foul, free kick"
  },
  {
   "kind": "stoppage",
   "half": 2,
-  "t_start": 4661.1,
-  "t_end": 4679.9,
+  "t_start": 4657.0,
+  "t_end": 4677.7,
   "note": "CAL foul, free kick"
  },
  {
   "kind": "stoppage",
   "half": 2,
-  "t_start": 4688.9,
-  "t_end": 4708.8,
+  "t_start": 4687.0,
+  "t_end": 4707.7,
   "note": "CAL foul, free kick"
  },
  {
   "kind": "calm",
   "half": 2,
-  "t_start": 4723.3,
+  "t_start": 4723.2,
   "t_end": 4850.0,
   "note": "CAL circulation in the back third"
  },
  {
   "kind": "stalled",
   "half": 2,
-  "t_start": 4862.5,
-  "t_end": 4886.7,
+  "t_start": 4860.0,
+  "t_end": 4874.6,
   "note": "CAL passing around the box, no shot"
  },
  {
   "kind": "attack",
   "half": 2,
-  "t_start": 4898.2,
-  "t_end": 4909.9,
+  "t_start": 4886.5,
+  "t_end": 4895.7,
   "note": "CAL fast attack ending in corner"
  },
  {
   "kind": "set_piece_wait",
   "half": 2,
-  "t_start": 4916.5,
-  "t_end": 4935.1,
+  "t_start": 4902.4,
+  "t_end": 4924.0,
   "note": "CAL corner"
  },
  {
   "kind": "attack",
   "half": 2,
-  "t_start": 4948.0,
-  "t_end": 4957.7,
+  "t_start": 4936.6,
+  "t_end": 4947.3,
   "note": "NBR fast attack ending in deflect"
  },
  {
   "kind": "set_piece_wait",
   "half": 2,
-  "t_start": 4960.0,
-  "t_end": 4979.2,
+  "t_start": 4949.6,
+  "t_end": 4967.9,
   "note": "NBR corner"
  },
  {
   "kind": "stalled",
   "half": 2,
-  "t_start": 4989.7,
-  "t_end": 5005.3,
+  "t_start": 4978.4,
+  "t_end": 4996.9,
   "note": "CAL passing around the box, no shot"
  },
  {
   "kind": "calm",
   "half": 2,
-  "t_start": 5098.9,
+  "t_start": 5088.3,
   "t_end": 5150.0,
   "note": "NBR circulation in the mid third"
  },
@@ -605,55 +605,55 @@
   "kind": "stoppage",
   "half": 2,
   "t_start": 5150.0,
-  "t_end": 5169.2,
+  "t_end": 5170.2,
   "note": "CAL foul, free kick"
  },
  {
   "kind": "stoppage",
   "half": 2,
-  "t_start": 5264.5,
-  "t_end": 5282.8,
-  "note": "CAL foul, free kick"
- },
- {
-  "kind": "stoppage",
-  "half": 2,
-  "t_start": 5292.0,
-  "t_end": 5313.7,
+  "t_start": 5263.5,
+  "t_end": 5281.6,
   "note": "NBR foul, free kick"
  },
  {
   "kind": "stoppage",
   "half": 2,
-  "t_start": 5323.9,
-  "t_end": 5345.5,
-  "note": "CAL foul, free kick"
+  "t_start": 5290.5,
+  "t_end": 5312.1,
+  "note": "NBR foul, free kick"
+ },
+ {
+  "kind": "stoppage",
+  "half": 2,
+  "t_start": 5321.7,
+  "t_end": 5340.4,
+  "note": "NBR foul, free kick"
  },
  {
   "kind": "attack",
   "half": 2,
-  "t_start": 5366.7,
-  "t_end": 5375.7,
+  "t_start": 5363.7,
+  "t_end": 5373.3,
   "note": "NBR fast attack ending in save"
  },
  {
   "kind": "calm",
   "half": 2,
-  "t_start": 5384.2,
+  "t_start": 5381.8,
   "t_end": 5450.0,
-  "note": "CAL circulation in the mid third"
+  "note": "CAL circulation in the mid third, NBR wins the ball and keeps it"
  },
  {
   "kind": "attack",
   "half": 2,
-  "t_start": 5462.6,
-  "t_end": 5472.5,
+  "t_start": 5459.9,
+  "t_end": 5471.3,
   "note": "NBR fast attack ending in off"
  },
  {
   "kind": "calm",
   "half": 2,
-  "t_start": 5494.4,
+  "t_start": 5493.7,
   "t_end": 5575.0,
   "note": "NBR circulation in the mid third"
  }
