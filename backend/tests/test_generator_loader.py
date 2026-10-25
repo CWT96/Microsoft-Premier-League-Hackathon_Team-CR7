@@ -67,3 +67,33 @@ def test_strict_mode_reraises_broken_module(tmp_path, monkeypatch) -> None:
 def test_strict_mode_still_allows_missing_module(monkeypatch) -> None:
     monkeypatch.setenv("GENERATOR_STRICT", "1")
     assert get_propose("backend.agents.no_such_generator") is stub_propose
+
+
+def test_stub_satisfies_the_propose_contract() -> None:
+    assert isinstance(stub_propose, generator.ProposeFn)
+    assert generator.is_compatible(stub_propose)
+
+
+def test_incompatible_signature_falls_back_and_logs(monkeypatch, caplog) -> None:
+    bad = types.ModuleType("bad_sig_generator")
+    bad.propose = lambda state: None
+    monkeypatch.setitem(sys.modules, "bad_sig_generator", bad)
+    with caplog.at_level(logging.WARNING):
+        assert get_propose("bad_sig_generator") is stub_propose
+    assert any(r.levelno == logging.ERROR and "incompatible" in r.getMessage()
+               for r in caplog.records)
+
+
+def test_incompatible_signature_raises_when_strict(monkeypatch) -> None:
+    bad = types.ModuleType("bad_sig_strict")
+    bad.propose = lambda state, moment: None
+    monkeypatch.setitem(sys.modules, "bad_sig_strict", bad)
+    monkeypatch.setenv("GENERATOR_STRICT", "1")
+    with pytest.raises(TypeError):
+        get_propose("bad_sig_strict")
+
+
+def test_compatible_variants_are_accepted() -> None:
+    assert generator.is_compatible(lambda state, moment, user_player_id, roster=None: None)
+    assert generator.is_compatible(lambda *a, **k: None)
+    assert not generator.is_compatible(lambda state, moment, user_player_id, other: None)

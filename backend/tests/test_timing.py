@@ -638,3 +638,14 @@ def test_duplicate_step_at_same_half_and_t_is_ignored():
     dup = agent.step(S.st(100))
     assert dup.moments == () and dup.decisions == ()
     assert agent.step(S.st(101)).moments == ()  # spacing still counts from the first
+
+
+def test_make_state_defaults_and_overrides():
+    from backend.tests.fixtures.states import make_state
+    a, b = make_state(), make_state(situation="throw_in", restart_pending=True)
+    assert a.mode == "live" and a.dull_parts == {"possession": 0.5} and a.dull_parts is not \
+        b.dull_parts
+    assert b.situation == "throw_in" and b.restart_pending
+    import pytest
+    with pytest.raises(TypeError):
+        make_state(not_a_field=1)

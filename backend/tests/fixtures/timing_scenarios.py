@@ -16,6 +16,7 @@ from __future__ import annotations
 from typing import Any
 
 from backend.core.types import DetectorState
+from backend.tests.fixtures.states import make_state
 
 CALM: dict[str, Any] = dict(
     mode="live", situation="open_play", threat=0.0, movement=0.2, pressure_m=9.0,
@@ -34,13 +35,8 @@ LINGER: dict[str, Any] = dict(  # cost between 0.45 and 0.70 (neither calm nor s
 
 def st(t: float, half: int = 1, **kw: Any) -> DetectorState:
     """One DetectorState; calm own-third play unless overridden."""
-    base: dict[str, Any] = dict(
-        t=t, half=half, break_kind=None, score_home=0, score_away=0, dull_score=0.7,
-        last_attack_end_t=None,
-    )
-    base.update(CALM)
-    base.update(kw)
-    return DetectorState(**base)
+    return make_state(**{"t": t, "half": half, "dull_score": 0.7, "dull_parts": {},
+                         **CALM, **kw})
 
 
 def run(start: float, n: int, half: int = 1, **kw: Any) -> list[DetectorState]:

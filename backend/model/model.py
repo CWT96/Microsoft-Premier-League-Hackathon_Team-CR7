@@ -25,9 +25,9 @@ from dataclasses import dataclass
 from typing import Iterator
 
 from backend.app.models import Option, Question
-from backend.core.constants import (DEFAULT_MATCH_ID, FINAL_THIRD_MIN_X, HALF_LENGTH_S,
-                                    OWN_THIRD_MAX_X,
-                                    PITCH_LENGTH_M, SECOND_HALF_START_S)
+from backend.core.constants import (DEFAULT_MATCH_ID, HALF_LENGTH_S, PITCH_LENGTH_M,
+                                    SECOND_HALF_START_S)
+from backend.core.geometry import flip_x, zone_of
 from backend.core.types import BallZone, Match, MatchEvent
 from backend.resolve import rules as R
 from backend.resolve.registry import RULES, RuleContext, split_after
@@ -104,13 +104,6 @@ class Model:
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
-def zone_of(x: float) -> BallZone:
-    """Third of the pitch for x in the possession team's attacking frame."""
-    if x < OWN_THIRD_MAX_X:
-        return "own_third"
-    return "final_third" if x > FINAL_THIRD_MIN_X else "middle_third"
-
-
 def pass_bucket(passes: int) -> str:
     """Bucket of passes in the current possession."""
     low, high = PASS_BUCKET_EDGES
@@ -156,7 +149,7 @@ def _yes_no(template_id: str, ctx: RuleContext, team: str) -> bool | None:
 def _holder_x(ctx: RuleContext, e: MatchEvent, holder: str) -> float:
     """Ball x after the event, in the holder's attacking frame."""
     pts = R._x_points(e) or ([e.start[0]] if e.start else [PITCH_LENGTH_M / 2])
-    return pts[-1] if holder == e.team else PITCH_LENGTH_M - pts[-1]
+    return pts[-1] if holder == e.team else flip_x(pts[-1])
 
 
 def iter_instant_samples(match: Match) -> Iterator[Sample]:

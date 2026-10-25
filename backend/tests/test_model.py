@@ -28,6 +28,7 @@ from backend.model import model as model_mod
 from backend.model.model import cache_model, clear_cache, get_model
 from backend.model import registry as prob_registry
 from backend.model.model import iter_instant_samples
+from backend.tests.fixtures.states import make_state
 
 N, C = "NBR", "CAL"
 BINARY = ("keep_ball", "reach_final_third", "shot_soon", "goals_over", "team_wins",
@@ -85,17 +86,6 @@ def make_match() -> Match:
     add(5500.0, "full_end", N, 2)
     evs.sort(key=lambda e: (e.half, e.t, e.id))
     return Match("test", make_roster(), tuple(evs), None, 2790.0, 5500.0)
-
-
-def make_state(**kw) -> DetectorState:
-    base = dict(t=600.0, half=1, mode="live", break_kind=None, score_home=0, score_away=0,
-                situation="open_play", dull_score=0.5, threat=0.05, movement=None,
-                pressure_m=None, ball_xy=(50.0, 34.0), ball_zone="middle_third",
-                possession_team=N, seconds_since_shot=100.0, last_attack_end_t=None,
-                attack_active=False, restart_pending=False, restart_taken=False,
-                dull_parts={"possession": 0.5})
-    base.update(kw)
-    return DetectorState(**base)
 
 
 @pytest.fixture(scope="module")
