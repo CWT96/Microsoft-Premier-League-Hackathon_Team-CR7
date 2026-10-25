@@ -60,10 +60,10 @@
         },
         "cards": [
           {
-            "time": "02:31",
+            "time": "65:20",
             "card_type": "Yellow Card",
             "reason": "Foul Committed",
-            "period": 1
+            "period": 2
           }
         ],
         "positions": [
@@ -88,13 +88,20 @@
           "id": 68,
           "name": "England"
         },
-        "cards": [],
+        "cards": [
+          {
+            "time": "44:39",
+            "card_type": "Yellow Card",
+            "reason": "Foul Committed",
+            "period": 1
+          }
+        ],
         "positions": [
           {
             "position_id": 5,
             "position": "Left Center Back",
             "from": "00:00",
-            "to": "45:00",
+            "to": "75:37",
             "from_period": 1,
             "to_period": 2,
             "start_reason": "Starting XI",
@@ -140,7 +147,7 @@
             "position_id": 12,
             "position": "Right Midfield",
             "from": "00:00",
-            "to": "66:07",
+            "to": "60:54",
             "from_period": 1,
             "to_period": 2,
             "start_reason": "Starting XI",
@@ -163,11 +170,11 @@
             "position_id": 13,
             "position": "Right Center Midfield",
             "from": "00:00",
-            "to": null,
+            "to": "65:55",
             "from_period": 1,
-            "to_period": null,
+            "to_period": 2,
             "start_reason": "Starting XI",
-            "end_reason": "Final Whistle"
+            "end_reason": "Substitution - Off (Tactical)"
           }
         ]
       },
@@ -186,11 +193,11 @@
             "position_id": 15,
             "position": "Left Center Midfield",
             "from": "00:00",
-            "to": "76:38",
+            "to": null,
             "from_period": 1,
-            "to_period": 2,
+            "to_period": null,
             "start_reason": "Starting XI",
-            "end_reason": "Substitution - Off (Tactical)"
+            "end_reason": "Final Whistle"
           }
         ]
       },
@@ -249,30 +256,17 @@
           "id": 68,
           "name": "England"
         },
-        "cards": [
-          {
-            "time": "28:34",
-            "card_type": "Yellow Card",
-            "reason": "Foul Committed",
-            "period": 1
-          },
-          {
-            "time": "39:53",
-            "card_type": "Second Yellow",
-            "reason": "Foul Committed",
-            "period": 1
-          }
-        ],
+        "cards": [],
         "positions": [
           {
             "position_id": 24,
             "position": "Left Center Forward",
             "from": "00:00",
-            "to": "39:53",
+            "to": null,
             "from_period": 1,
-            "to_period": 1,
+            "to_period": null,
             "start_reason": "Starting XI",
-            "end_reason": "Foul Committed (Second Yellow)"
+            "end_reason": "Final Whistle"
           }
         ]
       },
@@ -302,7 +296,7 @@
           {
             "position_id": 5,
             "position": "Left Center Back",
-            "from": "45:00",
+            "from": "75:37",
             "to": null,
             "from_period": 2,
             "to_period": null,
@@ -337,7 +331,7 @@
           {
             "position_id": 12,
             "position": "Right Midfield",
-            "from": "66:07",
+            "from": "60:54",
             "to": null,
             "from_period": 2,
             "to_period": null,
@@ -355,19 +349,12 @@
           "id": 68,
           "name": "England"
         },
-        "cards": [
-          {
-            "time": "79:21",
-            "card_type": "Yellow Card",
-            "reason": "Foul Committed",
-            "period": 2
-          }
-        ],
+        "cards": [],
         "positions": [
           {
-            "position_id": 15,
-            "position": "Left Center Midfield",
-            "from": "76:38",
+            "position_id": 13,
+            "position": "Right Center Midfield",
+            "from": "65:55",
             "to": null,
             "from_period": 2,
             "to_period": null,
@@ -536,11 +523,11 @@
             "position_id": 13,
             "position": "Right Center Midfield",
             "from": "00:00",
-            "to": null,
+            "to": "59:43",
             "from_period": 1,
-            "to_period": null,
+            "to_period": 2,
             "start_reason": "Starting XI",
-            "end_reason": "Final Whistle"
+            "end_reason": "Substitution - Off (Tactical)"
           }
         ]
       },
@@ -559,11 +546,11 @@
             "position_id": 10,
             "position": "Center Defensive Midfield",
             "from": "00:00",
-            "to": null,
+            "to": "67:14",
             "from_period": 1,
-            "to_period": null,
+            "to_period": 2,
             "start_reason": "Starting XI",
-            "end_reason": "Final Whistle"
+            "end_reason": "Substitution - Off (Tactical)"
           }
         ]
       },
@@ -628,7 +615,7 @@
             "position_id": 22,
             "position": "Right Center Forward",
             "from": "00:00",
-            "to": "67:20",
+            "to": "73:55",
             "from_period": 1,
             "to_period": 2,
             "start_reason": "Starting XI",
@@ -651,11 +638,11 @@
             "position_id": 24,
             "position": "Left Center Forward",
             "from": "00:00",
-            "to": "59:01",
+            "to": null,
             "from_period": 1,
-            "to_period": 2,
+            "to_period": null,
             "start_reason": "Starting XI",
-            "end_reason": "Substitution - Off (Tactical)"
+            "end_reason": "Final Whistle"
           }
         ]
       },
@@ -681,18 +668,7 @@
           "name": "England"
         },
         "cards": [],
-        "positions": [
-          {
-            "position_id": 24,
-            "position": "Left Center Forward",
-            "from": "75:30",
-            "to": null,
-            "from_period": 2,
-            "to_period": null,
-            "start_reason": "Substitution - On (Tactical)",
-            "end_reason": "Final Whistle"
-          }
-        ]
+        "positions": []
       },
       {
         "player_id": 910421,
@@ -716,7 +692,18 @@
           "name": "England"
         },
         "cards": [],
-        "positions": []
+        "positions": [
+          {
+            "position_id": 13,
+            "position": "Right Center Midfield",
+            "from": "59:43",
+            "to": null,
+            "from_period": 2,
+            "to_period": null,
+            "start_reason": "Substitution - On (Tactical)",
+            "end_reason": "Final Whistle"
+          }
+        ]
       },
       {
         "player_id": 910417,
@@ -728,7 +715,18 @@
           "name": "England"
         },
         "cards": [],
-        "positions": []
+        "positions": [
+          {
+            "position_id": 10,
+            "position": "Center Defensive Midfield",
+            "from": "67:14",
+            "to": null,
+            "from_period": 2,
+            "to_period": null,
+            "start_reason": "Substitution - On (Tactical)",
+            "end_reason": "Final Whistle"
+          }
+        ]
       },
       {
         "player_id": 910407,
@@ -742,14 +740,14 @@
         "cards": [],
         "positions": [
           {
-            "position_id": 24,
-            "position": "Left Center Forward",
-            "from": "59:01",
-            "to": "75:30",
+            "position_id": 22,
+            "position": "Right Center Forward",
+            "from": "73:55",
+            "to": null,
             "from_period": 2,
-            "to_period": 2,
+            "to_period": null,
             "start_reason": "Substitution - On (Tactical)",
-            "end_reason": "Substitution - Off (Tactical)"
+            "end_reason": "Final Whistle"
           }
         ]
       },
@@ -763,18 +761,7 @@
           "name": "England"
         },
         "cards": [],
-        "positions": [
-          {
-            "position_id": 22,
-            "position": "Right Center Forward",
-            "from": "67:20",
-            "to": null,
-            "from_period": 2,
-            "to_period": null,
-            "start_reason": "Substitution - On (Tactical)",
-            "end_reason": "Final Whistle"
-          }
-        ]
+        "positions": []
       }
     ]
   }

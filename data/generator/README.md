@@ -24,3 +24,5 @@ python -m pytest data/generator/tests    # determinism + checks + "data/source m
 
 ## Calibration
 `check.py` compares every match with 7 real Hudl open-data matches (6 Premier League 2015/16 games and one Euro 2020 game). Only summary numbers are stored, in `REFERENCE`; no real data is committed. The comparison covers event counts per type, pass completion, possessions, half lengths and per-position stats.
+
+It also measures the data the way the question bank (`backend/bank/`, `backend/resolve/`) sees it: only contract event types, per-90 touches, shots, saves and ball wins per position, and how instant questions settle inside slow spells. Player rates are hard checks (the questions are priced from real rates); instant-question rates are WARN only, because our dull spells deliberately stay in midfield. A test also checks the engine's average over 15 extra seeds is within 20% of real.

@@ -10,6 +10,8 @@ from __future__ import annotations
 import argparse
 import collections
 import json
+import math
+import random
 import statistics as st
 import sys
 from pathlib import Path
@@ -32,6 +34,20 @@ REFERENCE = {
 # Mean per player per match with 20+ touches, same reference matches.
 REFERENCE_PLAYER = {"GK": ("saves", 3.5), "DF": ("clearances", 3.8), "MF": ("passes_completed", 40.5),
                     "FW": ("shots", 2.0)}
+# The same matches seen through contracts/event.schema.json (what the question bank counts):
+# per 90 minutes for starters, where a touch is any contract event by the player.
+REFERENCE_CONTRACT = {
+    "GK": {"touch": 41.4, "save": 3.34},
+    "DF": {"touch": 90.5, "win_ball": 1.99},
+    "MF": {"touch": 117.2, "shot": 1.29, "win_ball": 2.77},
+    "FW": {"touch": 73.2, "shot": 2.74, "win_ball": 1.41},
+}
+REFERENCE_FOULS = 23.9           # per match
+REFERENCE_TACKLES_LOST = 0.32    # share of tackles that fail
+# Instant questions asked at a random moment inside a slow spell (one possession of 25 s+ with
+# 8+ passes and no shot), settled like backend/resolve/primitives.py: share of "yes".
+REFERENCE_INSTANT = {"next_pass_forward": 0.41, "keep_ball": 0.60, "reach_final_third": 0.65,
+                     "next_pass_long": 0.15, "switch_play": 0.11, "back_to_keeper": 0.15}
 
 ON_BALL = {"Pass", "Carry", "Shot", "Ball Receipt*", "Ball Recovery", "Clearance", "Interception",
            "Dribble", "Miscontrol", "Dispossessed", "Duel", "Block", "Foul Committed", "Foul Won",
@@ -253,6 +269,104 @@ def touch_windows(evs: list, lineups: list) -> list[tuple[str, str, int, float]]
     return out
 
 
+M = 120 / 105  # pitch units per metre along x (the contract pitch is 105 x 68 m)
+
+
+def contract_view(evs: list) -> list[dict]:
+    """The events backend/ingest/ keeps for the contract, still in the 120x80 Hudl frame."""
+    out = []
+    for e in evs:
+        n = e["type"]["name"]
+        sub = typ = outcome = None
+        if n == "Pass":
+            typ, sub = "pass", e["pass"]
+            outcome = "incomplete" if "outcome" in sub else "complete"
+        elif n == "Carry":
+            typ, sub = "carry", e["carry"]
+        elif n == "Shot":
+            typ, sub = "shot", e["shot"]
+        elif n == "Goal Keeper" and e["goalkeeper"]["type"]["name"] in ("Shot Saved", "Penalty Saved"):
+            typ = "save"
+        elif n == "Clearance":
+            typ = "clearance"
+        elif n == "Interception":
+            typ = "interception"
+        elif n == "Duel" and e["duel"]["type"]["name"] == "Tackle":
+            typ = "tackle"
+            outcome = "lost" if "Lost" in e["duel"].get("outcome", {}).get("name", "") else "won"
+        elif n == "Foul Committed":
+            typ = "foul"
+        if typ:
+            out.append({"t": secs(e), "half": e["period"], "team": e["team"]["id"], "player": e["player"]["id"],
+                        "type": typ, "outcome": outcome, "start": e.get("location"),
+                        "end": sub.get("end_location") if sub else None})
+    return out
+
+
+def contract_rates(cv: list, lineups: list, evs: list) -> tuple[dict, dict]:
+    """Per-90 rates per position group for starters (until they go off), plus the minutes behind them."""
+    end_s = max(e["minute"] * 60 + e["second"] for e in evs)
+    by_player = collections.defaultdict(list)
+    for e in cv:
+        by_player[e["player"]].append(e)
+    cnt, mins = collections.defaultdict(collections.Counter), collections.Counter()
+    for team in lineups:
+        for p in team["lineup"]:
+            if not p["positions"] or p["positions"][0]["start_reason"] != "Starting XI":
+                continue
+            g = group(p["positions"][0]["position"])
+            to = p["positions"][-1]["to"]
+            mins[g] += (clock(to) if to else end_s) / 60
+            for e in by_player[p["player_id"]]:
+                c = cnt[g]
+                c["touch"] += 1
+                c["shot"] += e["type"] == "shot"
+                c["save"] += e["type"] == "save"
+                c["win_ball"] += e["type"] == "interception" or (e["type"] == "tackle" and e["outcome"] == "won")
+    return cnt, mins
+
+
+def slow_spells(evs: list) -> list[tuple[int, int, float, float]]:
+    """(period, team, first pass s, last pass s) for possessions of 25 s+ with 8+ passes and no shot."""
+    by = collections.defaultdict(list)
+    for e in evs:
+        if "possession_team" in e:
+            by[e["possession"]].append(e)
+    out = []
+    for p in by.values():
+        team = p[0]["possession_team"]["id"]
+        passes = [e for e in p if e["type"]["name"] == "Pass" and e["team"]["id"] == team]
+        if len(passes) >= 8 and not any(e["type"]["name"] == "Shot" for e in p):
+            a, b = secs(passes[0]), secs(passes[-1])
+            if b - a >= 25 and passes[0]["period"] == passes[-1]["period"]:
+                out.append((passes[0]["period"], team, a, b))
+    return out
+
+
+def instant_answers(cv: list, spells: list, gk: dict, rng) -> collections.Counter:
+    """Settle the instant templates at 3 random moments per slow spell; count the "yes" answers."""
+    yes, n = collections.Counter(), 0
+    for half, team, a, b in spells:
+        evs = [e for e in cv if e["half"] == half]
+        for _ in range(3):
+            t0 = rng.uniform(a, max(a + 1, b - 5))
+            win = lambda s: [e for e in evs if t0 < e["t"] <= t0 + s]  # noqa: E731
+            n += 1
+            nxt = next((e for e in win(15) if e["type"] == "pass" and e["team"] == team), None)
+            if nxt:
+                dx = nxt["end"][0] - nxt["start"][0]
+                yes["next_pass_forward"] += dx > 5 * M
+                yes["next_pass_long"] += math.hypot(dx / M, (nxt["end"][1] - nxt["start"][1]) * 68 / 80) >= 25
+            yes["keep_ball"] += not any(e["team"] != team and e["type"] in
+                                        ("pass", "carry", "shot", "clearance", "tackle", "interception") for e in win(15))
+            yes["reach_final_third"] += any(e["team"] == team and e["end"] and e["end"][0] > 80 for e in win(20))
+            yes["switch_play"] += any(e["type"] == "pass" and min(e["start"][1], e["end"][1]) < 80 / 3
+                                      and max(e["start"][1], e["end"][1]) > 160 / 3 for e in win(15))
+            yes["back_to_keeper"] += any(e["player"] == gk.get(team) for e in win(30))
+    yes["n"] = n
+    return yes
+
+
 def fair_line(values: list[int]) -> tuple[int, float]:
     """Line L such that P(stat >= L) is closest to 0.5."""
     best = (1, 1.0)
@@ -319,6 +433,45 @@ def main() -> int:
         rep.check(0.4 <= pr <= 0.6, f"{name} ({g}): no touch window gives P in [0.4, 0.6] (best {w}s at {pr:.2f})")
     means = {g: st.mean(pooled[g]) for g in pooled}
     rep.check(means["FW"] > 0.3 and means["DF"] > 0.5 and means["GK"] > 0.3, "position stats look wrong")
+
+    print("\nAs the question bank sees it (contract events), all matches vs the same real matches:")
+    cnt, mins = collections.defaultdict(collections.Counter), collections.Counter()
+    fouls = tackles = lost = 0
+    yes = collections.Counter()
+    rng = random.Random(1)
+    for r in results.values():
+        cv = contract_view(r["events"])
+        c, m = contract_rates(cv, r["lineups"], r["events"])
+        for g in m:
+            cnt[g].update(c[g])
+            mins[g] += m[g]
+        fouls += sum(e["type"] == "foul" for e in cv)
+        tackles += sum(e["type"] == "tackle" for e in cv)
+        lost += sum(e["type"] == "tackle" and e["outcome"] == "lost" for e in cv)
+        gk = {t["team_id"]: p["player_id"] for t in r["lineups"] for p in t["lineup"]
+              if p["positions"] and p["positions"][0]["position"] == "Goalkeeper"}
+        yes.update(instant_answers(cv, slow_spells(r["events"]), gk, rng))
+    for g, ref in REFERENCE_CONTRACT.items():
+        row = []
+        for stat, real in ref.items():
+            v = cnt[g][stat] / mins[g] * 90
+            # Player questions are priced from real rates. Touches are common, so 3 matches pin them down;
+            # saves, shots and ball wins are rare and swing more between matches, real ones included.
+            tol = 0.25 if stat == "touch" else 0.4
+            ok = (1 - tol) * real <= v <= (1 + tol) * real
+            rep.check(ok, f"{g} {stat} per 90 = {v:.2f}, real {real} (needs ±{tol:.0%})")
+            row.append(f"{stat} {v:6.2f} (real {real}){'' if ok else ' !'}")
+        print(f"  {g} per 90: " + ",  ".join(row))
+    fpm, lost_share = fouls / len(results), lost / max(tackles, 1)
+    print(f"  fouls per match {fpm:.1f} (real {REFERENCE_FOULS}),  tackles lost {lost_share:.2f} (real {REFERENCE_TACKLES_LOST})")
+    rep.warn(0.75 * REFERENCE_FOULS <= fpm <= 1.25 * REFERENCE_FOULS, f"fouls per match {fpm:.1f}, real {REFERENCE_FOULS}")
+    rep.warn(0.5 * REFERENCE_TACKLES_LOST <= lost_share <= 1.5 * REFERENCE_TACKLES_LOST,
+             f"tackles lost {lost_share:.2f}, real {REFERENCE_TACKLES_LOST}")
+    print(f"  instant questions in slow spells (n={yes['n']}), share of yes:")
+    for k, real in REFERENCE_INSTANT.items():
+        v = yes[k] / yes["n"]
+        print(f"    {k:18s} {v:.2f} (real {real})")
+        rep.warn(abs(v - real) <= 0.12, f"instant {k}: {v:.2f} in slow spells, real {real}")
 
     print()
     for w in rep.warns:

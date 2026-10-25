@@ -61,12 +61,13 @@ Gitignored. Derived files built from `data/source/` (normalised event stream, pr
 
 | match_id | slug | Score | Character | Dull spells / attacks ending in a shot |
 |---|---|---|---|---|
-| 9000001 | `nbr-cal-seed42` | Northbridge 2–1 Calder | Main demo. Balanced; Mensah vs Ward at about 34' as in the worked example | 16 / 27 |
-| 9000002 | `har-wex-seed7` | Harrowgate 1–0 Wexmoor | Slow and possession-heavy; tests the detector | 30 / 18 |
-| 9000003 | `wex-cal-seed2026` | Wexmoor 3–3 Calder | Rare events: penalty scored, penalty saved, straight red, free-kick goal | 19 / 19 |
+| 9000001 | `nbr-cal-seed42` | Northbridge 2–1 Calder | Main demo. Balanced; Mensah vs Ward at about 34' as in the worked example | 14 / 16 |
+| 9000002 | `har-wex-seed7` | Harrowgate 1–0 Wexmoor | Slow and possession-heavy; tests the detector | 22 / 22 |
+| 9000003 | `wex-cal-seed2026` | Wexmoor 3–3 Calder | Rare events: penalty scored, penalty saved, straight red, free-kick goal | 19 / 18 |
 
 - **Must-haves:** all three pass `python -m data.generator.check`:
   1. Every on-ball event has coordinates.
-  2. Positions are present, and each position's stats fit it (`player_touch_window` P≈0.5 for every starter at about GK 180 s, DF 120 s, MF 60 s, FW 90 s).
+  2. Positions are present, and each position's stats fit it (`player_touch_window` P≈0.5 for every starter at about GK 135 s, DF 105 s, MF 60 s, FW 90 s).
+     Counted the way the question bank counts them (contract events only), touches, shots, saves and ball wins per 90 are within 20% of 7 real matches on average.
   3. Each half has 4+ dull spells, and each match has 10+ attacks that end in a shot.
 - **Labels:** the labels are ground truth from the generator, not hand labels. Say so when reporting the detector's hits and misses.

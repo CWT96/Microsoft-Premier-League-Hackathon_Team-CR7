@@ -42,7 +42,7 @@ GK_TYPE = {"Collected": 25, "Goal Conceded": 26, "Penalty Conceded": 28, "Penalt
 GK_OUTCOME = {"Success": 15, "In Play Danger": 52, "In Play Safe": 53, "No Touch": 55, "Touched Out": 59}
 CARD = {"Red Card": 5, "Second Yellow": 6, "Yellow Card": 7}
 DUEL_TYPE = {"Aerial Lost": 10, "Tackle": 11}
-DUEL_OUTCOME = {"Won": 4, "Success In Play": 16}
+DUEL_OUTCOME = {"Won": 4, "Lost In Play": 13, "Lost Out": 14, "Success In Play": 16}
 
 HALF_SECS = 45 * 60
 
@@ -272,12 +272,20 @@ class MatchSim:
         x = 0.7 * hx + 0.45 * (ball_def[0] - 50) + 5
         return (clip(x, 3, 110), clip(hy + 0.35 * (ball_def[1] - 40), 2, 78))
 
-    def nearest_def(self, team: int, ball, exclude_gk: bool = True, spread: float = 6.0) -> tuple[Player, tuple]:
-        """Pick a defender of `team` near the ball (ball given in the *attacking* frame)."""
+    def nearest_def(self, team: int, ball, exclude_gk: bool = True, spread: float = 6.0,
+                    winner: bool = False) -> tuple[Player, tuple]:
+        """Pick a defender of `team` near the ball (ball given in the *attacking* frame).
+
+        `winner`: the player who wins the ball (tackle, interception); real data skews these to defenders.
+        """
         bd = flip(ball)
+        if winner:
+            spread = max(spread, 9.0)
         cands = [p for p in self.teams[team].onpitch if not (exclude_gk and p.group == "GK")]
         locs = [self.def_pos(p, bd) for p in cands]
         w = [math.exp(-math.hypot(l[0] - bd[0], l[1] - bd[1]) / spread) + 1e-6 for l in locs]
+        if winner:
+            w = [wi * {"GK": 1.0, "DF": 2.1, "MF": 1.0, "FW": 0.32}[p.group] for wi, p in zip(w, cands)]
         i = self.rng.choices(range(len(cands)), weights=w)[0]
         return cands[i], locs[i]
 
@@ -598,12 +606,12 @@ class Possession:
         self.pressure = False
 
         # carry
-        p_carry = 0.4 if self.carrier.group == "GK" else 0.78
+        p_carry = 0.5 if self.carrier.group == "GK" else 0.78
         if r.random() < p_carry:
             self.carry()
 
         # pressure from the defending side
-        p_press = {"dull": 0.05, "circulate": 0.12, "build": 0.2, "attack": 0.34, "counter": 0.3,
+        p_press = {"dull": 0.15, "circulate": 0.12, "build": 0.2, "attack": 0.34, "counter": 0.3,
                    "scripted": 0.25}[mode] * self.sim.teams[self.opp].style["press"] / 0.25
         if r.random() < p_press:
             self.press()
@@ -612,7 +620,7 @@ class Possession:
             return self.scripted_step()
 
         if not forced:
-            foul_p = {"circulate": 0.01, "build": 0.022, "attack": 0.05, "counter": 0.05}[mode]
+            foul_p = {"circulate": 0.012, "build": 0.026, "attack": 0.058, "counter": 0.058}[mode]
             foul_p *= sim.teams[self.opp].style["foul"]
             red = sim.due_red(self.opp)
             if red or r.random() < foul_p:
@@ -625,18 +633,17 @@ class Possession:
                         return nxt
             if self.carrier.group == "DF" and x < 22 and self.pressure and r.random() < 0.4:
                 return self.own_clearance()
-            lose = {"circulate": 0.012, "build": 0.03, "attack": 0.065, "counter": 0.06}[mode]
+            lose = {"circulate": 0.008, "build": 0.02, "attack": 0.05, "counter": 0.045}[mode]
             if self.pressure:
                 lose *= 1.8
             if r.random() < lose:
                 return self.lose_ball()
             dist = math.hypot(120 - x, 40 - self.ball[1])
-            if self.carrier.group == "MF" and 84 <= x < 96 and 22 < self.ball[1] < 58 and r.random() < 0.08:
+            if self.carrier.group == "MF" and 76 <= x < 96 and 18 < self.ball[1] < 62 and r.random() < 0.22:
                 return self.shoot()  # speculative long shot
             if x >= 92 and dist <= 30:
                 p_shot = clip(0.06 + 2.8 * xg(self.ball), 0, 0.65)
-                if self.carrier.group == "FW":
-                    p_shot *= 0.5
+                p_shot *= {"FW": 0.2, "MF": 1.5}.get(self.carrier.group, 1.0)
                 if mode == "counter":
                     p_shot *= 1.3
                 if r.random() < p_shot:
@@ -648,7 +655,7 @@ class Possession:
         sim, r = self.sim, self.rng
         x, y = self.ball
         if self.mode == "dull":
-            dx, dy = r.uniform(-3, 3), r.uniform(-4, 4)
+            dx, dy = r.uniform(-5, 2), r.uniform(-4, 4)
         elif self.mode == "circulate":
             dx, dy = r.uniform(-3, 5), r.uniform(-5, 5)
         elif self.mode in ("attack", "scripted"):
@@ -663,7 +670,7 @@ class Possession:
         if self.mode == "dull":
             end = (soft_band(end[0], 42, 78, r), end[1])
         dist = math.hypot(end[0] - x, end[1] - y)
-        dur = 0.5 + dist / 5.2 + r.uniform(0, 1.0)
+        dur = 0.3 + dist / 6.0 + r.uniform(0, 0.6)
         sim.tick(r.uniform(0.1, 0.4))
         e = sim.emit("Carry", self.team, self.carrier, self.ball, dur, sub={"end_location": [r1(end[0]), r1(end[1])]})
         if self.prev_evt:
@@ -681,6 +688,9 @@ class Possession:
         if self.prev_evt:
             sim.link(self.prev_evt, e)
         self.pressure = True
+        if r.random() < (0.15 if self.mode == "dull" else 0.03):
+            sim.emit("Duel", self.opp, d, loc, sub={"type": named(DUEL_TYPE, "Tackle"),
+                                                    "outcome": named(DUEL_OUTCOME, "Lost In Play")})
 
     def pick_recipient(self, max_len: float = 45.0, progressive: bool = False) -> tuple[Player, tuple]:
         sim, r = self.sim, self.rng
@@ -700,15 +710,16 @@ class Possession:
             dist = math.hypot(dx, py - by)
             if dist > max_len or dist < 4:
                 continue
-            role = {"GK": 0.45, "DF": 1.2, "MF": 0.95, "FW": 0.9}[p.group]
+            role = {"GK": 2.2, "DF": 4.5, "MF": 0.65, "FW": 0.75}[p.group]
             if mode in ("dull", "circulate"):
                 w = math.exp(-(((dist - 15) / 9) ** 2)) * (1.0 if 38 <= px <= 82 else 0.15)
-                w *= 1.2 if dx < 6 else 0.55
-                if p.group == "GK":
-                    w *= 0.1 if mode == "dull" else 0.5
+                if p.group != "GK":
+                    w *= 2.0 if dx > 6 else (0.5 if dx < -6 else 1.0)
+                else:
+                    w *= 0.1 if mode == "dull" and bx > 40 else 1.5
             elif mode == "build":
                 w = math.exp(-(((dist - 18) / 11) ** 2)) * (1 + 0.04 * max(dx, 0))
-                if p.group == "GK" and bx < 45:
+                if p.group == "GK" and bx < 55:
                     w *= 3.0
             else:  # attack, counter, scripted
                 w = math.exp(-(((dist - 16) / 11) ** 2)) * (1 + 0.08 * max(dx, 0))
@@ -716,6 +727,8 @@ class Possession:
                     w *= 1.8
                 if mode == "counter":
                     w *= 1 + 0.12 * max(dx, 0)
+            if mode not in ("dull", "circulate") and p.group != "GK":
+                w *= 2.2 if dx > 6 else (0.45 if dx < -6 else 1.0)
             if progressive:
                 w *= 4.0 if dx > 12 else 0.05
             cands.append(p)
@@ -731,7 +744,7 @@ class Possession:
         r, x, y = self.rng, *self.ball
         mode = self.mode
         if mode == "dull":
-            return self.pass_to(*self.pick_recipient(max_len=30), force=True)
+            return self.dull_pass()
         if mode == "circulate" and r.random() < self.style["progress"]:
             to, end = self.pick_recipient(progressive=True)
             return self.pass_to(to, end)
@@ -746,6 +759,36 @@ class Possession:
         to, end = self.pick_recipient()
         through = mode in ("attack", "counter") and to.group == "FW" and end[0] - x > 15 and r.random() < 0.3
         return self.pass_to(to, end, through=through)
+
+    def dull_pass(self) -> Start | None:
+        """A pass in a slow spell: mostly short and square, sometimes a reset, a switch or a probe."""
+        r, sim = self.rng, self.sim
+        x, y = self.ball
+        roll = r.random()
+        mates = [p for p in self.tm.onpitch if p is not self.carrier]
+        if roll < 0.06 and x < 72:  # reset: back to a centre back or the keeper
+            deep = [p for p in mates if p.group == "GK" or p.pos_id in (3, 4, 5)]
+            to = r.choice(deep)
+            end = sim.att_pos(to, self.ball) if to.group == "GK" else (r.uniform(24, 34), clip(to.home[1] + r.uniform(-5, 5), 5, 75))
+            return self.pass_to(to, end, force=True)
+        if roll < 0.14 and (y < 26 or y > 54):  # switch from one flank to the other
+            far = [p for p in mates if p.group != "GK" and abs(sim.att_pos(p, self.ball)[1] - y) > 32]
+            if far:
+                to = r.choice(far)
+                ty = 72 + r.uniform(-4, 4) if y < 40 else 8 + r.uniform(-4, 4)
+                return self.pass_to(to, (soft_band(x + r.uniform(-8, 12), 42, 78, r), ty), force=True)
+        if roll < 0.15:  # probe into the final third, then it comes back out
+            ahead = [p for p in mates if p.group in ("FW", "MF")]
+            to = r.choice(ahead)
+            return self.pass_to(to, (r.uniform(81, 90), clip(y + r.uniform(-15, 15), 8, 72)), force=True)
+        if roll < 0.65:  # forward into a teammate ahead
+            ahead = [(p, sim.att_pos(p, self.ball)) for p in mates if p.group != "GK"]
+            ahead = [(p, (min(px, 79), py)) for p, (px, py) in ahead
+                     if 7 < min(px, 79) - x and math.hypot(min(px, 79) - x, py - y) < 32]
+            if ahead:
+                to, end = r.choice(ahead)
+                return self.pass_to(to, (end[0], clip(end[1] + r.uniform(-3, 3), 2, 78)), force=True)
+        return self.pass_to(*self.pick_recipient(max_len=30), force=True)
 
     def pass_to(self, to: Player, end, ptype: str | None = None, height: str | None = None,
                 body: str | None = "auto", acc: float | None = None, force: bool = False,
@@ -868,7 +911,7 @@ class Possession:
             return self.defend_box_ball(end, keeper=False)
         if length < 30 and r.random() < 0.25:
             mid = (start[0] + dx * r.uniform(0.3, 0.8), start[1] + dy * r.uniform(0.3, 0.8))
-            d, _ = sim.nearest_def(self.opp, mid, spread=4)
+            d, _ = sim.nearest_def(self.opp, mid, spread=4, winner=True)
             sim.seg_close("turnover")
             self.sim.possession += 1
             self.sim.poss_team = self.opp
@@ -972,7 +1015,7 @@ class Possession:
 
     def lose_ball(self) -> Start:
         sim, r = self.sim, self.rng
-        d, dloc = sim.nearest_def(self.opp, self.ball, spread=4)
+        d, dloc = sim.nearest_def(self.opp, self.ball, spread=4, winner=True)
         if r.random() < 0.5:
             ev = sim.emit("Miscontrol", self.team, self.carrier, self.ball, pressure=self.pressure)
             if r.random() < 0.35:  # a teammate picks up the loose ball
@@ -991,13 +1034,16 @@ class Possession:
 
     def dribble(self) -> Start | None:
         sim, r = self.sim, self.rng
-        d, _ = sim.nearest_def(self.opp, self.ball, spread=4)
+        d, _ = sim.nearest_def(self.opp, self.ball, spread=4, winner=True)
         ok = r.random() < 0.6
         e = sim.emit("Dribble", self.team, self.carrier, self.ball, pressure=True,
                      sub={"outcome": {"id": 8, "name": "Complete"} if ok else {"id": 9, "name": "Incomplete"}})
         if ok:
             past = sim.emit("Dribbled Past", self.opp, d, flip(self.ball))
             sim.link(e, past)
+            if r.random() < 0.2:
+                sim.link(e, sim.emit("Duel", self.opp, d, flip(self.ball), sub={
+                    "type": named(DUEL_TYPE, "Tackle"), "outcome": named(DUEL_OUTCOME, "Lost In Play")}))
             self.prev_evt = e
             self.ball = (clip(self.ball[0] + r.uniform(3, 8), 0, 117), self.ball[1])
             return None
@@ -1023,8 +1069,8 @@ class Possession:
         if red_scene:
             card = "Red Card"
             red_scene["done"] = True
-        elif r.random() < 0.13 * sim.teams[self.opp].style["foul"]:
-            card = "Second Yellow" if fouler.yellow else "Yellow Card"
+        elif not fouler.yellow and r.random() < 0.15 * sim.teams[self.opp].style["foul"]:
+            card = "Yellow Card"
         if card:
             fc["card"] = named(CARD, card)
         fcev = sim.emit("Foul Committed", self.opp, fouler, flip(loc), sub=fc or None)
@@ -1058,7 +1104,7 @@ class Possession:
             roll = r.random()
             if roll < 0.32:
                 outcome = "Blocked"
-            elif roll < 0.32 + on_target * 0.68:
+            elif roll < 0.32 + on_target * 0.6:
                 outcome = "Saved"
             elif roll < 0.97:
                 outcome = r.choice(["Off T", "Off T", "Off T", "Wayward"])
