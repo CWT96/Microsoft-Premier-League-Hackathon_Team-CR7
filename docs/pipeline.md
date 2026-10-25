@@ -149,7 +149,7 @@ Every user in the match receives the same questions at the same match second. Fa
   - `option_probs(template_id, state, params)`, from [3]
   - `fair_line(template_id, player_id, state)`, from [3]
   - `validate_question(q)`, a schema check plus "the resolver has a rule for this template"
-- **Top-2 rule:** every question shows exactly two options. When a template has three possible outcomes, only the two most likely ones under [3] are shown. If the excluded third outcome happens, the question is **void for everyone** and left out of the score denominator. The UI never says "void". It shows a playful line such as *"Plot twist, he went sideways! Nobody saw that coming 😄"*.
+- **Top-2 rule:** every question shows exactly two options. When a template has three possible outcomes, only the two most likely ones under [3] are shown. If the excluded third outcome happens, the question is **void for everyone** and left out of the score denominator. The UI never says "void". It shows a playful line such as *"Plot twist, nobody scored! Nobody saw that coming 😄"*.
 - **Output** is strict JSON matching `contracts/question.schema.json`. If validation fails, it falls back to a default template question with canned text.
 
 **Template catalog (all binary):**
@@ -158,7 +158,7 @@ Source of truth: `backend/bank/templates.json` (28 templates); this table lists 
 
 | ID | Category | Question | Options | Resolution rule | Window |
 |---|---|---|---|---|---|
-| `next_pass_dir` | instant | Next pass: forward or back? | top-2 of forward / sideways / backward | dx > +5m forward, dx < −5m backward, else sideways (void if not shown) | First pass after lock; void after 15s |
+| `next_pass_dir` | instant | Next pass: forward or back? | forward / back | dx > 0 forward, else back (a sideways pass counts as back, so it never voids) | First pass after lock; void after 15s |
 | `keep_ball` | instant | Will they keep the ball for 15s? | yes / no | No turnover. A turnover is any change of possession, including the ball going out of play to the opponent. A restart for the same team is still "kept". | 15s |
 | `reach_final_third` | instant | Will they reach the final third? | yes / no | Ball x > 70 while still in possession | 20s |
 | `shot_soon` | instant | Shot in the next 60s? | yes / no | Any shot event | 60s |
@@ -169,7 +169,7 @@ Source of truth: `backend/bank/templates.json` (28 templates); this table lists 
 | `player_stat_over` | player | Will `{player}` make `{line}`+ `{stat}` this half? | yes / no | Count in the half it was asked for (first half or second half, whichever the question was asked in). Stat by position: GK saves, DF clearances, MF completed passes, FW shots. `line` from [3] so P≈0.5 | HT or FT |
 | `player_touch_window` | player | Will `{player}` touch the ball in the next `{window_s}`? | yes / no | Any event with that `player_id`. `window_s` from [3] so P≈0.5 | `window_s` |
 
-Template parameters go in `question.params` and use the names shown in braces: `line`, `window_s`, `team`, plus `dead_zone_m` for `next_pass_dir`.
+Template parameters go in `question.params` and use the names shown in braces: `line`, `window_s`, `team`.
 
 **Player templates never void.** Both always resolve yes or no. This keeps every user's player-question count equal, which the scoring in [6] depends on. A favourite player who is substituted off counts as "no" for the remaining window, so a good `fair_line` avoids late slots for likely substitutes.
 
@@ -180,7 +180,7 @@ The catalog is extended by adding a row here, a resolver rule in `backend/resolv
 - A simple model trained on the synthetic data, such as logistic regression or a frequency table. Features include zone, pressure (nearest opponent distance), passes in the possession, and the player's position and touch rate.
 - **It never sets points.** It has three jobs:
   1. **Top-2 options.** It ranks a template's outcomes so the generator shows the two most likely.
-  2. **AI hint.** The hint is hidden by default. A user can tap to reveal it (*"AI leans Back, 52%"*). The probability is renormalised over the two options shown. Answering correctly after using the hint earns half points (see [6]).
+  2. **AI hint.** The hint is hidden by default. A user can tap to reveal it (*"AI leans Forward, 57%"*). The probability is renormalised over the two options shown. Answering correctly after using the hint earns half points (see [6]).
   3. **Fair lines for favourite-player questions.** Players differ a lot: a goalkeeper may touch the ball 20 times, a central midfielder 80. To give everyone questions of equal count **and** equal difficulty:
      - **Forecast:** `fair_line` picks the threshold that puts P(yes) closest to 0.5 for *that* player, for example, over a full 45-minute half: GK saves ≥2 (P=0.44), CB clearances ≥2 (P=0.59), CM completed passes ≥23 (P=0.49). A striker's shots have no line inside the band over a full half (1+ is 0.71, 2+ is 0.36), so a different player question is picked instead.
      - **Instant:** `player_touch_window` runs at fixed slots, with a window tuned so P(touch)≈0.5, for example GK 2 min, CB 60s, ST 90s.
@@ -344,16 +344,15 @@ Detector at 34:10: `ball_mid_third=1.0, max_xT=0.04, last_shot=6m12s, poss_len=1
 
 | Outcome | P | Shown? |
 |---|---|---|
-| Backward | 0.44 | ✅ |
-| Forward | 0.41 | ✅ |
-| Sideways | 0.15 | ❌ (excluded third: if it happens, the question is void) |
+| Forward | 0.57 | ✅ |
+| Back | 0.43 | ✅ |
 
 Every phone in the match shows the same card:
 
 > "Northbridge are passing it around midfield. **Next pass: forward or back?**
 > ⬆ Forward · ⬇ Back"  ·  💡 *Hint (costs half points)*
 
-If Alex tapped the hint, it would show *"AI leans Back, 52%"* (0.44 renormalised over the two options shown). Alex skips the hint and picks **Forward**. Answers lock at **34:24**.
+If Alex tapped the hint, it would show *"AI leans Forward, 57%"*. Alex skips the hint and picks **Forward**. Answers lock at **34:24**.
 
 **③ 34:26: the resolver.** The first pass after the lock:
 
@@ -362,7 +361,7 @@ If Alex tapped the hint, it would show *"AI leans Back, 52%"* (0.44 renormalised
  "start":[52,30],"end":[68,22],"outcome":"complete"}
 ```
 
-dx = 68 − 52 = **+16m**, which is more than 5m, so the answer is **forward ✅**. Alex sees a ✓ and a coin burst, with no number. The streak goes to 2, so this answer will count ×1.2.
+dx = 68 − 52 = **+16m**, so the pass went up the pitch and the answer is **forward ✅**. Alex sees a ✓ and a coin burst, with no number. The streak goes to 2, so this answer will count ×1.2.
 
 **④ The explainer** gets `facts = {dx_m:16, crowd_forward:27}`:
 
@@ -385,7 +384,7 @@ Alex now knows why the room shouted, and that it involved their own player. No n
 
 A friend who picked striker Doyle, in the same dull slot, gets "…in the next 90 seconds?". The question count and difficulty are the same for both.
 
-**⑧ Half time, then more dull slots.** The replay pauses at half time and a stack appears: two shared forecast (window) questions such as `card_window` ("Any card in the first 10 minutes of the second half?", P(yes)=0.36) and `goal_window` ("Goal in the first 10 minutes of the second half?", P(yes)=0.26), plus Ward's `player_stat_over` "2+ saves this half?" (P=0.44) as the player question. It locks after 60 real seconds, or when the host resumes. Dull slots after the restart carry on as before.
+**⑧ Half time, then more dull slots.** The replay pauses at half time and a stack appears: two shared forecast (window) questions such as `card_window` ("Any card in the first 10 minutes of the second half?", P(yes)=0.32) and `goal_window` ("Goal in the first 10 minutes of the second half?", P(yes)=0.26), plus Ward's `player_stat_over` "2+ saves this half?" (P=0.44) as the player question. It locks after 60 real seconds, or when the host resumes. Dull slots after the restart carry on as before.
 
 **⑨ Full time.** In issue order Alex got 22 non-void questions: 14 instant, 4 forecast and 4 player (the kickoff and half-time stacks supply 2 forecast and 1 player each). So per_q is 400/14 ≈ 28.6, 300/4 = 75 and 300/4 = 75. A perfect run would earn max_possible = 1440.
 

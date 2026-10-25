@@ -56,10 +56,11 @@ def test_near_certain_instant_questions_are_not_asked():
     assert not ids & {"next_pass_complete", "switch_play", "shot_soon"}
     assert {"keep_ball", "reach_final_third", "next_pass_long", "back_to_keeper"} <= ids
 
-def test_next_pass_dir_shows_top2_renormalised():
+
+def test_next_pass_dir_is_two_way():
     c = only(build_candidates("instant", _state(), BANK, 1200), "next_pass_dir")
-    assert c.options == ["backward", "forward"]
-    assert c.p["backward"] == pytest.approx(0.44 / 0.85, abs=1e-3)
+    assert c.options == ["forward", "back"]
+    assert c.p["forward"] == pytest.approx(0.57)
     assert sum(c.p.values()) == pytest.approx(1.0)
     assert c.resolve_by == 1200 + 6 + 15
 

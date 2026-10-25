@@ -119,7 +119,7 @@ Window labels render as "the next 5 minutes", "the next 10 minutes", "the next 2
 
 | ID | Question | Options | Rule | Teaches |
 |---|---|---|---|---|
-| `next_pass_dir` *(v2)* | Next pass: forward or back? | top-2 of forward / sideways / backward | dx ±5m dead zone | line-breaking pass |
+| `next_pass_dir` *(v2)* | Next pass: forward or back? | forward / back | dx > 0 forward, else back; sideways counts as back, so it never voids (changed from 3-way after the PR #6 review: real rates made sideways the second likeliest) | line-breaking pass |
 | `keep_ball` *(v2)* | Will they keep the ball for 15 seconds? | yes / no | no turnover | possession |
 | `reach_final_third` *(v2)* | Will they reach the final third? | yes / no | ball x > 70 within 20s | final third |
 | `shot_soon` *(v2)* | Shot in the next 60 seconds? | yes / no | any shot | shot |

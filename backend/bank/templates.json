@@ -5,8 +5,7 @@
     "text": "Next pass: forward or back?",
     "options": [
       "forward",
-      "sideways",
-      "backward"
+      "back"
     ],
     "params": {
       "window_s": [
@@ -21,7 +20,7 @@
         "team": "possession"
       },
       "test": {
-        "dx_dead_zone_m": 5
+        "forward_back": true
       },
       "no_event": "void"
     },

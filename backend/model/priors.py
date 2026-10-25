@@ -20,7 +20,9 @@ POSITION_RATES_90: dict[str, dict[str, float]] = {
 
 # Measured inside slow spells of real matches (team review of PR #6).
 INSTANT_DEFAULTS: dict[str, dict[str, float]] = {
-    "next_pass_dir": {"backward": 0.44, "forward": 0.41, "sideways": 0.15},
+    # next_pass_dir is two-way (forward = ends further up the pitch). Real 3-way rates with a
+    # 5m dead zone are 0.42 / 0.31 / 0.26; splitting sideways evenly gives this estimate.
+    "next_pass_dir": {"forward": 0.57, "back": 0.43},
     "keep_ball": {"yes": 0.6, "no": 0.4},
     "reach_final_third": {"yes": 0.65, "no": 0.35},
     "shot_soon": {"yes": 0.11, "no": 0.89},

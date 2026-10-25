@@ -71,15 +71,15 @@ def test_back_to_keeper_means_the_keeper_of_the_team_asked_about():
 
 def test_next_pass_dir_text_matches_shown_options():
     c = _cand("instant", "next_pass_dir")
-    assert c.options == ["backward", "forward"]
+    assert c.options == ["forward", "back"]
     assert c.text == "Next pass: forward or back?"
 
 
-def test_result_not_among_shown_options_is_void():
+def test_next_pass_dir_sideways_counts_as_back_and_never_voids():
     c = _cand("instant", "next_pass_dir")  # lock 1206
-    sideways = _ev(1210, "AAA", start=[50.0, 30.0], end=[52.0, 40.0])
-    assert settle_candidate(c, [sideways], BANK) == "void"
-    forward = _ev(1210, "AAA", start=[50.0, 30.0], end=[65.0, 30.0])
+    sideways = _ev(1210, "AAA", start=[50.0, 30.0], end=[50.0, 40.0])
+    assert settle_candidate(c, [sideways], BANK) == "back"
+    forward = _ev(1210, "AAA", start=[50.0, 30.0], end=[52.0, 30.0])
     assert settle_candidate(c, [forward], BANK) == "forward"
 
 
@@ -91,3 +91,9 @@ def test_player_result_outside_options_is_an_error():
     bad = replace(pl[0], options=["nope", "never"])
     with pytest.raises(AssertionError):
         settle_candidate(bad, [], BANK, closed=True)
+
+
+def test_result_not_among_shown_options_is_void():
+    c = _cand("window", "next_goal_team")  # shows home / away; "none" is the hidden third
+    assert "none" not in c.options
+    assert settle_candidate(c, [_ev(1300, "AAA")], BANK, closed=True) == "void"
