@@ -1,0 +1,133 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "timing_decision.schema.json",
+  "title": "TimingDecision",
+  "description": "Payload of timing.decision: why the timing agent opened, held or blocked a moment. For the director view. Emitted at decision points and on calm/silent transitions, not every second.",
+  "type": "object",
+  "required": [
+    "t",
+    "half",
+    "action",
+    "source",
+    "moment_ids",
+    "reason",
+    "inputs"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "t": {
+      "type": "number",
+      "minimum": 0
+    },
+    "half": {
+      "type": "integer",
+      "enum": [
+        1,
+        2
+      ]
+    },
+    "action": {
+      "type": "string",
+      "enum": [
+        "open",
+        "hold",
+        "blocked",
+        "scheduled",
+        "silent",
+        "calm"
+      ]
+    },
+    "source": {
+      "type": "string",
+      "enum": [
+        "llm",
+        "rule",
+        "rule_fallback",
+        "schedule"
+      ]
+    },
+    "moment_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "situation": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Detector vocabulary for silent/calm/blocked records, moment vocabulary for open/hold/scheduled records"
+    },
+    "tone": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 40
+    },
+    "reason": {
+      "type": "string",
+      "maxLength": 200
+    },
+    "blocked_by": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Name of the gate rule, e.g. spacing, after_attack, half_end"
+    },
+    "inputs": {
+      "type": "object",
+      "description": "Signals at that second, each 0-1 unless noted",
+      "properties": {
+        "cost": {
+          "type": "number"
+        },
+        "ball_zone": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "threat": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "movement": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "pressure": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "shot_gap": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "context": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "calm_for_s": {
+          "type": "number",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "cost"
+      ]
+    }
+  }
+}

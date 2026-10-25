@@ -15,8 +15,12 @@
     "type": {
       "type": "string",
       "enum": ["kickoff", "pass", "carry", "shot", "save", "clearance", "tackle",
-               "interception", "foul", "card", "out", "goal", "half_end", "full_end"]
+               "interception", "foul", "card", "out", "goal", "half_end", "full_end",
+               "throw_in", "goal_kick", "corner", "free_kick", "penalty",
+               "substitution", "injury", "var_check", "water_break_start", "water_break_end"],
+      "description": "Restart types (throw_in, goal_kick, corner, free_kick, penalty) mark the moment the restart is AWARDED (ball dead); the taker's next pass or shot is the kick. substitution: player_id leaves, related_player_id joins. injury / var_check: play is stopped. water_break_start / water_break_end: match-level, player_id null."
     },
+    "related_player_id": {"type": ["string", "null"], "description": "Second player involved, e.g. the player coming on in a substitution"},
     "start": {"$ref": "#/$defs/xy"},
     "end": {"$ref": "#/$defs/xy"},
     "outcome": {
