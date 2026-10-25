@@ -29,8 +29,7 @@ Scan QR / open link ─► pick match ─► pick team ─► pick favourite pla
   Match view (2D pitch, score, clock)
         │   dull stretch ───► instant question (2 options, 6s to answer, optional AI hint)
         │   attack ─────────► questions vanish; when it ends ─► catch-up card
-        │   kickoff / HT ───► forecast + favourite-player forecast questions
-        │   timed slots ────► favourite-player instant question
+        │   dull stretch ───► (kind drawn at random) instant, window or favourite-player question
         ▼
   Full time ─► score card (0–1000 + metrics) ─► email sign-up (mock)
            ─► web membership card with QR + "Add to Wallet" (mock) ─► gift redemption (concept)
@@ -119,7 +118,7 @@ It's deterministic and can be tested against the labelled stretches. Report the 
 
 ### [2b] Timing agent (LLM decides format; code enforces the schedule)
 
-The timing agent decides **when** a question appears and **in what rhythm**. The detector code runs every second. The LLM is called only at decision points: a dull stretch begins, half time, a scheduled slot. It is never called inside the per-second loop, which would be too slow and too costly.
+The timing agent decides **when** a question appears and **in what rhythm**. The detector code runs every second. The LLM is called only at decision points: a dull stretch begins. It is never called inside the per-second loop, which would be too slow and too costly.
 
 **Hard rules (code, identical for every user):**
 
@@ -127,6 +126,8 @@ The timing agent decides **when** a question appears and **in what rhythm**. The
 |---|---|---|
 | Instant | Dull stretch entered; cooldown 45s or more; a stretch that stays dull for 90s or more may get a rapid-fire pair 10s apart | At most 8 per half |
 | All kinds | All kinds come through dull slots; kind drawn at random, see `backend/bank/` | See `backend/bank/` |
+
+The pre-match lobby and the half-time pause (`break` mode) stay, but no questions are asked in either; every question comes through a dull slot during play.
 
 **Time units:** `open_at`, `lock_at` and `resolve_by` are match seconds, but answer windows are real time.
 - While an instant or player-instant question is open, the replay **drops to 1×** until the result is shown, then returns to the chosen speed (default 15×). So "6 seconds to answer" is 6 real seconds at every speed.
@@ -164,7 +165,7 @@ Source of truth: `backend/bank/templates.json` (28 templates); this table lists 
 | `team_wins` | forecast | Will `{team}` win? | yes / no | Result at FT | FT |
 | `card_second_half` | forecast | Any card in the second half? | yes / no | Any card event after HT | FT |
 | `second_half_goal` | forecast | Will there be a goal in the second half? | yes / no | Any goal after HT | FT |
-| `player_stat_over` | player | Will `{player}` make `{line}`+ `{stat}` this half? | yes / no | Count in the half it was asked for (kickoff → first half, HT → second half). Stat by position: GK saves, DF clearances, MF completed passes, FW shots. `line` from [3] so P≈0.5 | HT or FT |
+| `player_stat_over` | player | Will `{player}` make `{line}`+ `{stat}` this half? | yes / no | Count in the half it was asked for (first half or second half, whichever the question was asked in). Stat by position: GK saves, DF clearances, MF completed passes, FW shots. `line` from [3] so P≈0.5 | HT or FT |
 | `player_touch_window` | player | Will `{player}` touch the ball in the next `{window_s}`? | yes / no | Any event with that `player_id`. `window_s` from [3] so P≈0.5 | `window_s` |
 
 Template parameters go in `question.params` and use the names shown in braces: `line`, `window_s`, `team`, plus `dead_zone_m` for `next_pass_dir`.
@@ -377,13 +378,13 @@ Guard check: 16 and 27 are both in `facts`, so the explanation is sent. The crow
 
 Alex now knows why the room shouted, and that it involved their own player. No new instant question until 35:25 at the earliest (45s cooldown after the attack ended at 34:40).
 
-**⑦ 40:00: favourite-player slot.** Every user gets a question about *their own* player at the same moment. For Ward, a goalkeeper, `fair_line` tunes the window to 3 minutes (P(touch)=0.50):
+**⑦ A later dull slot: favourite-player question.** The slot's random draw picks "player", so every user gets a question about *their own* player at the same moment. For Ward, a goalkeeper, `fair_line` tunes the window to 3 minutes (P(touch)=0.50):
 
 > "Will **Ward** touch the ball in the next 3 minutes?"  Yes · No
 
-A friend who picked striker Doyle gets "…in the next 90 seconds?" at the same moment. The question count and difficulty are the same for both.
+A friend who picked striker Doyle, in the same dull slot, gets "…in the next 90 seconds?". The question count and difficulty are the same for both.
 
-**⑧ Half time.** The replay pauses, and three cards stack up: `card_second_half`, `second_half_goal` and Ward's `player_stat_over` "2+ saves this half?" (P=0.49). (At kickoff the stack was `goals_over` with line 2 (P=0.51), `team_wins`, and Ward's first-half stat question.)
+**⑧ Half time, then more dull slots.** The replay pauses at half time, but no question is asked there. In later dull slots the draw picks "window" and Ward's `player_stat_over` "2+ saves this half?" (P=0.49) shows up as a player question, and forecast-style (window) questions such as `card_second_half` and `second_half_goal` arrive the same way.
 
 **⑨ Full time.** In issue order Alex got 22 non-void questions: 14 instant, 4 forecast and 4 player. So per_q is 400/14 ≈ 28.6, 300/4 = 75 and 300/4 = 75. A perfect run would earn max_possible = 1440.
 
@@ -399,7 +400,7 @@ Alex's results:
 
 The scoring agent adds *"You called 3 of 4 questions about Ward, your goalkeeper."* 431 is Silver tier. Alex enters an email (mock) and gets the membership card with a QR code.
 
-These numbers come from running the formula exactly as written: streak in issue order, hints ×0.5, largest-remainder split. Use this case as the first unit-test fixture for `backend/scoring/`. The answer sequence by issue order is `C W H | W - C C W | C | C C | W C C | C C W C | - | - W H` (C = correct, H = correct with hint, W = wrong, - = unanswered). The issue order is: 2 forecast + 1 player at kickoff · 5 instant · player slot · 2 instant · 2 forecast + 1 player at HT · 4 instant · player slot · 3 instant.
+These numbers come from running the formula exactly as written: streak in issue order, hints ×0.5, largest-remainder split. Use this case as the first unit-test fixture for `backend/scoring/`. The answer sequence by issue order is `C W H | W - C C W | C | C C | W C C | C C W C | - | - W H` (C = correct, H = correct with hint, W = wrong, - = unanswered). The issue order is: 2 forecast + 1 player in dull slots · 5 instant · player slot · 2 instant · 2 forecast + 1 player in dull slots · 4 instant · player slot · 3 instant.
 
 ---
 
@@ -430,7 +431,7 @@ The scope is larger than 3 people can build in 3 days, and only one of them work
 | 0:00–0:10 | The problem: a friend on the sofa, bored, phone out. Scan the QR, pick a team and Ward. |
 | 0:10–0:35 | Dull meter rises → question → lock → ✓ coins → explanation + room split |
 | 0:35–0:50 | Attack: the phone goes quiet → catch-up card |
-| 0:50–1:05 | Half time: forecast + favourite-player question (show GK vs ST windows side by side) |
+| 0:50–1:05 | Dull slot: a window question and a favourite-player question (show GK vs ST windows side by side) |
 | 1:05–1:30 | Skip to FT: score card → sign-up → membership card |
 | 1:30–1:45 | Ops funnel dashboard (enterprise value) |
 | 1:45–1:58 | Evidence slide: detector hits/misses on labelled stretches; favourite-player P(yes) per position ≈ 0.5 (fairness); agent diagram |
