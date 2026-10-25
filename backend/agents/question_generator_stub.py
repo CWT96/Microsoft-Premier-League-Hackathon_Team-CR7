@@ -120,8 +120,11 @@ def _instant(state: DetectorState, moment: Moment) -> Question:
         tid = _pick(moment.moment_id, candidates)
     options = _pass_options(state) if tid == "next_pass_dir" else list(YES_NO)
     params = {"dead_zone_m": DEAD_ZONE_M} if tid == "next_pass_dir" else {}
+    text = INSTANT_TEXT[tid]
+    if tid == "next_pass_dir":  # the catalog wording, naming the two options actually shown
+        text = f"Next pass: {options[0].label.lower()} or {options[1].label.lower()}?"
     return Question(**_base(
-        moment, template_id=tid, text=INSTANT_TEXT[tid], options=options,
+        moment, template_id=tid, text=text, options=options,
         resolve_by=moment.lock_at + INSTANT_WINDOW_S[tid], params=params))
 
 

@@ -243,3 +243,20 @@ def test_works_without_roster_for_shared_questions() -> None:
     q = propose(_state(), _moment("q-2"), None)
     assert q is not None
     _check(q)
+
+
+def test_pass_question_text_names_the_two_shown_options() -> None:
+    """The text never says "forward or back?" when sideways is one of the options."""
+    from backend.agents import question_generator_stub as stub
+    from backend.core.types import Moment
+    from backend.tests.fixtures.states import make_state
+
+    for mid in (f"q-{i}" for i in range(1, 60)):
+        m = Moment(moment_id=mid, kind="instant", category="instant", open_at=100, lock_at=108,
+                   lock_rule="fixed", situation="throw_in", cost=0.1, half=1)
+        q = stub.propose(make_state(t=100, possession_team="NBR", ball_zone="middle_third"), m, None)
+        if q is not None and q.template_id == "next_pass_dir":
+            labels = [o.label.lower() for o in q.options]
+            assert q.text == f"Next pass: {labels[0]} or {labels[1]}?"
+            return
+    raise AssertionError("no next_pass_dir question produced")
