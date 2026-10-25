@@ -5,7 +5,7 @@ from backend.bank.context import ctx_for
 from backend.bank.guards import GUARDS, HALF_LEN, _seconds, window_for
 from backend.bank.loader import fill_text
 from backend.bank.types import CATEGORY, Candidate, Kind, MatchState, Player, Template
-from backend.model.poisson import PRICERS, tune_player
+from backend.model.poisson import PRICERS, count_already, tune_player
 
 _SERVE_LAG = 6.0
 _FULL_S = 5400.0
@@ -129,7 +129,9 @@ def build_candidates(kind: Kind, state: MatchState, bank: dict[str, Template],
                     params["window_s"] = tune_player(pl.position, stat, "window_s", minutes_left)[0]
                 if t.params.get("line") == "tuned":
                     if kind == "player":
-                        params["line"] = tune_player(pl.position, stat, "line", minutes_left)[0]
+                        # The line counts the whole half, so add what is already made.
+                        tuned = tune_player(pl.position, stat, "line", minutes_left)[0]
+                        params["line"] = count_already(t, params, state, pl) + tuned
                     else:
                         params["line"] = _tune_line(t, params, state, pl)
                 c = _try(t, params, state, pl, lock_at)

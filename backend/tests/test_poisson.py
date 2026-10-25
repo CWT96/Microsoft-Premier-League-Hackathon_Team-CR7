@@ -164,3 +164,16 @@ def test_player_stat_over_counts_since_half_start():
     p = PRICERS["player"](t, {"line": 3}, _state(events=ev), pl)
     expect = p_at_least(POSITION_RATES_90["FW"]["shot"], (2700 - 600) / 60, 1)
     assert p["yes"] == pytest.approx(expect)
+
+
+def test_count_already_matches_half_and_filter():
+    from backend.model.poisson import count_already
+    t = load_bank()["player_stat_over"]
+    pl = Player("p", "P", "H", "FW")
+    ev = [{"type": "shot", "team": "H", "t": 100.0, "half": 1, "player_id": "p"},
+          {"type": "pass", "team": "H", "t": 150.0, "half": 1, "player_id": "p"},
+          {"type": "shot", "team": "H", "t": 2750.0, "half": 1, "player_id": "p"},
+          {"type": "shot", "team": "H", "t": 2800.0, "half": 2, "player_id": "p"}]
+    assert count_already(t, {"line": 3}, _state(events=ev), pl) == 2
+    assert count_already(t, {"line": 3}, _state(t=2900, half=2, events=ev), pl) == 1
+    assert count_already(load_bank()["goal_window"], {"window": "5m"}, _state(events=ev), None) == 0

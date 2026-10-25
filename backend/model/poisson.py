@@ -107,10 +107,24 @@ def _window_start(template: Template, state: MatchState) -> tuple[float, int | N
     return None
 
 
-def _already(template: Template, params: dict, state: MatchState,
-             player: Player | None, flt: dict) -> int:
+def _count_filter(template: Template, player: Player | None) -> dict | None:
+    """The template's count filter, with the player's stat when it depends on position."""
+    spec = template.resolve
+    flt = spec.get("filter")
+    if flt is None:
+        return None
+    sbp = spec.get("stat_by_position")
+    if sbp and player is not None and not flt.get("stat"):
+        return {**flt, "stat": sbp[player.position]}
+    return flt
+
+
+def count_already(template: Template, params: dict, state: MatchState,
+                  player: Player | None) -> int:
+    """Matching events already counted at state.t (counts_from half_start/kickoff only)."""
+    flt = _count_filter(template, player)
     window = _window_start(template, state)
-    if window is None:
+    if flt is None or window is None:
         return 0
     start, half = window
     ctx = ctx_for(template, params, state, player)
@@ -133,7 +147,7 @@ def _n_needed(template: Template, params: dict) -> int:
 def _price_count(t: Template, params: dict, state: MatchState,
                  player: Player | None) -> dict[str, float]:
     rate = MATCH_RATES_90[t.resolve["rate"]]
-    need = _n_needed(t, params) - _already(t, params, state, player, t.resolve["filter"])
+    need = _n_needed(t, params) - count_already(t, params, state, player)
     return _yes_no(t, p_at_least(rate, _window_minutes(params, state), need))
 
 
@@ -172,10 +186,8 @@ def _price_player(t: Template, params: dict, state: MatchState,
         kind = "complete" if "complete" in test else "long"
         p = PLAYER_NEXT_PASS[kind][player.position]
         return {"yes": p, "no": 1 - p} if kind == "complete" else {"long": p, "short": 1 - p}
-    flt = spec["filter"]
-    stat = flt.get("stat") or spec["stat_by_position"][player.position]
-    full_flt = {**flt, "stat": stat}
-    need = _n_needed(t, params) - _already(t, params, state, player, full_flt)
+    stat = spec["filter"].get("stat") or spec["stat_by_position"][player.position]
+    need = _n_needed(t, params) - count_already(t, params, state, player)
     if "window_s" in params:
         minutes = params["window_s"] / 60
     else:

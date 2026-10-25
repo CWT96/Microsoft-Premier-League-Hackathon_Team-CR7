@@ -115,3 +115,13 @@ def test_player_template_with_no_stat_for_position_is_skipped():
     bank = {"player_stat_over": replace(t, resolve=res)}
     s = _state(events=[_touch("p8", 1150)])
     assert build_candidates("player", s, bank, 1200, MF) == []
+
+
+def test_player_stat_over_line_counts_passes_already_made():
+    passes = [{"id": f"p{i}", "t": 100.0 + 50 * i, "half": 1, "team": "AAA", "type": "pass",
+               "outcome": "complete", "player_id": "p8"} for i in range(20)]
+    s = _state(events=passes)
+    c = only(build_candidates("player", s, BANK, 1200, MF), "player_stat_over")
+    assert c.params["stat"] == "pass_complete"
+    assert c.params["line"] > 20
+    assert 0.40 <= c.p["yes"] <= 0.60
