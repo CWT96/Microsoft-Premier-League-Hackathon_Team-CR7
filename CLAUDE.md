@@ -85,7 +85,7 @@ python -m data.generator.check              # validate the dataset (must-haves +
 
 **Branches**
 - `main` must always run and be demo-able. **No direct pushes to `main`.**
-- Work on short-lived branches named `<area>/<topic>`, where area is `backend`, `frontend`, `contracts`, `docs` or `infra`. Examples: `backend/resolver`, `frontend/question-card`, `contracts/catchup-card`.
+- Work on short-lived branches named `<area>/<topic>`, where area is `backend`, `frontend`, `contracts`, `docs`, `infra` or `data`. Examples: `backend/resolver`, `frontend/question-card`, `contracts/catchup-card`.
 - One branch = one focused change. Merge it within a day. Do not keep long-lived personal branches.
 
 **Daily sync**
