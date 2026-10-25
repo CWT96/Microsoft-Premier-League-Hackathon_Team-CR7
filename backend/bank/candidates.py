@@ -97,7 +97,10 @@ def build_candidates(kind: Kind, state: MatchState, bank: dict[str, Template],
     if kind == "player" and player is None:
         return []
     lock_at = open_at + _SERVE_LAG
-    minutes_left = (HALF_LEN * state.half - state.t) / 60
+    half_end = HALF_LEN * state.half
+    minutes_left = (half_end - state.t) / 60
+    # A tuned window starts at the lock, so it must fit between lock_at and half end.
+    window_minutes_left = (half_end - lock_at) / 60
     out: list[Candidate] = []
     for t in bank.values():
         if t.kind != kind:
@@ -126,7 +129,8 @@ def build_candidates(kind: Kind, state: MatchState, bank: dict[str, Template],
                 if t.id == "player_stat_over":
                     params["stat"] = stat
                 if key == "window_s" and val == "tuned":
-                    params["window_s"] = tune_player(pl.position, stat, "window_s", minutes_left)[0]
+                    params["window_s"] = tune_player(pl.position, stat, "window_s",
+                                                    window_minutes_left)[0]
                 if t.params.get("line") == "tuned":
                     if kind == "player":
                         # The line counts the whole half, so add what is already made.

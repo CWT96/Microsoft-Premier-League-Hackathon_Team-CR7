@@ -125,3 +125,11 @@ def test_player_stat_over_line_counts_passes_already_made():
     assert c.params["stat"] == "pass_complete"
     assert c.params["line"] > 20
     assert 0.40 <= c.p["yes"] <= 0.60
+
+
+def test_forward_gets_shot_window_at_20min():
+    fw = Player("p9", "Nine", "AAA", "FW")
+    s = replace(_state(events=[_touch("p9", 1150)]), roster={"p8": MF, "g1": GK, "p9": fw})
+    c = only(build_candidates("player", s, BANK, 1200, fw), "player_shot_window")
+    assert 1206 + c.params["window_s"] <= 2700
+    assert 0.40 <= c.p["yes"] <= 0.60
