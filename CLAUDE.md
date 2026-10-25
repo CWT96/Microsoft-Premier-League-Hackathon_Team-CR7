@@ -47,12 +47,13 @@ Suggested backend split (the two owners may swap): **core** = `ingest/ detect/ m
 - Examples in `contracts/README.md` must validate. Run the snippet at the bottom of that file after any edit.
 
 ### Inside the backend (target signatures, see `backend/README.md`)
-`load_match(match_id)` → `Detector.step(t, events)` → `timing.plan(...)` → `question_generator.propose(state, slot)` (calls `model.option_probs`, `model.fair_line`) → `resolve(question, events)` → `explainer.explain(result, facts)` → `scoring.final_score(...)` → `scoring_summary.summarize(...)`.
+`load_match(match_id)` → `Detector.step(half, t, new_events, tracking_frame)` → `TimingAgent.step(state)` → per-user pacer → `question_generator.propose(state, moment, user_player_id)` (calls `model.option_probs`, `model.fair_line`) → `resolve(question, events)` → `explainer.explain(result, facts)` → `scoring.final_score(...)` → `scoring_summary.summarize(...)`.
 
 ### Invariants (do not break)
 - **Code decides, LLM phrases.** The resolver and scoring never call an LLM. Agents never change a result or a number.
 - Every question has exactly 2 options. If the excluded third outcome happens, the question is void for everyone. The UI never shows the word "void".
-- All users get the same questions at the same match second. Favourite-player questions match in count and timing, and their difficulty is tuned to P≈0.5.
+- Questions come from one shared stream of timing moments: every user who picks up a moment gets the same question (except favourite-player moments, which name each user's own player), and every moment locks before its outcome can happen. Each user moves through the stream at their own pace. Favourite-player moments open at the same time for everyone, and their difficulty is tuned to P≈0.5.
+- Timing decides when and why (the moment's situation). The question generator alone decides what is asked.
 - No point numbers or running total on screen during the match. Only ✓ and coins.
 - Every number in LLM text must appear in that call's `facts` (number guard), or a template is used instead.
 - Synthetic data and fictional clubs only.
