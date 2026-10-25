@@ -1,0 +1,100 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "question.schema.json",
+  "title": "Question",
+  "description": "Payload of the question.open message. Every question is binary.",
+  "type": "object",
+  "required": [
+    "qid",
+    "category",
+    "template_id",
+    "text",
+    "options",
+    "open_at",
+    "lock_at",
+    "resolve_by",
+    "hint_available"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "qid": {
+      "type": "string",
+      "description": "e.g. q-17"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "instant",
+        "forecast",
+        "player"
+      ]
+    },
+    "template_id": {
+      "type": "string",
+      "description": "Catalog template, e.g. next_pass_dir, goals_over, player_touch_window"
+    },
+    "text": {
+      "type": "string",
+      "maxLength": 140
+    },
+    "options": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "label"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string",
+            "maxLength": 24
+          }
+        }
+      }
+    },
+    "open_at": {
+      "type": "number",
+      "description": "Match clock (s) when shown"
+    },
+    "lock_at": {
+      "type": "number",
+      "description": "Match clock (s) after which answers are rejected"
+    },
+    "resolve_by": {
+      "description": "Match clock (s) deadline, or HT / FT for forecast questions",
+      "oneOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "string",
+          "enum": [
+            "HT",
+            "FT"
+          ]
+        }
+      ]
+    },
+    "hint_available": {
+      "type": "boolean"
+    },
+    "player_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Set only for category=player (the user's favourite player)"
+    },
+    "params": {
+      "type": "object",
+      "description": "Template parameters named as in the docs/pipeline.md catalog, e.g. {\"line\": 2}, {\"window_s\": 90}, {\"dead_zone_m\": 5}. Player forecast vs instant is given by template_id (player_stat_over vs player_touch_window)."
+    }
+  }
+}

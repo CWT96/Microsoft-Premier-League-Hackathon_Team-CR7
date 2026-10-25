@@ -1,53 +1,90 @@
-# Quick-Play Pipeline: Turning Dull Match Moments into a Game
+# Quick-Play Pipeline v2: A Second Screen for People Who Don't Watch Football
 
-**Goal:** attract people who don't usually watch football by starting quick prediction games ("Next pass: forward or backward?") during the dull stretches of a match, such as passing around midfield. Each game ends the moment the action heats up.
+**Version:** v2, 2026-10-24. Replaces the v1 plan from PR #1. The decisions come from a design session on 2026-10-24.
 
-**Pitch line:** *We turn the boring 60% of a match into a game for people who don't watch football.*
+**User and moment:** someone who doesn't follow football is watching a match with fan friends, at home, in a bar or at a watch party. The TV is on and they have nothing to say. Their phone becomes a second screen:
+- In dull stretches it gives them quick two-option games.
+- After a real attack it explains in ten seconds what everyone just shouted about.
+- At full time it turns their play into a score card and a membership sign-up.
 
-**Core rule:** code decides what happened and who wins. LLMs only choose and phrase the question and explain the result.
+**Pitch line:** *Bored when it's slow, lost when it's loud. We fix both for the friend who doesn't watch football.*
 
-## Constraints (from `source_reports/`)
+**Core rule:** code decides what happened, who was right and how many points that is worth. LLM agents choose, time and phrase questions, and explain results. They never settle a question or compute a score.
+
+## Constraints (from `docs/source_reports/`)
 
 - Submission deadline: **2026-10-27 23:59 PT**.
-- **Synthetic data only.** The organizers provide no real match data.
+- **Synthetic data only.** The organizers provide no match data or footage. A 2D animated pitch driven by synthetic events stands in for the TV picture.
 - Deliverables: a public GitHub repo, something judges can test, English materials, and a **demo video under 2 minutes**.
-- Judging is 5 criteria at 20% each: technical implementation, agent design, real-world impact, UX/demo, and category fit.
+- Judging is 5 criteria at 20% each: technical implementation, agent design, real-world impact, UX/demo, and category fit. **Target categories:** Enterprise application + Multi-agent system.
+- **Zero cost.** Anything that needs a real integration is mocked: email, wallet pass, gift redemption. LLM outputs are cached so the demo replays for free.
+- Team of 3 with 3 days left. See **Priorities and cut lines** before building anything.
+
+## User flow
+
+```
+Scan QR / open link ─► pick match ─► pick team ─► pick favourite player
+        │
+        ▼
+  Match view (2D pitch, score, clock)
+        │   dull stretch ───► instant question (2 options, 6s to answer, optional AI hint)
+        │   attack ─────────► questions vanish; when it ends ─► catch-up card
+        │   kickoff / HT ───► forecast + favourite-player forecast questions
+        │   timed slots ────► favourite-player instant question
+        ▼
+  Full time ─► score card (0–1000 + metrics) ─► email sign-up (mock)
+           ─► web membership card with QR + "Add to Wallet" (mock) ─► gift redemption (concept)
+```
 
 ## Pipeline overview
 
 ```
-[0] Synthetic match generator ──events──► Event bus (replay at 1×–4× speed)
+[0] Match dataset + ingest ──events──► Event bus (replay 1×–15×, skip controls)
                                              │
-            ┌────────────────────────────────┼─────────────────────────┐
-            ▼                                ▼                         ▼
-[1] Dull-moment detector (code)     [4] Resolver (code)        Live match feed (UI)
-            │ trigger                        │ result + evidence
-            ▼                                ▼
-[2] Question agent (LLM)            [5] Explainer agent (LLM + number guard)
-            │ question                       │ 1–2 sentence explanation
-            ▼                                ▼
-[3] Probability model (Python)      [6] Scoring + user profile ──► back to [2]
-            │ AI odds + points
-            ▼
-      Push to users ── answers locked at t_lock
+     ┌───────────────────────┬───────────────┼──────────────────┬──────────────────┐
+     ▼                       ▼               ▼                  ▼                  ▼
+[1] Detector (code)    [4] Resolver     2D pitch (UI)    Social: global /    Ops funnel
+ dull_score, attack        (code)                        room / bot friends  (simulated)
+     │                       │ result + evidence + facts
+     ▼                       ▼
+[2b] Timing agent      [5] Explainer agent (LLM + number guard)
+ (LLM picks format;          │ result text, catch-up card text
+  code enforces slots)       ▼
+     │                 [6] Scoring (code) ──► [6b] Scoring agent (LLM summary only)
+     ▼
+[2] Question generator agent (LLM picks template + phrasing)
+     │   ▲ tools
+     ▼   │
+[3] Probability model (code): top-2 options, AI hint, fair lines for player questions
+     │
+     ▼
+  Push question to users ── answers locked at lock_at
 ```
 
 ---
 
 ## Stages
 
-### [0] Synthetic match generator (Python)
+### [0] Match data: teammate's simulated dataset + ingest adapter
 
-- Simulates a match between two fictional clubs as a stream of events:
+**Status: dataset pending.** A teammate will upload a simulated match dataset to `data/source/`. Upload rules and the list of required fields are in `data/README.md`. Team names, player names and the `match_id` in this document are placeholders until it lands.
+
+There are two kinds of simulated data, and they never mix:
+- **Match data** (events, rosters) comes only from the uploaded dataset.
+- **User data** (global crowd answers, bot friends, sign-up funnel) is generated by our code in `backend/social/`.
+
+`backend/ingest/` converts the dataset into a stream of events in the shape of `contracts/event.schema.json`:
 
   ```json
-  {"id":"e1042","t":"34:26","team":"NBR","player":"Okafor","type":"pass",
-   "start":[52,30],"end":[71,22],"outcome":"complete"}
+  {"id":"e1042","t":2066,"half":1,"team":"NBR","player_id":"nbr-8-okafor","type":"pass",
+   "start":[52,30],"end":[68,22],"outcome":"complete"}
   ```
 
-- Coordinates are in metres on a 105×68 pitch, normalised so each team attacks left to right.
-- **Seeded**, so every replay is identical. That makes the demo reproducible and gives known answers for testing.
-- **Plants dull stretches** (long midfield possessions) and a few sudden attacks on purpose, so we can measure whether the detector catches them.
+- `t` is match seconds (34:26 = 2066). Coordinates are in metres on a 105×68 pitch, normalised so the acting team attacks left to right. The adapter rescales and flips coordinates if the dataset uses another convention.
+- **Fixed data, so every replay is identical.** That makes the demo reproducible, gives known answers for tests, and lets every LLM output be cached.
+- **Hand-labelled stretches for evaluation.** We mark about 10–20 dull stretches and attacks in the dataset by hand in `data/labels.json` (committed), so we can measure the detector's hits and misses.
+- **Position-realistic player stats are required.** Goalkeepers make saves, defenders clear, forwards shoot. Favourite-player questions depend on this; without it, the fair lines in [3] cannot be computed. If the dataset lacks it, flag it in the ingest PR.
+- Also produces rosters with positions (GK, DF, MF, FW) for the entry screen.
 
 ### [1] Dull-moment detector (pure code)
 
@@ -61,64 +98,125 @@ Every second, it computes features over a rolling 25-second window:
 | Time since the last shot | More than 3 minutes |
 | Current possession length | More than 6 passes |
 
-`dull_score` is a weighted sum between 0 and 1.
+`dull_score` is the mean of five sub-scores, each in [0, 1] *(starting weights; tune them against the hand-labelled stretches in `data/labels.json`)*:
+
+| Sub-score | Formula |
+|---|---|
+| `pass_rate` | passes/min in the window, ramped linearly from 4 (→0) to 10 (→1) |
+| `mid_third` | share of window events with ball x between 35 and 70 |
+| `low_threat` | 1 if max xT < 0.05, falling linearly to 0 at 0.15 |
+| `shot_gap` | min(seconds since last shot / 180, 1) |
+| `possession` | min(passes in current possession / 6, 1) |
+
+**xT** comes from a fixed 12×8 zone grid hard-coded in `backend/detect/xt_grid.py`, rising towards the opponent's goal. Values are hand-set and need no training.
 
 - **Enter game mode:** `dull_score > 0.7` holds for 8 seconds.
-- **Exit immediately:** the ball enters the final third, xT rises above 0.15, or there's a shot, foul or card. The game must never cover a real chance.
-- **Throttle:** at least 45 seconds between questions, and at most about 8 per half.
+- **Attack mode, entered immediately:** the ball enters the final third, xT rises above 0.15, or there's a shot, foul or card. Any open question card is **hidden** at once, and answers close at that moment. Answers already given still count, and **the resolver keeps watching**. So `reach_final_third` or `shot_soon` can resolve "yes" during the attack, and that result appears after the attack, next to the catch-up card. The game must never cover a real chance.
+- **Attack end:** a shot, goal, save, foul, ball out of play, or the ball back in the middle third for 5 seconds. This triggers the **catch-up card** (see [5]).
+- Emits `match.state` once per second: `{t, half, score, mode, dull_score}`, where `mode` is `live`, `game`, `attack` or `break`.
 
-It's deterministic and can be tested against the planted dull stretches. Report the misses as well as the hits.
+It's deterministic and can be tested against the hand-labelled stretches. Report the misses as well as the hits.
 
-### [2] Question agent (LLM on Microsoft Foundry)
+### [2b] Timing agent (LLM decides format; code enforces the schedule)
 
-- **Input:** a snapshot of the match state plus the user's profile (level, accuracy per question type, language, concepts already learned).
-- **It picks from a fixed catalog and never invents questions**, so the resolver can always settle the result:
+The timing agent decides **when** a question appears and **in what rhythm**. The detector code runs every second. The LLM is called only at decision points: a dull stretch begins, half time, a scheduled slot. It is never called inside the per-second loop, which would be too slow and too costly.
 
-| ID | Question | Options | Resolution rule | Window |
-|---|---|---|---|---|
-| `next_pass_dir` | Next pass: which way? | forward / sideways / backward | dx > +5m → forward, dx < −5m → backward, otherwise sideways | First pass after lock; void after 15s |
-| `reach_final_third` | Will they reach the final third? | yes / no | Ball x > 70 while still in possession | 20s |
-| `keep_ball` | Will they keep the ball for 15s? | yes / no | No turnover event | 15s |
-| `shot_soon` | Shot in the next 60s? | yes / no | Any shot event | 60s |
+**Hard rules (code, identical for every user):**
 
-- Beginners get `next_pass_dir` or `keep_ball` (fast and visual). Experienced users get `reach_final_third` or `shot_soon`.
-- **Output** is strict JSON, validated against a schema. If validation fails, fall back to a default question:
+| Category | When | Count per match |
+|---|---|---|
+| Instant | Dull stretch entered; cooldown 45s or more; a stretch that stays dull for 90s or more may get a rapid-fire pair 10s apart | At most 8 per half |
+| Forecast | 2 at kickoff (`goals_over`, `team_wins`, resolve FT); 2 at half time (`card_second_half`, `second_half_goal`, resolve FT) | 4 |
+| Favourite-player forecast | 1 at kickoff (first half, resolves HT), 1 at half time (second half, resolves FT) | 2 |
+| Favourite-player instant | Fixed slots at about 40:00 and 70:00. If an attack is under way, wait until it ends. | 2 |
 
-  ```json
-  {"question_id":"next_pass_dir","lock_in_s":6,"lang":"en",
-   "text":"Northbridge are passing it around midfield. Next pass: which way?",
-   "hint":"Backward passes are safe; forward passes are riskier but create chances."}
-  ```
+**Kickoff and half time:** the three questions appear together as a stack the user swipes through.
+- Kickoff questions appear in a pre-match lobby before the replay starts.
+- At half time the replay pauses in `break` mode.
+- Each stacked question locks after **60 seconds of real time**, or earlier when the room host presses resume or skip.
+
+**Time units:** `open_at`, `lock_at` and `resolve_by` are match seconds, but answer windows are real time.
+- While an instant or player-instant question is open, the replay **drops to 1×** until the result is shown, then returns to the chosen speed (default 15×). So "6 seconds to answer" is 6 real seconds at every speed.
+- Each room, including a solo player's private room, runs its **own replay instance**, and only the room creator can send `control` (speed, skip).
+
+**LLM choices (within those rules):**
+- Which template family suits this moment.
+- Whether to use a rapid-fire pair.
+- The tone of the pop-up, such as "Quiet spell, quick one!".
+
+Every user in the match receives the same questions at the same match second. Favourite-player questions are the exception only in content: same count and same slots for everyone, but each one names that user's own player.
+
+### [2] Question generator agent (LLM on Microsoft Foundry, with tools)
+
+- **Input:** match state only. **No user profile.** Users only scan a QR code and pick a team and player, so the generator has nothing else to go on.
+- **It picks a template from a fixed catalog and fills its parameters. It never invents questions**, so the resolver can always settle the result. Its tools:
+  - `get_match_state()`
+  - `option_probs(template_id, state, params)`, from [3]
+  - `fair_line(template_id, player_id, state)`, from [3]
+  - `validate_question(q)`, a schema check plus "the resolver has a rule for this template"
+- **Top-2 rule:** every question shows exactly two options. When a template has three possible outcomes, only the two most likely ones under [3] are shown. If the excluded third outcome happens, the question is **void for everyone** and left out of the score denominator. The UI never says "void". It shows a playful line such as *"Plot twist, he went sideways! Nobody saw that coming 😄"*.
+- **Output** is strict JSON matching `contracts/question.schema.json`. If validation fails, it falls back to a default template question with canned text.
+
+**Template catalog (all binary):**
+
+| ID | Category | Question | Options | Resolution rule | Window |
+|---|---|---|---|---|---|
+| `next_pass_dir` | instant | Next pass: forward or back? | top-2 of forward / sideways / backward | dx > +5m forward, dx < −5m backward, else sideways (void if not shown) | First pass after lock; void after 15s |
+| `keep_ball` | instant | Will they keep the ball for 15s? | yes / no | No turnover. A turnover is any change of possession, including the ball going out of play to the opponent. A restart for the same team is still "kept". | 15s |
+| `reach_final_third` | instant | Will they reach the final third? | yes / no | Ball x > 70 while still in possession | 20s |
+| `shot_soon` | instant | Shot in the next 60s? | yes / no | Any shot event | 60s |
+| `goals_over` | forecast | `{line}` or more goals in total? | yes / no | Goal count at FT; `line` from [3] so P≈0.5 | FT |
+| `team_wins` | forecast | Will `{team}` win? | yes / no | Result at FT | FT |
+| `card_second_half` | forecast | Any card in the second half? | yes / no | Any card event after HT | FT |
+| `second_half_goal` | forecast | Will there be a goal in the second half? | yes / no | Any goal after HT | FT |
+| `player_stat_over` | player | Will `{player}` make `{line}`+ `{stat}` this half? | yes / no | Count in the half it was asked for (kickoff → first half, HT → second half). Stat by position: GK saves, DF clearances, MF completed passes, FW shots. `line` from [3] so P≈0.5 | HT or FT |
+| `player_touch_window` | player | Will `{player}` touch the ball in the next `{window_s}`? | yes / no | Any event with that `player_id`. `window_s` from [3] so P≈0.5 | `window_s` |
+
+Template parameters go in `question.params` and use the names shown in braces: `line`, `window_s`, `team`, plus `dead_zone_m` for `next_pass_dir`.
+
+**Player templates never void.** Both always resolve yes or no. This keeps every user's player-question count equal, which the scoring in [6] depends on. A favourite player who is substituted off counts as "no" for the remaining window, so a good `fair_line` avoids late slots for likely substitutes.
+
+The catalog is extended by adding a row here, a resolver rule in `backend/resolve/` and a probability function in `backend/model/`, in the same PR.
 
 ### [3] Probability model (Python, not an LLM)
 
-- A simple model trained on the synthetic data, such as logistic regression or a frequency table. Features include zone, pressure (nearest opponent distance) and passes in the possession.
-- It outputs a probability for each option. That probability becomes the "AI thinks…" display and the reward:
-
-  ```
-  points = 10 + round(90 × (1 − p_chosen))
-  ```
-
-  Calling an unlikely outcome correctly pays more.
-- **Lock:** answers close at `t_lock` (6 seconds after the question appears). Only events after `t_lock` count, and answers that reach the server late are rejected. *Future work:* offset each user's stream delay so the game stays fair and resistant to cheating.
+- A simple model trained on the synthetic data, such as logistic regression or a frequency table. Features include zone, pressure (nearest opponent distance), passes in the possession, and the player's position and touch rate.
+- **It never sets points.** It has three jobs:
+  1. **Top-2 options.** It ranks a template's outcomes so the generator shows the two most likely.
+  2. **AI hint.** The hint is hidden by default. A user can tap to reveal it (*"AI leans Back, 52%"*). The probability is renormalised over the two options shown. Answering correctly after using the hint earns half points (see [6]).
+  3. **Fair lines for favourite-player questions.** Players differ a lot: a goalkeeper may touch the ball 20 times, a central midfielder 80. To give everyone questions of equal count **and** equal difficulty:
+     - **Forecast:** `fair_line` picks the threshold that puts P(yes) closest to 0.5 for *that* player, for example GK saves ≥2 (P=0.49), CB clearances ≥4 (P=0.52), ST shots ≥2 (P=0.47).
+     - **Instant:** `player_touch_window` runs at fixed slots, with a window tuned so P(touch)≈0.5, for example GK 3 min, CB 60s, ST 90s.
+     - **Guardrail:** a player question is issued only if its tuned P(yes) lies in [0.4, 0.6]. Otherwise it falls back to `player_touch_window`, which can always be tuned.
+- **Lock:** answers close at `lock_at` (6 seconds after the question appears). Only events after `lock_at` count, and answers that reach the server late are rejected. *Future work:* offset each user's stream delay so the game stays fair and resistant to cheating.
 
 ### [4] Resolver (pure code)
 
-- Watches the event bus for the first event that qualifies after `t_lock`.
-- Applies the catalog rule and emits a result record with the IDs of the events that prove it:
+- Watches the event bus for the first event that qualifies after `lock_at`, or waits until HT or FT for forecast questions.
+- Applies the catalog rule and emits a result in the shape of `contracts/result.schema.json`, with the IDs of the events that prove it:
 
   ```json
-  {"q":"q-17","answer":"forward","evidence":["e1042"],"facts":{"dx_m":19,"from_x":52,"to_x":71}}
+  {"qid":"q-17","status":"resolved","correct_option":"forward","evidence":["e1042"],
+   "facts":{"dx_m":16,"crowd_forward":27}}
   ```
 
-- **Void:** if play stops (foul, ball out of play) or the window times out, no points are awarded or lost.
-- **Corrections:** if an event is later amended, re-resolve and adjust scores.
+- **Void:** a shared (instant or forecast) question is void for everyone in three cases: the excluded third outcome happens, play stops before the qualifying event (foul, ball out of play), or the window times out. A void question earns no points, does not break a streak, and is left out of the denominator. An attack does **not** void a question (see [1]).
+- **Corrections:** if an event is later amended (`amends` field), the resolver re-resolves and scoring recomputes.
 
 ### [5] Explainer agent (LLM + number guard)
 
-- **Input:** the result's `facts`, the crowd split, the AI odds and the user's level. These are the only numbers it may use.
-- **Output:** 1–2 sentences, adjusted to the user's level, teaching one concept per round (e.g. "switching play", "recycling possession").
-- **Guard:** every number in the output must appear in `facts`. If any doesn't, use a template sentence instead.
+The explainer runs in two places:
+- **Question result:** 1–2 sentences that teach one concept per round, such as "line-breaking pass" or "recycling possession". There is no per-user level, so the text is written for a newcomer.
+- **Catch-up card:** after an attack ends, a 2D replay of its 3–5 key events plus one line, for example *"Northbridge cut through the middle, Mensah shot from 18m and Ward saved."* This is the moment the non-fan most needs help, because the room just shouted.
+  - Code picks the key events: passes that gained the most ground, plus the final shot, foul or loss of the ball.
+  - Code computes the card's `facts` from them, for example `shot_dist_m` (distance from shot start to goal centre), `passes`, `duration_s` and the player names.
+  - The card is the same for everyone in the room. The UI adds a "your player!" badge when one of the events is by the viewer's favourite player.
+
+Its only input is `facts` (plus player and team names). Those are the only numbers it may use.
+
+**Output** is JSON `{message, explanation, new_term}` that fills those fields of `result.schema.json`. For the catch-up card, the output is `{headline, explanation}`. If the JSON is invalid, a template is used instead.
+
+**Guard:** every number in the output must appear in `facts`. If any doesn't, a template sentence is used instead.
 
   ```python
   nums = set(re.findall(r"\d+(?:\.\d+)?", text))
@@ -127,26 +225,113 @@ It's deterministic and can be tested against the planted dull stretches. Report 
       text = template(result)
   ```
 
-### [6] Scoring + user profile
+### [6] Scoring (pure code) and [6b] scoring agent (LLM summary only)
 
-- Updates points, streak, leaderboard, accuracy per question type and the concepts the user has seen.
-- Feeds back into [2]: the question agent picks harder questions as accuracy improves and avoids concepts already taught.
+**Principles:**
+- One fixed formula for everyone.
+- No adjustment by player level.
+- Everyone gets the same number and type of questions, so scores are directly comparable and gift thresholds are fair across matches.
+
+**Formula:**
+
+```
+Budgets:     B_instant = 400,  B_forecast = 300,  B_player = 300            (sum 1000)
+Per question in category c:   per_q_c = B_c / n_c
+             n_c = non-void questions issued in c this match (for player: per user; equal for all users)
+Each correct answer earns:    per_q_c × hint × streak
+             hint   = 1.0 (no hint) | 0.5 (hint revealed)
+             streak = 1.0 (1st in a row) | 1.2 (2nd) | 1.5 (3rd or more, cap)
+Streak:      one streak across all categories, counted in ISSUE order (open_at), computed at FT.
+             correct (with or without hint) → streak +1 ; wrong or unanswered → earns 0, streak resets ;
+             void → skipped (no effect)
+Final score: final = round(1000 × earned / max_possible)
+             max_possible = the same sum for a perfect run (all correct, no hints, full streak)
+```
+
+- `max_possible` is identical for every user for three reasons: everyone gets the same questions in the same issue order; shared voids hit everyone; and player templates never void. That keeps the scale 0–1000 even with streak bonuses.
+- Streaks are counted in issue order, not resolution order, because players' windows differ (GK 3 min, ST 90 s) and would otherwise reorder the sequence per user.
+- Unanswered questions, including those missed by joining late, earn 0 and still count in the denominator.
+- `by_category.points` splits `final` by category. Largest-remainder rounding makes the three parts add up exactly to `final`.
+- **During the match:** only ✓ and coin animations appear. No point numbers and no running total, because `per_q` is not known until full time.
+- **Score card metrics:**
+  - final score
+  - hit rate (correct / answered)
+  - correct per category
+  - best streak
+  - hints used
+  - terms learned
+  - rank in room / friends / global
+- **[6b] Scoring agent:** an LLM writes a one-paragraph summary of the card, such as *"You read backward passes well and called 2 of 4 forecasts."* It is number-guarded like [5], and it never changes a number.
+
+### Social layer: three scopes (all required)
+
+| Scope | What it is | In the demo |
+|---|---|---|
+| Global | Everyone playing this match | Simulated crowd (seeded, a few thousand answers drawn from [3] with noise). Each room runs its own replay, so there is no shared live global pool. |
+| Room | Everyone who scanned the same room QR. Real multi-user over WebSocket, sharing one replay instance. | Works with several phones |
+| Friends | 3 rule-based bot friends (e.g. "Sam the superfan" mostly follows the AI pick, "Jo" is random) | Always on, so a judge playing alone still sees splits and a leaderboard |
+
+`crowd_split` per scope comes with every result. Leaderboards use the final score, so they appear only at full time, in a `leaderboard` message (see `contracts/README.md`).
+
+### Exit: score card → sign-up → membership card (all mocked)
+
+1. Score card (see [6]).
+2. Email sign-up form. **Mock:** nothing is sent; the address is held in memory only.
+3. Web membership card: name, score, tier (Bronze < 400, Silver 400–699, Gold ≥ 700), and a QR code, with an "Add to Wallet" button. The button shows the card full-screen; a real `.pkpass` needs a paid Apple Developer certificate and is future work.
+4. Gift redemption at a partner store, described as a concept in the pitch.
+
+### Enterprise side: ops funnel dashboard (simulated)
+
+The paying customer is a league or club marketing team. The product turns non-fans into registered members. The dashboard shows, per match:
+- the funnel scanned → answered ≥5 → signed up → redeemed
+- new members
+- average score
+
+It runs on simulated data. This is what the Enterprise application category is judged on.
 
 ---
+
+## Agents (Multi-agent system category)
+
+Each agent follows the same split: **the LLM decides, and code tools execute and check.** All agents run on Microsoft Foundry. Every call goes through one client that reads from the replay cache by default.
+
+| Agent | LLM decides | Code tools it calls |
+|---|---|---|
+| Timing agent [2b] | Which template family, rapid-fire or single, pop-up tone | Detector state, slot schedule, cooldown/caps check |
+| Question generator [2] | Template choice, parameters, plain-English wording | `option_probs`, `fair_line`, `validate_question` |
+| Explainer [5] | Result sentence, concept to teach, catch-up card line | Number guard, template fallback |
+| Scoring agent [6b] | End-of-match summary | Scoring formula (read-only), number guard |
+
+Hand-offs:
+1. The timing agent opens a slot.
+2. The generator fills it.
+3. The resolver (code) settles it.
+4. The explainer narrates.
+5. At FT, scoring (code) computes the final score and the scoring agent narrates it.
+
+No agent can change a result or a number.
+
+**LLM cost control:** development uses real calls on Azure free credit or GitHub Models. The match data is fixed, so each output is cached under `hash(agent, prompt, match_id, qid)`. Deployed builds use `LLM_MODE=cache`, which costs nothing and replays identically for judges. Setting `LLM_MODE=live` switches back to real calls.
+
+**Cache misses in cache mode** use the agent's template text and never fall through to a live call. To keep misses rare, the cache is pre-warmed during development:
+- every shared question and catch-up card of the dataset match
+- the 4 player questions for **every** roster player (22 × 4)
+
+The end-of-match summary depends on each user's answers, so in cache mode it is a template filled from the score card.
 
 ## Hackathon architecture (keep it small)
 
-- One **FastAPI** app with an in-process event bus.
-- **WebSocket** push to the browser.
-- **Microsoft Foundry** for the two LLM agents (question + explainer).
-- Deploy on **Azure Container Apps (ACA)**, the option recommended in the talk when the team doesn't know Kubernetes.
-- Optional, only if time allows: Cosmos DB for scores, Azure Web PubSub for scale.
+- One **FastAPI** app with an in-process event bus, a replay clock (1×–15×) and skip controls.
+- **WebSocket** push to the browser; payloads defined in `contracts/`.
+- **Microsoft Foundry** for the four agents, with the cache in front.
+- Deploy on **Azure Container Apps (ACA)** inside the free monthly grant. State lives in memory.
+- No paid services: no Cosmos DB, no Web PubSub.
 
 ---
 
-## Worked example: one round
+## Worked example: one round, one attack, one favourite-player question
 
-**Setup:** a synthetic match, Northbridge FC (NBR) vs Calder Town (CAL), 0–0. The user `alex_new` is a beginner who has played 3 rounds at 33% accuracy.
+**Setup:** a synthetic match, Northbridge FC (NBR) vs Calder Town (CAL), 0–0. Alex doesn't follow football and is watching with two fan friends in the same room. Alex scanned the room QR, picked Calder, and chose the goalkeeper **Ward** as favourite player. Alex got the previous question right, so the current streak is 1.
 
 **① 33:53–34:18: a dull stretch.** NBR keeps the ball in midfield:
 
@@ -158,63 +343,110 @@ It's deterministic and can be tested against the planted dull stretches. Report 
 
 Detector at 34:10: `ball_mid_third=1.0, max_xT=0.04, last_shot=6m12s, poss_len=11` gives **dull_score = 0.82**. It has stayed above 0.7 for 8 seconds, so **game mode starts at 34:18.**
 
-**② 34:18: the question agent picks.** Alex is a beginner, so it picks `next_pass_dir`:
+**② 34:18: timing agent + question generator.** The timing agent opens an instant slot. The generator picks `next_pass_dir` and asks [3] for option probabilities. The ball is with Okafor at x=52, the nearest defender is 6m away, and this is pass 12 of the possession:
 
-> "Northbridge are passing it around midfield. **Next pass: which way?**
-> ⬆ Forward · ↔ Sideways · ⬇ Backward"
-> 💡 *Backward passes are safe; forward passes are riskier but create chances.*
-
-**③ The probability model.** The ball is with Okafor at x=52, the nearest defender is 6m away, and this is pass 12 of the possession:
-
-| Option | AI probability | Points if correct |
+| Outcome | P | Shown? |
 |---|---|---|
-| Forward | 0.18 | 84 |
-| Sideways | 0.34 | 69 |
-| Backward | 0.48 | 57 |
+| Backward | 0.44 | ✅ |
+| Forward | 0.41 | ✅ |
+| Sideways | 0.15 | ❌ (excluded third: if it happens, the question is void) |
 
-The screen shows: *"AI thinks: Backward (48%)."* Alex goes against the AI and picks **Forward**. Answers lock at **34:24**. Final crowd split: 27% forward, 31% sideways, 42% backward.
+Every phone in the match shows the same card:
 
-**④ 34:26: the resolver.** The first pass after the lock:
+> "Northbridge are passing it around midfield. **Next pass: forward or back?**
+> ⬆ Forward · ⬇ Back"  ·  💡 *Hint (costs half points)*
+
+If Alex tapped the hint, it would show *"AI leans Back, 52%"* (0.44 renormalised over the two options shown). Alex skips the hint and picks **Forward**. Answers lock at **34:24**.
+
+**③ 34:26: the resolver.** The first pass after the lock:
 
 ```json
-{"id":"e1042","t":"34:26","player":"Okafor","type":"pass","start":[52,30],"end":[71,22]}
+{"id":"e1042","t":2066,"half":1,"team":"NBR","player_id":"nbr-8-okafor","type":"pass",
+ "start":[52,30],"end":[68,22],"outcome":"complete"}
 ```
 
-dx = 71 − 52 = **+19m**, which is more than 5m, so the answer is **forward ✅**. Alex wins **84 points**.
+dx = 68 − 52 = **+16m**, which is more than 5m, so the answer is **forward ✅**. Alex sees a ✓ and a coin burst, with no number. The streak goes to 2, so this answer will count ×1.2.
 
-**⑤ The explainer** gets `facts = {dx_m:19, ai_p_forward:18, crowd_forward:27}` and the level "beginner":
+**④ The explainer** gets `facts = {dx_m:16, crowd_forward:27}`:
 
-> "✅ **Forward!** Okafor spotted a gap between Calder's midfield lines and played it **19m** upfield. The AI gave that only **18%**, and just **27%** of players called it. Nice read!
+> "✅ **Forward!** Okafor spotted a gap between Calder's midfield lines and played it **16m** upfield. Only **27%** of players called it.
 > 📘 *New term:* **line-breaking pass**, a pass that skips past a line of defenders."
 
-Guard check: the output contains 19, 18 and 27, all of which are in `facts`, so the explanation is sent.
+Guard check: 16 and 27 are both in `facts`, so the explanation is sent. The crowd split appears underneath: global 27/73, room 50/50, friends 33/67.
 
-**⑥ Scoring and profile.** Alex now has 84 points, a 1-round streak and 2 of 4 correct (50%). `line-breaking pass` is marked as learned, so next time the question agent may give Alex `keep_ball`.
+**⑤ 34:31: attack.** NBR's pass reaches x=78 in the final third and xT is 0.21. **Mode becomes `attack`, and the phone goes quiet** so everyone watches the TV. At 34:39 Mensah shoots from 18m; at 34:40 Ward saves. The attack has ended.
 
-**⑦ 34:31: exit.** NBR's pass reaches x=78 in the final third and xT is 0.21. **Game mode ends and the UI goes back to the live match.** No new question until 35:16 at the earliest (the 45-second cooldown).
+**⑥ 34:41: catch-up card.** The phone replays the 4 key events on the 2D pitch. `facts = {shot_dist_m:18, passes:3, duration_s:10}`:
+
+> "Northbridge cut through the middle in **3** passes, Mensah shot from **18m** and Ward saved it!"  🧤 *your player!*
+
+Alex now knows why the room shouted, and that it involved their own player. No new instant question until 35:25 at the earliest (45s cooldown after the attack ended at 34:40).
+
+**⑦ 40:00: favourite-player slot.** Every user gets a question about *their own* player at the same moment. For Ward, a goalkeeper, `fair_line` tunes the window to 3 minutes (P(touch)=0.50):
+
+> "Will **Ward** touch the ball in the next 3 minutes?"  Yes · No
+
+A friend who picked striker Doyle gets "…in the next 90 seconds?" at the same moment. The question count and difficulty are the same for both.
+
+**⑧ Half time.** The replay pauses, and three cards stack up: `card_second_half`, `second_half_goal` and Ward's `player_stat_over` "2+ saves this half?" (P=0.49). (At kickoff the stack was `goals_over` with line 2 (P=0.51), `team_wins`, and Ward's first-half stat question.)
+
+**⑨ Full time.** In issue order Alex got 22 non-void questions: 14 instant, 4 forecast and 4 player. So per_q is 400/14 ≈ 28.6, 300/4 = 75 and 300/4 = 75. A perfect run would earn max_possible = 1440.
+
+Alex's results:
+- answered 19 of 22, got 13 right
+- used 2 hints
+- best streak 4
+
+| | instant | forecast | player | total |
+|---|---|---|---|---|
+| correct / issued | 8 / 14 | 2 / 4 | 3 / 4 | 13 / 22 |
+| points (share of 1000) | 186 | 104 | 141 | **431** |
+
+The scoring agent adds *"You called 3 of 4 questions about Ward, your goalkeeper."* 431 is Silver tier. Alex enters an email (mock) and gets the membership card with a QR code.
+
+These numbers come from running the formula exactly as written: streak in issue order, hints ×0.5, largest-remainder split. Use this case as the first unit-test fixture for `backend/scoring/`. The answer sequence by issue order is `C W H | W - C C W | C | C C | W C C | C C W C | - | - W H` (C = correct, H = correct with hint, W = wrong, - = unanswered). The issue order is: 2 forecast + 1 player at kickoff · 5 instant · player slot · 2 instant · 2 forecast + 1 player at HT · 4 instant · player slot · 3 instant.
 
 ---
 
-## Demo video plan (under 2 minutes)
+## Priorities and cut lines
 
-1. Replay the seeded match at 4× speed and show the dull-moment meter rising.
-2. The question pops up, answers lock, the result comes in, and the explanation appears.
-3. The attack starts and the game disappears, back to the live match.
-4. Close on one evidence slide: how well the detector caught the planted dull stretches (hits and misses) and how well the AI's probabilities held up (calibration).
+The scope is larger than 3 people can build in 3 days, and only one of them works on the frontend. **P0 must work end to end before any P1 work starts.** Anything unfinished at its cut-off ships as a static mock page.
+
+| Tier | Scope | Who | Cut-off |
+|---|---|---|---|
+| **P0 main loop** | [0] ingest of the uploaded dataset (until it lands: a tiny hand-written sample in `data/generated/` for testing) → [1] detector → instant questions ([2] + cache) → **minimal [3]** (frequency table, enough for top-2 options and bot friends) → [4] resolver → [6] scoring → minimal 2D pitch, question card, result, final score card; bot friends | all | end of 10/25 |
+| **P1 depth** | [3] full: hint + fair lines; forecast questions; favourite-player questions; catch-up card; ACA deploy | backend ×2, frontend | end of 10/26 |
+| **P2 polish** | real multi-user rooms; global crowd; sign-up + web wallet card; ops funnel dashboard | backend builds sign-up / wallet / dashboard as static pages to unload the frontend | 10/27 noon, otherwise static |
+| **Always** | demo video script + recording; README judging map | Tiana | 10/27 evening |
+
+`contracts/` freezes on the morning of 10/25. That freeze is what lets the three work in parallel.
+
+## Demo
+
+**Judge try-out:**
+- Runs at 15× by default (a full match in about 6 minutes) and slows down automatically during dull stretches so there is time to answer.
+- Buttons skip to the next dull stretch, to half time, or to full time.
+- Bot friends make the room feel alive even with one player.
+
+**Video (under 2 minutes, scripted edit):**
+
+| Time | Shot |
+|---|---|
+| 0:00–0:10 | The problem: a friend on the sofa, bored, phone out. Scan the QR, pick a team and Ward. |
+| 0:10–0:35 | Dull meter rises → question → lock → ✓ coins → explanation + room split |
+| 0:35–0:50 | Attack: the phone goes quiet → catch-up card |
+| 0:50–1:05 | Half time: forecast + favourite-player question (show GK vs ST windows side by side) |
+| 1:05–1:30 | Skip to FT: score card → sign-up → membership card |
+| 1:30–1:45 | Ops funnel dashboard (enterprise value) |
+| 1:45–1:58 | Evidence slide: detector hits/misses on hand-labelled stretches; favourite-player P(yes) per position ≈ 0.5 (fairness); agent diagram |
 
 ## Risks
 
-- **Gambling perception:** use points only, never real money, and say so plainly in the pitch.
-- **Overlap with Lasso** (fans challenge the AI's predictions): lead with the dull-moment timing and the casual, non-watching audience, not "predict plays".
-- **What counts as "forward":** the ±5m dead zone and the `sideways` option settle edge cases. Keep the rule visible in the UI.
-
-## Suggested build order
-
-1. Generator [0] + resolver [4]. No LLM, quickest to make solid.
-2. Dull-moment detector [1], tested against the planted dull stretches.
-3. Probability model [3] + scoring [6].
-4. Question [2] and explainer [5] agents on Foundry, with schema validation and the number guard.
-5. UI + WebSocket push, deploy to ACA, record the demo.
+- **Gambling perception:** points only, never real money or odds. Say so plainly in the pitch.
+- **Overlap with Lasso** (fans challenge AI predictions): lead with the non-fan sitting next to fans, the dull-moment timing and the catch-up card, not "predict plays".
+- **Branding:** clubs and players are fictional. In the demo, refer to a "partner store" rather than a real league store.
+- **Fairness depends on the match dataset.** If it lacks position-realistic stats, the favourite-player lines collapse. Test P(yes) per position early.
+- **What counts as "forward":** the ±5m dead zone settles edge cases. Keep the rule one tap away in the UI.
 
 ## Ideas reused from the landscape report
 
@@ -224,7 +456,7 @@ Guard check: the output contains 19, 18 and 27, all of which are in `facts`, so 
 | Detecting dull vs. exciting phases of play | Control vs. Chaos, Director's Cut, Tiki-Taka |
 | Withdrawing prompts that are no longer relevant | Before the Pass |
 | Lock answers before the event (no hindsight) | ghost-lines |
-| Play against the AI, points scaled by odds | Lasso, ParallelPitch |
-| Learning feedback that changes later content | Coach in Your Ear, Matchday Explainer |
+| AI prediction as part of the game (here: an optional hint, not odds) | Lasso, ParallelPitch |
+| Explanations that teach one concept at a time | Coach in Your Ear, Matchday Explainer |
 | Testing with known answers on synthetic data | Gallery |
 | Re-scoring after event corrections | MatchLens |

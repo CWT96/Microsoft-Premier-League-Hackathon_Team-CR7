@@ -1,0 +1,9 @@
+# Each path's owners are requested as reviewers automatically.
+# Later lines win over earlier ones.
+
+*               @stephenwzkong @tianawangty @CWT96
+/backend/       @stephenwzkong @tianawangty
+/frontend/      @CWT96
+/contracts/     @stephenwzkong @tianawangty @CWT96
+/docs/          @stephenwzkong @tianawangty @CWT96
+/infra/         @stephenwzkong @tianawangty

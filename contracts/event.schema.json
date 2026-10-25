@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "event.schema.json",
+  "title": "MatchEvent",
+  "description": "One synthetic match event. Coordinates are metres on a 105x68 pitch, normalised so the acting team attacks left to right.",
+  "type": "object",
+  "required": ["id", "t", "half", "team", "type"],
+  "additionalProperties": false,
+  "properties": {
+    "id": {"type": "string", "description": "Unique, stable event id, e.g. e1042"},
+    "t": {"type": "number", "minimum": 0, "description": "Match clock in seconds since kickoff of the first half (34:26 = 2066)"},
+    "half": {"type": "integer", "enum": [1, 2]},
+    "team": {"type": "string", "description": "Team code, e.g. NBR"},
+    "player_id": {"type": ["string", "null"], "description": "Acting player; null for match-level events"},
+    "type": {
+      "type": "string",
+      "enum": ["kickoff", "pass", "carry", "shot", "save", "clearance", "tackle",
+               "interception", "foul", "card", "out", "goal", "half_end", "full_end"]
+    },
+    "start": {"$ref": "#/$defs/xy"},
+    "end": {"$ref": "#/$defs/xy"},
+    "outcome": {
+      "type": ["string", "null"],
+      "enum": ["complete", "incomplete", "on_target", "off_target", "goal", "saved",
+               "won", "lost", "yellow", "red", null]
+    },
+    "amends": {"type": ["string", "null"], "description": "Id of an earlier event this one corrects (triggers re-resolve)"}
+  },
+  "$defs": {
+    "xy": {
+      "type": "array",
+      "prefixItems": [
+        {"type": "number", "minimum": 0, "maximum": 105},
+        {"type": "number", "minimum": 0, "maximum": 68}
+      ],
+      "minItems": 2,
+      "maxItems": 2
+    }
+  }
+}
