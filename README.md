@@ -16,7 +16,7 @@ The non-fan scans a QR code on the table, picks a team and a favourite player, a
 
 | Match moment | What the phone does |
 |---|---|
-| Dull stretch | Pops a quick **two-option question** ("Next pass: forward or back?"). 6 seconds to answer, optional AI hint. |
+| Dull stretch | Pops a quick **two-option question** ("Next pass: forward or back?"). 8 seconds to answer, optional AI hint. |
 | Attack | Goes quiet so everyone watches the TV. When the attack ends, shows a **catch-up card**: a 2D replay plus one plain sentence. |
 | Kickoff / half time | **Forecast** questions for the whole match, plus questions about *your* player |
 | Full time | **Score card** (0–1000) → email sign-up → **membership card** with a QR code for partner-store rewards |
