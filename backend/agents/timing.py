@@ -318,6 +318,7 @@ class TimingAgent:
         self._goal_half = 0
         self._last_live_key: tuple[int, float] | None = None
         self._warned_values: set[tuple[str, str]] = set()
+        self._last_cost = 1.0
 
     # .........................................................................
     # public
@@ -337,6 +338,7 @@ class TimingAgent:
             self._last_live_key = key
         self._note_goal(state)
         cost, sig = interruption_cost(state, self._goal_t)
+        self._last_cost = cost
         if not self._recent or self._recent[-1] != state.situation:
             self._recent.append(state.situation)
 
@@ -359,6 +361,11 @@ class TimingAgent:
         """True if the last live step was calm (cost at or below the candidate threshold)."""
         return self._calm_since is not None
 
+    @property
+    def last_cost(self) -> float:
+        """Interruption cost of the latest step (read-only; 1.0 before the first step)."""
+        return self._last_cost
+
     def _check_values(self, state: DetectorState) -> None:
         """Log once per unknown categorical value (detector and agent out of step)."""
         for name in ("ball_zone", "situation", "mode", "break_kind"):
@@ -378,15 +385,19 @@ class TimingAgent:
                 state.half != self._goal_half or state.t - self._goal_t >= R.GOAL_SILENT_S):
             self._goal_t = None
 
-    def peek_next_stop(self, states: Iterable[DetectorState]) -> NextStop | None:
-        """First calm-spell start or scheduled moment in ``states``; does not change ``self``."""
+    def peek_next_stop(self, states: Iterable[DetectorState],
+                       scheduled_only: bool = False) -> NextStop | None:
+        """First calm-spell start or scheduled moment in ``states``; does not change ``self``.
+
+        With ``scheduled_only`` calm-spell starts are ignored (the app's skip uses this).
+        """
         sim = copy.deepcopy(self, {id(self._policy): RulePolicy()})  # no LLM calls on a skip
         for s in states:
             out = sim.step(s)
             for m in out.moments:
                 if m.kind != "instant":
                     return NextStop(s.half, s.t, "scheduled", m)
-            if any(d.action == "calm" for d in out.decisions):
+            if not scheduled_only and any(d.action == "calm" for d in out.decisions):
                 return NextStop(s.half, s.t, "calm_spell", None)
         return None
 
