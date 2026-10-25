@@ -24,9 +24,15 @@
         "resolve": {
           "type": "object",
           "required": ["primitive"],
-          "properties": { "primitive": { "type": "string" } }
+          "properties": {
+            "primitive": {
+              "enum": ["count_at_least", "compare_counts", "first_of", "final_state", "next_matching"]
+            }
+          }
         },
-        "prob": { "type": "string" },
+        "prob": {
+          "enum": ["poisson_count", "poisson_first", "poisson_compare", "goal_grid", "player", "instant"]
+        },
         "rare": { "type": "boolean" },
         "positions": {
           "oneOf": [

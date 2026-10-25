@@ -82,3 +82,25 @@ def test_fill_text_renders_names():
     t = load_bank()["who_shoots_first"]
     text = fill_text(t, {"window": "5m"}, _state(), None)
     assert LONG_TEAM in text and "the next 5 minutes" in text
+
+
+@pytest.mark.parametrize("field,bad", [("primitive", "count_most"), ("prob", "guess")])
+def test_schema_rejects_unknown_primitive_and_pricer(tmp_path, field, bad):
+    entry = json.loads(BANK_PATH.read_text())[8]
+    if field == "primitive":
+        entry["resolve"]["primitive"] = bad
+    else:
+        entry["prob"] = bad
+    path = tmp_path / "bad.json"
+    path.write_text(json.dumps([entry]))
+    with pytest.raises(ValueError, match="invalid question bank"):
+        load_bank(path)
+
+
+def test_schema_enums_match_code():
+    from backend.bank.loader import SCHEMA_PATH
+    from backend.model.poisson import PRICERS
+    from backend.resolve.primitives import PRIMITIVES
+    props = json.loads(SCHEMA_PATH.read_text())["$defs"]["template"]["properties"]
+    assert set(props["resolve"]["properties"]["primitive"]["enum"]) == set(PRIMITIVES)
+    assert set(props["prob"]["enum"]) == set(PRICERS)
