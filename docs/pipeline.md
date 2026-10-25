@@ -125,9 +125,10 @@ The timing agent decides **when** a question appears and **in what rhythm**. The
 | Category | When | Count per match |
 |---|---|---|
 | Instant | Dull stretch entered; cooldown 45s or more; a stretch that stays dull for 90s or more may get a rapid-fire pair 10s apart | At most 8 per half |
-| All kinds | All kinds come through dull slots; kind drawn at random, see `backend/bank/` | See `backend/bank/` |
+| All kinds | Dull slots during play; kind drawn at random, see `backend/bank/` | See `backend/bank/` |
+| Kickoff / half time | One stack in the pre-match lobby and one in the half-time pause: 2 shared window questions plus 1 favourite-player question per user | 1 stack at each |
 
-The pre-match lobby and the half-time pause (`break` mode) stay, but no questions are asked in either; every question comes through a dull slot during play.
+**Kickoff and half-time stacks.** The pre-match lobby and the half-time pause (`break` mode) each show a stack: 2 shared window (forecast) questions, which have different templates and are the same for everyone, plus 1 favourite-player question per user. If any user has no valid player question, nobody gets the player card, so everyone still sees the same number of questions. The stack locks after 60 real seconds, or when the host sends resume or skip. The questions count from the restart (the first whistle, or the start of the second half), so a timed question reads "the first 10 minutes" at kickoff and "the first 10 minutes of the second half" at half time. Stack questions do not count toward the limit of 2 open window questions, and a player who has been sent off is never asked about. All other questions come through dull slots during play. See `backend/bank/stack.py`.
 
 **Time units:** `open_at`, `lock_at` and `resolve_by` are match seconds, but answer windows are real time.
 - While an instant or player-instant question is open, the replay **drops to 1×** until the result is shown, then returns to the chosen speed (default 15×). So "6 seconds to answer" is 6 real seconds at every speed.
@@ -384,9 +385,9 @@ Alex now knows why the room shouted, and that it involved their own player. No n
 
 A friend who picked striker Doyle, in the same dull slot, gets "…in the next 90 seconds?". The question count and difficulty are the same for both.
 
-**⑧ Half time, then more dull slots.** The replay pauses at half time, but no question is asked there. In later dull slots the draw picks "window" and Ward's `player_stat_over` "2+ saves this half?" (P=0.49) shows up as a player question, and forecast-style (window) questions such as `card_second_half` and `second_half_goal` arrive the same way.
+**⑧ Half time, then more dull slots.** The replay pauses at half time and a stack appears: two shared forecast (window) questions such as `card_second_half` ("Any card in the first 10 minutes of the second half?") and `second_half_goal`, plus Ward's `player_stat_over` "2+ saves this half?" (P=0.44) as the player question. It locks after 60 real seconds, or when the host resumes. Dull slots after the restart carry on as before.
 
-**⑨ Full time.** In issue order Alex got 22 non-void questions: 14 instant, 4 forecast and 4 player. So per_q is 400/14 ≈ 28.6, 300/4 = 75 and 300/4 = 75. A perfect run would earn max_possible = 1440.
+**⑨ Full time.** In issue order Alex got 22 non-void questions: 14 instant, 4 forecast and 4 player (the kickoff and half-time stacks supply 2 forecast and 1 player each). So per_q is 400/14 ≈ 28.6, 300/4 = 75 and 300/4 = 75. A perfect run would earn max_possible = 1440.
 
 Alex's results:
 - answered 19 of 22, got 13 right
@@ -400,7 +401,7 @@ Alex's results:
 
 The scoring agent adds *"You called 3 of 4 questions about Ward, your goalkeeper."* 431 is Silver tier. Alex enters an email (mock) and gets the membership card with a QR code.
 
-These numbers come from running the formula exactly as written: streak in issue order, hints ×0.5, largest-remainder split. Use this case as the first unit-test fixture for `backend/scoring/`. The answer sequence by issue order is `C W H | W - C C W | C | C C | W C C | C C W C | - | - W H` (C = correct, H = correct with hint, W = wrong, - = unanswered). The issue order is: 2 forecast + 1 player in dull slots · 5 instant · player slot · 2 instant · 2 forecast + 1 player in dull slots · 4 instant · player slot · 3 instant.
+These numbers come from running the formula exactly as written: streak in issue order, hints ×0.5, largest-remainder split. Use this case as the first unit-test fixture for `backend/scoring/`. The answer sequence by issue order is `C W H | W - C C W | C | C C | W C C | C C W C | - | - W H` (C = correct, H = correct with hint, W = wrong, - = unanswered). The issue order is: kickoff stack (2 forecast + 1 player) · 5 instant · player slot · 2 instant · half-time stack (2 forecast + 1 player) · 4 instant · player slot · 3 instant.
 
 ---
 

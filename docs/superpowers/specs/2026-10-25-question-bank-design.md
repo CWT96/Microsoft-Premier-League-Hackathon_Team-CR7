@@ -232,11 +232,11 @@ The rates are **not** taken from the dataset, because the dataset is the same ma
 ### 8. Changes to other parts of the design
 
 - `docs/pipeline.md`:
-  - **§[2b]:** remove the kickoff/half-time stacks and the fixed player slots at 40:00 and 70:00. Every question now comes through dull slots.
+  - **§[2b]:** remove the fixed player slots at 40:00 and 70:00. Questions come through dull slots, plus one stack at kickoff and one at half time: 2 shared window questions (different templates) and 1 favourite-player question per user, locking after 60 real seconds or on host resume/skip. Windows count from the restart and stack questions do not count toward the 2-open-window limit. See `backend/bank/stack.py`.
   - **§[2]:** the catalog table points to `backend/bank/templates.json` as the source of truth.
 - `CLAUDE.md`: add `backend/bank/` to the folder map.
 - **Scoring:** the category budgets (400 / 300 / 300) and the formula are unchanged. With random draws the number of questions per category varies by match, which `per_q_c = B_c / n_c` already handles. If a category gets no questions, its budget drops out of `max_possible`.
-- **Frontend:** no change to the question card. The kickoff/half-time stack UI is no longer needed (tell CWT96).
+- **Frontend:** no change to the question card. The kickoff/half-time stack UI is still needed (see `contracts/README.md`); tell CWT96 that stacks are now 2 shared cards plus 1 player card.
 
 ### 9. Testing
 
