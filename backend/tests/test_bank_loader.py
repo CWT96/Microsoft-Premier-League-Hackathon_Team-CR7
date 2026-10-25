@@ -25,7 +25,6 @@ def test_bank_has_28_templates_by_kind():
     assert len(bank) == 28 and kinds == {"instant": 8, "window": 13, "player": 7}
 
 
-@pytest.mark.skip(reason="until Task 3 lands primitives and pricers")
 def test_every_template_has_resolver_and_pricer():
     from backend.model.poisson import PRICERS
     from backend.resolve.primitives import PRIMITIVES
