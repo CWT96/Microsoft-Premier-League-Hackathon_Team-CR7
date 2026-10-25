@@ -48,8 +48,8 @@ Scan QR / open link ─► pick match ─► pick team ─► pick favourite pla
      │                       │ result + evidence + facts
      ▼                       ▼
 [2b] Timing agent      [5] Explainer agent (LLM + number guard)
- (LLM picks format;          │ result text, catch-up card text
-  code enforces slots)       ▼
+ (code: cost + gate;         │ result text, catch-up card text
+  LLM: open/hold, tone)      ▼
      │                 [6] Scoring (code) ──► [6b] Scoring agent (LLM summary only)
      ▼
 [2] Question generator agent (LLM picks template + phrasing)
@@ -58,7 +58,7 @@ Scan QR / open link ─► pick match ─► pick team ─► pick favourite pla
 [3] Probability model (code): top-2 options, AI hint, fair lines for player questions
      │
      ▼
-  Push question to users ── answers locked at lock_at
+  Per-user pacer picks cards from the shared stream ── answers locked at lock_at
 ```
 
 ---
@@ -93,58 +93,158 @@ Every second, it computes features over a rolling 25-second window:
 | Feature | Dull when |
 |---|---|
 | Passes per minute | High, but… |
-| Ball position | …the ball stays in the middle third (x between 35 and 70) |
+| Ball position | …the ball stays out of the final third (x < 70). Passing it around at the back counts as dull too. |
 | Max threat (xT) in the window | Below 0.05 |
 | Time since the last shot | More than 3 minutes |
 | Current possession length | More than 6 passes |
+
+The **final third** is the third of the pitch nearest the goal a team attacks (x > 70 in the acting team's direction).
 
 `dull_score` is the mean of five sub-scores, each in [0, 1] *(starting weights; tune them against the hand-labelled stretches in `data/labels.json`)*:
 
 | Sub-score | Formula |
 |---|---|
 | `pass_rate` | passes/min in the window, ramped linearly from 4 (→0) to 10 (→1) |
-| `mid_third` | share of window events with ball x between 35 and 70 |
+| `not_final_third` | share of window events with ball x < 70 (in the acting team's attacking direction) |
 | `low_threat` | 1 if max xT < 0.05, falling linearly to 0 at 0.15 |
 | `shot_gap` | min(seconds since last shot / 180, 1) |
 | `possession` | min(passes in current possession / 6, 1) |
 
 **xT** comes from a fixed 12×8 zone grid hard-coded in `backend/detect/xt_grid.py`, rising towards the opponent's goal. Values are hand-set and need no training.
 
-- **Enter game mode:** `dull_score > 0.7` holds for 8 seconds.
+**Raw signals for the timing agent.** The detector also reports what is happening on the pitch. It does not turn these into a decision. The timing agent [2b] owns the interruption cost and `calm_for_s`.
+
+| Output | Meaning |
+|---|---|
+| `movement` | Mean speed of the 22 players over the last 3 s, from tracking: 0 m/s → 0, 3 m/s or more → 1, linear between. Not part of `dull_score`. |
+| `pressure_m` | Distance in metres from the ball carrier to the nearest opponent, from tracking |
+| `situation` | `kickoff`, `open_play`, `stalled_near_box`, `attack`, restarts (`throw_in`, `goal_kick`, `corner`, `free_kick`, `penalty`), stoppages (`referee_decision`, `substitution`, `injury`), `water_break`, `after_goal`, `half_time`, `full_time` |
+| `ball_zone` | Which third the ball is in, for the team in possession |
+| `possession_team` | Team with the ball |
+| `last_shot_t`, `last_attack_end_t` | Match second of the last shot and of the last attack end, so timing knows the seconds since each |
+| `ball_xy` | Ball position |
+
+A **restart** is how play starts again after the ball goes out or a foul (throw-in, goal kick, corner, free kick, penalty). A **water break** is a short drinks pause in the middle of each half.
+
+**Tracking is optional.** Simulated player positions stand in for positions read from the TV picture. Low movement for a few seconds is a strong early sign of a dull spell. Without tracking, `movement` and `pressure_m` are `null` and everything else still works.
+
+- **Modes:** the detector reports `lobby`, `live`, `attack`, `break` (with `break_kind`: `half_time` or `water_break`) and `full_time`. **It never enters `game` mode.** The app sets `game` per user while that user has a card open, because only the app knows a card is on screen.
 - **Attack mode, entered immediately:** the ball enters the final third, xT rises above 0.15, or there's a shot, foul or card. Any open question card is **hidden** at once, and answers close at that moment. Answers already given still count, and **the resolver keeps watching**. So `reach_final_third` or `shot_soon` can resolve "yes" during the attack, and that result appears after the attack, next to the catch-up card. The game must never cover a real chance.
-- **Attack end:** a shot, goal, save, foul, ball out of play, or the ball back in the middle third for 5 seconds. This triggers the **catch-up card** (see [5]).
-- Emits `match.state` once per second: `{t, half, score, mode, dull_score}`, where `mode` is `live`, `game`, `attack` or `break`.
+- **Attack end:** a shot, goal, save, foul, ball out of play, the ball back in the middle third for 5 seconds, or the attack **stalls** (ball still in the final third but players barely moving and no shot for 10 seconds; the situation then becomes `stalled_near_box`). This triggers the **catch-up card** (see [5]).
+- Emits `match.state` once per second: `{t, half, score, mode, break_kind, dull_score}` plus the raw signals above and the timing agent's `cost` (full shape in `contracts/state.schema.json`).
 
 It's deterministic and can be tested against the hand-labelled stretches. Report the misses as well as the hits.
 
-### [2b] Timing agent (LLM decides format; code enforces the schedule)
+### [2b] Timing agent (code scores the moment; LLM may hold it or set the tone)
 
-The timing agent decides **when** a question appears and **in what rhythm**. The detector code runs every second. The LLM is called only at decision points: a dull stretch begins, half time, a scheduled slot. It is never called inside the per-second loop, which would be too slow and too costly.
+The timing agent decides **when** the match can spare the viewer's attention and **why** (the situation). It never decides **what** is asked. Question content, templates and wording belong to the generator [2].
 
-**Hard rules (code, identical for every user):**
+**Pace target.** Questions are simple and binary, so timing aims for the pace of a short-video feed. In calm play a new moment opens roughly every **4 s**. One user's cycle (read, answer, see the result) takes about 8–12 s. No moment opens while a chance is building.
 
-| Category | When | Count per match |
+**Shared stream, per-user pace.** Timing opens one stream of **moments** per match, with the same question content for everyone. Each user moves through that stream at their own pace (see the pacer below). The stream is deterministic for a given match, so it can be cached and tested.
+
+```
+events + tracking + match context (every second)
+  → interruption cost (code)   0 = nothing to miss, 1 = do not look away
+  → gate (code, hard rules)    silence, spacing, half-end guard
+  → director (policy)          open now / hold, tone
+  → gate re-checks             → Moment(s) + TimingDecision
+```
+
+The gate is plain code and can never be overridden. The director only chooses among options the gate allows.
+
+**Interruption cost** answers one question: *what would the viewer miss by looking at the phone for the next ~6 seconds?* It combines sub-scores in [0, 1] (weights and ramps are constants in `backend/agents/timing_rules.py`):
+
+| Signal | Raises cost when | Lowers cost when |
 |---|---|---|
-| Instant | Dull stretch entered; cooldown 45s or more; a stretch that stays dull for 90s or more may get a rapid-fire pair 10s apart | At most 8 per half |
-| Forecast | 2 at kickoff (`goals_over`, `team_wins`, resolve FT); 2 at half time (`card_second_half`, `second_half_goal`, resolve FT) | 4 |
-| Favourite-player forecast | 1 at kickoff (first half, resolves HT), 1 at half time (second half, resolves FT) | 2 |
-| Favourite-player instant | Fixed slots at about 40:00 and 70:00. If an attack is under way, wait until it ends. | 2 |
+| Ball zone | ball in the final third | ball in the own or middle third |
+| Threat (xT, from [1]) | max xT in the last 10 s above 0.10 | xT below 0.05 |
+| Movement (tracking) | players sprinting | everyone jogging or standing |
+| Pressure (tracking) | nearest opponent within 3 m of the ball carrier | carrier has 8 m or more of space |
+| Time since a shot | a shot in the last 20 s (rebound or corner likely) | no shot for 2 min or more |
+| Match context | last 10 min with the score level or one goal apart | big lead, or early in the half |
 
-**Kickoff and half time:** the three questions appear together as a stack the user swipes through.
-- Kickoff questions appear in a pre-match lobby before the replay starts.
-- At half time the replay pauses in `break` mode.
-- Each stacked question locks after **60 seconds of real time**, or earlier when the room host presses resume or skip.
+Without tracking, movement and pressure are dropped and the weights renormalised.
 
-**Time units:** `open_at`, `lock_at` and `resolve_by` are match seconds, but answer windows are real time.
-- While an instant or player-instant question is open, the replay **drops to 1×** until the result is shown, then returns to the chosen speed (default 15×). So "6 seconds to answer" is 6 real seconds at every speed.
-- Each room, including a solo player's private room, runs its **own replay instance**, and only the room creator can send `control` (speed, skip).
+**Situational overrides** replace the formula:
 
-**LLM choices (within those rules):**
-- Which template family suits this moment.
-- Whether to use a rapid-fire pair.
-- The tone of the pop-up, such as "Quiet spell, quick one!".
+| Situation | Cost | Why |
+|---|---|---|
+| Fast attack in motion (attack mode, high movement, ball moving towards goal) | 1.0 | Silent. Never cover a chance as it unfolds (the other silent case is the 8 s after a goal). |
+| Set-piece wait: penalty, corner or free kick near the box, from the whistle to the kick | 0.2 | Everyone is waiting. The card **locks the moment the kick is taken** (`lock_rule: on_restart`, early `question.locked`), so nobody answers with hindsight. |
+| Referee decision: foul given, card shown, VAR check (a video review of the referee's call) | 0.1 | Play has stopped and the room is arguing. |
+| Stalled play near the box: ball in the final third, low movement, no shot for 10 s | 0.4 | The attack has stalled into passing around the box. |
+| Throw-in, goal kick, foul in a team's own half | 0.1 | Play has stopped. |
+| Substitution, injury stoppage, water break | 0.0 | Nothing to miss for 30 s or more. |
+| Goal scored | 1.0 for 8 s, then the catch-up card, then 0.2 during the restart | Let them celebrate first. |
 
-Every user in the match receives the same questions at the same match second. Favourite-player questions are the exception only in content: same count and same slots for everyone, but each one names that user's own player.
+**Calm play** means any second with cost ≤ 0.45. That covers dull passing in the back and the middle, every stoppage and restart, set-piece waits and referee decisions.
+
+**Gate rules (code, the same for every user):**
+
+| Rule | Value | Why |
+|---|---|---|
+| Candidate moment | cost ≤ 0.45 | Below this, the match can spare the viewer. |
+| Silent | cost ≥ 0.70, or an override says silent. Stays silent until cost ≤ 0.45 again. | Stops flicker at the edge. |
+| Spacing between moments | ≥ 4 s | The feed pace. |
+| After an attack ends | ≥ 8 s | The catch-up card shows first. |
+| Half-end guard | No instant moment within 15 s of the nominal half end, nor in stoppage time past 45:00 or 90:00 | The answer and resolution windows must fit in the half. |
+
+There is **no per-half cap and no 45 s cooldown**. When a rule blocks a candidate, timing emits one `blocked` decision per blocked episode, naming the rule.
+
+**Director policy.** Called at each second where a candidate passes the gate. Input (the same JSON for the LLM and the rules): `t`, `half`, `score`, `cost` and each sub-score, `situation`, `ball_zone`, `possession_team`, `calm_for_s` (seconds the cost has stayed ≤ 0.45), and the last 3 situations. Output: `{action: "open" | "hold", tone, reason}`, for example tone *"Throw-in. Quick one!"*.
+- `hold` delays by 1 s, at most 2 holds in a row. The LLM uses it when, for example, a stoppage is about to end in a dangerous restart.
+- **RulePolicy** (deterministic fallback, and the default with no LLM key): always `open` when the gate allows. The tone comes from a fixed list per situation.
+- **LLMPolicy:** the same input and output through `agents/llm.py`, schema-checked. Invalid JSON, a timeout over 1 s or a cache miss falls back to RulePolicy, recorded as `source: "rule_fallback"`. The tone may not contain digits (number guard). In live mode the policy is called up to 2 s ahead on a look-ahead copy of the detector, so its answer is ready on time.
+
+**Outputs.**
+- **Moment** (to the generator): `{moment_id, kind, category, open_at, lock_at, lock_rule, situation, situation_detail, cost, tone, half}`.
+  - `kind` is `instant`, `kickoff_stack`, `ht_stack`, `water_break` or `player_instant`.
+  - `situation` describes the match, not a question: `calm_play`, `stalled_near_box`, `throw_in`, `goal_kick`, `set_piece_wait`, `referee_decision`, `substitution`, `injury`, `water_break`, `after_goal`, `kickoff`, `half_time`. `situation_detail` adds specifics such as `{"restart": "corner", "team": "NBR"}`.
+  - `lock_rule` is `fixed` (6 s) or `on_restart`.
+  - The generator may overwrite or drop the tone.
+- **TimingDecision**, published as `timing.decision` for the director view (the demo page that shows why a question popped up at that second). It carries the action (`open`, `hold`, `blocked`, `scheduled`, `silent`, `calm`), the source, a reason, the rule that blocked it, and the inputs. `silent` and `calm` are sent once on each transition.
+
+**Scheduled moments (code, not LLM):**
+
+| Moment | When | Rule |
+|---|---|---|
+| Kickoff stack | `lobby`, before the replay starts | 3 cards: 2 forecast + 1 favourite-player forecast (first half). Content from [2]. |
+| Half-time stack | entering the half-time `break` | 3 cards: 2 forecast + 1 favourite-player forecast (second half). Content from [2]. |
+| Water-break card | entering a water-break `break` | 1 forecast card for every connected user. No other moment opens during the break. Content from [2]. |
+| Favourite-player instant | first calm second at or after 40:00 and 70:00 | Each user's card is about their own player. It takes priority over the next shared moment. |
+
+The stacked cards appear together and the user swipes through them. Each locks after **60 real seconds**, or earlier when the room host presses resume or skip. A water-break card locks when the water-break pause ends (30 real seconds or host resume).
+
+**Water breaks.** In the placeholder match they fall at about 22:00 and 67:00 and last 90 match seconds. The detector is in `break` mode with `break_kind: "water_break"`. The replay pauses at the start, like half time, until the host resumes or 30 real seconds pass. The match clock keeps running during the break, as in real football.
+
+**Per-user pacer (in the app).** Timing opens moments for the match. Each user's pacer decides which moment that user sees.
+- **Pick-up:** a free user (no open card, last result shown) gets the newest open moment with at least 3 s left before its lock.
+- **Answer window:** a card stays up to `lock_at`, 6 s after the moment opens (for `fixed` moments; `on_restart` moments lock when the set piece is taken). At lock, an unanswered card is quietly replaced by the next open moment. It never blocks the next one.
+- **Nudge, not churn:** after **2 cards in a row** lock unanswered, the pacer stops and shows one gentle prompt ("Still with us? Tap for the next one"). The feed restarts on the next tap.
+- **Fast users get more.** A user who answers in 2 s picks up the next moment at once.
+- **Join any time.** A user who answered nothing in the first half picks up the very next moment like anyone else.
+- **Lock is shared, never per user.** Every moment locks before its outcome can happen. A user's pace changes which moments they take and how soon, never how long a moment stays open.
+
+**Replay speed and skip.**
+- Each room, including a solo player's private room, runs its **own replay instance**. Only the room creator (the host) can send `control`.
+- The replay runs at 1× whenever cost ≤ 0.45, so "6 seconds to answer" is 6 real seconds. Otherwise it runs at the host's chosen speed (default 15×). A multi-user room runs at 1× while any member has an open card.
+- **Time units:** `open_at`, `lock_at` and `resolve_by` are match seconds. Answer windows are real time.
+- **Skip has one action, `next`:** jump to 3 s before the next calm spell or scheduled moment (player slot, water break, half time, full time), whichever comes first. It never jumps past a designed moment, and skipped events still reach the resolver. Unanswered cards cost nothing, so skipping never hurts the score.
+
+**Timing simulator.** `backend/agents/timing_sim.py` replays the whole match through detector → timing → pacer with simulated users (fast, normal, hesitant, drifting) and writes `data/generated/timing_report.md`. Starting targets, to tune against the report:
+
+| Metric | Target |
+|---|---|
+| Moments per minute in calm play | ≥ 12 |
+| Median wait for a free user before the next card, in calm play | ≤ 2 s |
+| Cards a normal user sees per match | ≥ 100 |
+| Moments opened during a fast attack in motion | 0 |
+| Set-piece cards answered after the kick | 0 |
+| Open cards cut short by an attack | ≤ 10 % |
+| Share of match time that is calm | reported, no target |
+
+Every user moves through the same shared stream of moments at their own pace. Favourite-player moments are the exception only in content: same moment for everyone, but each card names that user's own player.
 
 ### [2] Question generator agent (LLM on Microsoft Foundry, with tools)
 
@@ -154,7 +254,7 @@ Every user in the match receives the same questions at the same match second. Fa
   - `option_probs(template_id, state, params)`, from [3]
   - `fair_line(template_id, player_id, state)`, from [3]
   - `validate_question(q)`, a schema check plus "the resolver has a rule for this template"
-- **Top-2 rule:** every question shows exactly two options. When a template has three possible outcomes, only the two most likely ones under [3] are shown. If the excluded third outcome happens, the question is **void for everyone** and left out of the score denominator. The UI never says "void". It shows a playful line such as *"Plot twist, he went sideways! Nobody saw that coming 😄"*.
+- **Top-2 rule:** every question shows exactly two options. When a template has three possible outcomes, only the two most likely ones under [3] are shown. If the excluded third outcome happens, the question is **void for everyone** and earns nothing and costs nothing. The UI never says "void". It shows a playful line such as *"Plot twist, he went sideways! Nobody saw that coming 😄"*.
 - **Output** is strict JSON matching `contracts/question.schema.json`. If validation fails, it falls back to a default template question with canned text.
 
 **Template catalog (all binary):**
@@ -174,7 +274,7 @@ Every user in the match receives the same questions at the same match second. Fa
 
 Template parameters go in `question.params` and use the names shown in braces: `line`, `window_s`, `team`, plus `dead_zone_m` for `next_pass_dir`.
 
-**Player templates never void.** Both always resolve yes or no. This keeps every user's player-question count equal, which the scoring in [6] depends on. A favourite player who is substituted off counts as "no" for the remaining window, so a good `fair_line` avoids late slots for likely substitutes.
+**Player templates never void.** Both always resolve yes or no. This keeps favourite-player questions equally fair for every user. A favourite player who is substituted off counts as "no" for the remaining window, so a good `fair_line` avoids late slots for likely substitutes.
 
 The catalog is extended by adding a row here, a resolver rule in `backend/resolve/` and a probability function in `backend/model/`, in the same PR.
 
@@ -200,7 +300,7 @@ The catalog is extended by adding a row here, a resolver rule in `backend/resolv
    "facts":{"dx_m":16,"crowd_forward":27}}
   ```
 
-- **Void:** a shared (instant or forecast) question is void for everyone in three cases: the excluded third outcome happens, play stops before the qualifying event (foul, ball out of play), or the window times out. A void question earns no points, does not break a streak, and is left out of the denominator. An attack does **not** void a question (see [1]).
+- **Void:** a shared (instant or forecast) question is void for everyone in three cases: the excluded third outcome happens, play stops before the qualifying event (foul, ball out of play), or the window times out. A void question earns no points, costs nothing and does not break a streak. An attack does **not** void a question (see [1]).
 - **Corrections:** if an event is later amended (`amends` field), the resolver re-resolves and scoring recomputes.
 
 ### [5] Explainer agent (LLM + number guard)
@@ -230,38 +330,53 @@ Its only input is `facts` (plus player and team names). Those are the only numbe
 **Principles:**
 - One fixed formula for everyone.
 - No adjustment by player level.
-- Everyone gets the same number and type of questions, so scores are directly comparable and gift thresholds are fair across matches.
+- **Scoring exists to win sign-ups.** Everything a user does adds points. Nobody should leave feeling their score is low, that they did worse than others, or that their judgement as a newcomer was poor.
+- Each user takes a different number of cards (see the pacer in [2b]). The score rewards how well you answer (quality) and, more gently, how much you play (participation, square root), so a casual player who answers a handful of cards still lands in the middle of the scale.
 
 **Formula:**
 
 ```
-Budgets:     B_instant = 400,  B_forecast = 300,  B_player = 300            (sum 1000)
-Per question in category c:   per_q_c = B_c / n_c
-             n_c = non-void questions issued in c this match (for player: per user; equal for all users)
-Each correct answer earns:    per_q_c × hint × streak
-             hint   = 1.0 (no hint) | 0.5 (hint revealed)
+Per answered question:  +10 for taking part
+If correct:             +20 × streak × hint
              streak = 1.0 (1st in a row) | 1.2 (2nd) | 1.5 (3rd or more, cap)
-Streak:      one streak across all categories, counted in ISSUE order (open_at), computed at FT.
-             correct (with or without hint) → streak +1 ; wrong or unanswered → earns 0, streak resets ;
-             void → skipped (no effect)
-Final score: final = round(1000 × earned / max_possible)
-             max_possible = the same sum for a perfect run (all correct, no hints, full streak)
+             hint   = 1.0 (no hint) | 0.5 (hint revealed)
+Wrong:                  keeps the +10, resets the streak
+Unanswered or void:     earns nothing, costs nothing
+Quality:                quality = min(1, (earned / answered) / typical points per card)
+Participation:          participation = sqrt(min(1, answered / cards a typical engaged player answers))
+Final score:            final = round(600 × quality + 400 × participation)   (0–1000)
+             typical points per card = 22.8 (a player who gets 3 of every 5 right, no hints)
+             typical cards = what a simulated normal-pace user answers in this match (timing simulator, [2b])
 ```
 
-- `max_possible` is identical for every user for three reasons: everyone gets the same questions in the same issue order; shared voids hit everyone; and player templates never void. That keeps the scale 0–1000 even with streak bonuses.
-- Streaks are counted in issue order, not resolution order, because players' windows differ (GK 3 min, ST 90 s) and would otherwise reorder the sequence per user.
-- Unanswered questions, including those missed by joining late, earn 0 and still count in the denominator.
-- `by_category.points` splits `final` by category. Largest-remainder rounding makes the three parts add up exactly to `final`.
-- **During the match:** only ✓ and coin animations appear. No point numbers and no running total, because `per_q` is not known until full time.
+- A newcomer who plays along for most of the match and gets most cards right lands near 1000. A casual user who answers 10 cards and gets 3 right still lands around the middle of the scale.
+- `by_category.points` splits `final` across categories in proportion to the points earned in each. Largest-remainder rounding makes the parts add up exactly to `final`.
+- **During the match:** only ✓ and coin animations appear. No point numbers and no running total, because the scale depends on the typical player and is only known at full time.
+- **Tiers, all positive:** Rookie (< 400), Rising Star (400–699), Super Fan (≥ 700). Every tier gets the membership card.
+- **Ranks only when they flatter.** A rank is shown only when the user is in the top half of global, room or friends. Otherwise the card shows the user's best moment: best streak, a hard question they got right, or their player questions.
+- **Fun radar** (`score.final.radar`). Six axes, each 0–100, scored the same positive way as the total, and `null` when the user has nothing on that axis. Axes are built from what the backend owns (moment situation, category, answer speed, streak), never from template ids. The backend publishes only the numbers; the frontend decides what to show.
+
+  | Axis | Built from |
+  |---|---|
+  | 🔮 `crystal_ball` | forecast cards (kickoff, half time, water break) |
+  | 🧠 `galaxy_brain` | cards during calm open play |
+  | ☕ `pause_pro` | cards during stoppages, set-piece waits, referee moments |
+  | 💘 `bestie_mode` | favourite-player cards |
+  | ⚡ `lightning_thumbs` | answer speed |
+  | 🔥 `on_fire` | streaks |
+
 - **Score card metrics:**
-  - final score
+  - final score and tier
   - hit rate (correct / answered)
   - correct per category
   - best streak
   - hints used
   - terms learned
-  - rank in room / friends / global
-- **[6b] Scoring agent:** an LLM writes a one-paragraph summary of the card, such as *"You read backward passes well and called 2 of 4 forecasts."* It is number-guarded like [5], and it never changes a number.
+  - the fun radar
+  - rank in room / friends / global, only when it flatters
+- **[6b] Scoring agent:** an LLM writes a one-paragraph summary of the card, such as *"You read backward passes well and called 2 of 4 forecasts."* It writes only praise built from the user's real numbers. It is number-guarded like [5], and it never changes a number.
+
+The worked example for this formula will live in `backend/tests/test_scoring.py`.
 
 ### Social layer: three scopes (all required)
 
@@ -277,7 +392,7 @@ Final score: final = round(1000 × earned / max_possible)
 
 1. Score card (see [6]).
 2. Email sign-up form. **Mock:** nothing is sent; the address is held in memory only.
-3. Web membership card: name, score, tier (Bronze < 400, Silver 400–699, Gold ≥ 700), and a QR code, with an "Add to Wallet" button. The button shows the card full-screen; a real `.pkpass` needs a paid Apple Developer certificate and is future work.
+3. Web membership card: name, score, tier (Rookie < 400, Rising Star 400–699, Super Fan ≥ 700), and a QR code, with an "Add to Wallet" button. The button shows the card full-screen; a real `.pkpass` needs a paid Apple Developer certificate and is future work.
 4. Gift redemption at a partner store, described as a concept in the pitch.
 
 ### Enterprise side: ops funnel dashboard (simulated)
@@ -297,13 +412,13 @@ Each agent follows the same split: **the LLM decides, and code tools execute and
 
 | Agent | LLM decides | Code tools it calls |
 |---|---|---|
-| Timing agent [2b] | Which template family, rapid-fire or single, pop-up tone | Detector state, slot schedule, cooldown/caps check |
+| Timing agent [2b] | Open now or hold, and the pop-up tone | Interruption cost, gate rules, schedule of fixed moments |
 | Question generator [2] | Template choice, parameters, plain-English wording | `option_probs`, `fair_line`, `validate_question` |
 | Explainer [5] | Result sentence, concept to teach, catch-up card line | Number guard, template fallback |
 | Scoring agent [6b] | End-of-match summary | Scoring formula (read-only), number guard |
 
 Hand-offs:
-1. The timing agent opens a slot.
+1. The timing agent opens a moment.
 2. The generator fills it.
 3. The resolver (code) settles it.
 4. The explainer narrates.
@@ -341,9 +456,9 @@ The end-of-match summary depends on each user's answers, so in cache mode it is 
 ...  9 passes in 25s, all with x between 38 and 62
 ```
 
-Detector at 34:10: `ball_mid_third=1.0, max_xT=0.04, last_shot=6m12s, poss_len=11` gives **dull_score = 0.82**. It has stayed above 0.7 for 8 seconds, so **game mode starts at 34:18.**
+Detector at 34:10: `not_final_third=1.0, max_xT=0.04, last_shot=6m12s, poss_len=11` gives **dull_score = 0.82**. Players are jogging and the ball carrier has space, so the timing agent's interruption cost is low (calm play).
 
-**② 34:18: timing agent + question generator.** The timing agent opens an instant slot. The generator picks `next_pass_dir` and asks [3] for option probabilities. The ball is with Okafor at x=52, the nearest defender is 6m away, and this is pass 12 of the possession:
+**② 34:18: timing agent + question generator.** The timing agent opens an instant moment. The generator picks `next_pass_dir` and asks [3] for option probabilities. The ball is with Okafor at x=52, the nearest defender is 6m away, and this is pass 12 of the possession:
 
 | Outcome | P | Shown? |
 |---|---|---|
@@ -351,7 +466,7 @@ Detector at 34:10: `ball_mid_third=1.0, max_xT=0.04, last_shot=6m12s, poss_len=1
 | Forward | 0.41 | ✅ |
 | Sideways | 0.15 | ❌ (excluded third: if it happens, the question is void) |
 
-Every phone in the match shows the same card:
+Every user who picks up this moment sees the same card:
 
 > "Northbridge are passing it around midfield. **Next pass: forward or back?**
 > ⬆ Forward · ⬇ Back"  ·  💡 *Hint (costs half points)*
@@ -380,7 +495,7 @@ Guard check: 16 and 27 are both in `facts`, so the explanation is sent. The crow
 
 > "Northbridge cut through the middle in **3** passes, Mensah shot from **18m** and Ward saved it!"  🧤 *your player!*
 
-Alex now knows why the room shouted, and that it involved their own player. No new instant question until 35:25 at the earliest (45s cooldown after the attack ended at 34:40).
+Alex now knows why the room shouted, and that it involved their own player. No new instant question until 34:48 at the earliest (8 s after the attack ended at 34:40, so the catch-up card shows first).
 
 **⑦ 40:00: favourite-player slot.** Every user gets a question about *their own* player at the same moment. For Ward, a goalkeeper, `fair_line` tunes the window to 3 minutes (P(touch)=0.50):
 
@@ -390,21 +505,7 @@ A friend who picked striker Doyle gets "…in the next 90 seconds?" at the same 
 
 **⑧ Half time.** The replay pauses, and three cards stack up: `card_second_half`, `second_half_goal` and Ward's `player_stat_over` "2+ saves this half?" (P=0.49). (At kickoff the stack was `goals_over` with line 2 (P=0.51), `team_wins`, and Ward's first-half stat question.)
 
-**⑨ Full time.** In issue order Alex got 22 non-void questions: 14 instant, 4 forecast and 4 player. So per_q is 400/14 ≈ 28.6, 300/4 = 75 and 300/4 = 75. A perfect run would earn max_possible = 1440.
-
-Alex's results:
-- answered 19 of 22, got 13 right
-- used 2 hints
-- best streak 4
-
-| | instant | forecast | player | total |
-|---|---|---|---|---|
-| correct / issued | 8 / 14 | 2 / 4 | 3 / 4 | 13 / 22 |
-| points (share of 1000) | 186 | 104 | 141 | **431** |
-
-The scoring agent adds *"You called 3 of 4 questions about Ward, your goalkeeper."* 431 is Silver tier. Alex enters an email (mock) and gets the membership card with a QR code.
-
-These numbers come from running the formula exactly as written: streak in issue order, hints ×0.5, largest-remainder split. Use this case as the first unit-test fixture for `backend/scoring/`. The answer sequence by issue order is `C W H | W - C C W | C | C C | W C C | C C W C | - | - W H` (C = correct, H = correct with hint, W = wrong, - = unanswered). The issue order is: 2 forecast + 1 player at kickoff · 5 instant · player slot · 2 instant · 2 forecast + 1 player at HT · 4 instant · player slot · 3 instant.
+**⑨ Full time.** Alex's answers become a final score, a tier and a fun radar by the formula in [6]. The scoring agent adds *"You called 3 of 4 questions about Ward, your goalkeeper."* Alex enters an email (mock) and gets the membership card with a QR code.
 
 ---
 
@@ -424,8 +525,8 @@ The scope is larger than 3 people can build in 3 days, and only one of them work
 ## Demo
 
 **Judge try-out:**
-- Runs at 15× by default (a full match in about 6 minutes) and slows down automatically during dull stretches so there is time to answer.
-- Buttons skip to the next dull stretch, to half time, or to full time.
+- Runs at the host's speed (15× by default) and drops to 1× in calm play, so there is time to answer. The run time depends on how much of the match is calm (see `data/generated/timing_report.md`); the next button keeps the try-out short.
+- One "next" button skips to the next calm spell or scheduled moment (player slot, water break, half time, full time), never past one.
 - Bot friends make the room feel alive even with one player.
 
 **Video (under 2 minutes, scripted edit):**
@@ -436,7 +537,7 @@ The scope is larger than 3 people can build in 3 days, and only one of them work
 | 0:10–0:35 | Dull meter rises → question → lock → ✓ coins → explanation + room split |
 | 0:35–0:50 | Attack: the phone goes quiet → catch-up card |
 | 0:50–1:05 | Half time: forecast + favourite-player question (show GK vs ST windows side by side) |
-| 1:05–1:30 | Skip to FT: score card → sign-up → membership card |
+| 1:05–1:30 | Tap next through to FT: score card → sign-up → membership card |
 | 1:30–1:45 | Ops funnel dashboard (enterprise value) |
 | 1:45–1:58 | Evidence slide: detector hits/misses on hand-labelled stretches; favourite-player P(yes) per position ≈ 0.5 (fairness); agent diagram |
 

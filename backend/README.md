@@ -13,11 +13,12 @@ Suggested split (swap freely, but write down who owns what in the PR description
 
 | Folder | Pipeline stage | Main entry point (target signature) |
 |---|---|---|
-| `ingest/` | [0] Match data adapter: reads the teammate's dataset in `../data/source/` | `load_match(match_id: str) -> tuple[list[MatchEvent], Roster]` |
-| `detect/` | [1] Dull-moment + attack-end detector | `Detector.step(t: float, recent: list[MatchEvent]) -> DetectorState` |
+| `ingest/` | [0] Match data adapter: reads the teammate's dataset in `../data/source/` (until it lands: `sim-placeholder/`) | `load_match(match_id: str) -> Match` (`.events`, `.roster`, `.tracking` or None) |
+| `detect/` | [1] Dull-moment + attack-end detector | `Detector.step(half: int, t: float, new_events: list[MatchEvent], tracking_frame: TrackingFrame \| None) -> DetectorState` |
 | `model/` | [3] Probability model | `option_probs(template_id, state, params) -> dict[str, float]`; `fair_line(template_id, player_id, state) -> params` |
-| `agents/question_generator.py` | [2] Question generator agent | `propose(state, slot) -> Question` (template + params + text, top-2 options) |
-| `agents/timing.py` | [2b] Timing agent | `plan(detector_state, schedule) -> Slot \| None` |
+| `agents/question_generator.py` | [2] Question generator agent (Stephen) | `propose(state: DetectorState, moment: Moment, user_player_id: str \| None) -> Question \| None` (template + params + text, top-2 options). Until it exists the app uses `agents/question_generator_stub.py`. |
+| `agents/timing.py` | [2b] Timing agent: when and why, never what | `TimingAgent.step(state: DetectorState) -> TimingOutput` (`.moments`, `.decisions`) |
+| `app/pacer.py` | Per-user pace through the shared moments | `Pacer.next_card(t, open_moments) -> Moment \| None` |
 | `resolve/` | [4] Resolver | `resolve(question, events_after_lock) -> QuestionResult \| None` |
 | `agents/explainer.py` | [5] Explainer agent + number guard | `explain(result, facts) -> str` |
 | `scoring/` | [6] Scoring formula | `final_score(user_answers, issued) -> FinalScore` |
@@ -25,7 +26,7 @@ Suggested split (swap freely, but write down who owns what in the PR description
 | `social/` | Rooms + **simulated users**: global crowd answers, bot friends, ops funnel numbers (match data comes from `data/source/`, user behaviour is generated here) | `crowd_split(qid, scope) -> dict[str, float]` |
 | `app/` | FastAPI app, `/ws`, `/api/*`, replay clock | `uvicorn backend.app.main:app` |
 
-Payload shapes come from `../contracts/`. Mirror them as Pydantic models in `app/models.py` and do not invent fields.
+Payload shapes come from `../contracts/`. Mirror them as Pydantic models in `app/models.py` and do not invent fields. Internal types shared between stages (`Match`, `DetectorState`, `Moment`, `TimingDecision`, `TimingOutput`, `Outcome`, `Answer`) live in `core/types.py`.
 
 ## Rules
 - **Code decides, LLM phrases.** Resolver and scoring never call an LLM.
