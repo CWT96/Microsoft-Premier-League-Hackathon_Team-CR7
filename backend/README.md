@@ -15,7 +15,7 @@ Suggested split (swap freely, but write down who owns what in the PR description
 |---|---|---|
 | `ingest/` | [0] Match data adapter: reads the teammate's dataset in `../data/source/` (until it lands: `sim-placeholder/`) | `load_match(match_id: str) -> Match` (`.events`, `.roster`, `.tracking` or None) |
 | `detect/` | [1] Dull-moment + attack-end detector | `Detector.step(half: int, t: float, new_events: list[MatchEvent], tracking_frame: TrackingFrame \| None) -> DetectorState` |
-| `model/` | [3] Probability model | `option_probs(template_id, state, params) -> dict[str, float]`; `fair_line(template_id, player_id, state) -> params` |
+| `model/` | [3] Probability model | `option_probs(template_id, state, params) -> dict[str, float]`; `fair_line(template_id, player_id, state) -> params`. Player templates read `params["player_id"]` (copy it from `Question.player_id`; the resolver reads that field). Warm `get_model()` at app startup. |
 | `agents/question_generator.py` | [2] Question generator agent (Stephen) | `propose(state: DetectorState, moment: Moment, user_player_id: str \| None) -> Question \| None` (template + params + text, top-2 options). Until it exists the app uses `agents/question_generator_stub.py`. |
 | `agents/timing.py` | [2b] Timing agent: when and why, never what | `TimingAgent.step(state: DetectorState) -> TimingOutput` (`.moments`, `.decisions`) |
 | `app/pacer.py` | Per-user pace through the shared moments | `Pacer.next_card(t, open_moments) -> Moment \| None` |
