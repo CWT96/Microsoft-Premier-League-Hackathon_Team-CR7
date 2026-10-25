@@ -2,7 +2,7 @@
   {
     "id": "next_pass_dir",
     "kind": "instant",
-    "text": "Next pass: forward, sideways or back?",
+    "text": "Next pass: forward or back?",
     "options": [
       "forward",
       "sideways",
