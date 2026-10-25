@@ -21,3 +21,9 @@ DEFAULT_MATCH_ID = "nbr-cal-seed42"
 
 RESTART_TYPES = frozenset({"throw_in", "goal_kick", "corner", "free_kick", "penalty"})
 STOPPAGE_TYPES = frozenset({"substitution", "injury", "var_check"})
+
+EVENT_TYPES = frozenset({
+    "kickoff", "pass", "carry", "shot", "save", "clearance", "tackle", "interception", "foul",
+    "card", "out", "goal", "half_end", "full_end", "throw_in", "goal_kick", "corner", "free_kick",
+    "penalty", "substitution", "injury", "var_check", "water_break_start", "water_break_end",
+})

@@ -1,6 +1,9 @@
 """Shared types serialise to contract-valid payloads."""
 
-from backend.core.types import MatchEvent, TimingDecision, TrackingFrame, clock_key
+import pytest
+
+from backend.core.types import (MatchEvent, Moment, Player, Roster, TimingDecision, TrackingFrame,
+                                clock_key, player_qid)
 from backend.tests.contract_utils import validate
 
 
@@ -41,3 +44,33 @@ def test_timing_decision_validates() -> None:
 
 def test_clock_key_orders_second_half_after_first_half_stoppage() -> None:
     assert clock_key(1, 2760) < clock_key(2, 2700)
+
+
+def test_moment_is_hashable_despite_dict_field() -> None:
+    m = Moment(moment_id="q-1", kind="instant", category="instant", open_at=1, lock_at=7,
+               lock_rule="fixed", situation="calm_play", cost=0.2, half=1,
+               situation_detail={"team": "NBR"})
+    assert m in {m}
+
+
+def test_unknown_event_type_rejected() -> None:
+    with pytest.raises(ValueError):
+        MatchEvent(id="x", t=1, half=1, team="NBR", type="dance")
+
+
+def test_timing_decision_requires_cost() -> None:
+    with pytest.raises(ValueError):
+        TimingDecision(t=1, half=1, action="open", source="rule", reason="r", inputs={})
+
+
+def test_roster_lookup_and_opponent() -> None:
+    r = Roster(home="NBR", away="CAL", home_name="Northbridge FC", away_name="Calder Town",
+               players=(Player("nbr-1", "Hale", "NBR", "GK", 1),))
+    assert r.by_id()["nbr-1"].name == "Hale"
+    assert r.opponent("NBR") == "CAL"
+    with pytest.raises(ValueError):
+        r.opponent("XYZ")
+
+
+def test_player_qid() -> None:
+    assert player_qid("q-40", "cal-1") == "q-40-cal-1"

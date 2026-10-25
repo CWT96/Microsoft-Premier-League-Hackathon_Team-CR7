@@ -5,6 +5,9 @@ The types here are internal: they flow between ingest → detector → timing �
 resolver → scoring inside one process. ``to_contract()`` turns the ones that are published
 into contract-shaped dicts.
 
+Dict-valued fields are excluded from ``==`` and ``hash`` (``_dict_field``) so frozen objects stay
+hashable. **Never mutate them**: one ``Moment`` is shared by every user.
+
 Clock: ``t`` is the displayed match clock in seconds. The second half starts at t = 2700
 even after first-half stoppage time, so always order by ``(half, t)`` (see ``clock_key``).
 """
@@ -13,6 +16,8 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field
 from typing import Any, Literal
+
+from backend.core.constants import EVENT_TYPES
 
 Position = Literal["GK", "DF", "MF", "FW"]
 Mode = Literal["lobby", "live", "attack", "break", "full_time"]
@@ -39,6 +44,16 @@ LockRule = Literal["fixed", "on_restart"]
 
 TimingAction = Literal["open", "hold", "blocked", "scheduled", "silent", "calm"]
 TimingSource = Literal["llm", "rule", "rule_fallback", "schedule"]
+
+
+def _dict_field() -> Any:
+    """A dict field left out of equality and hashing (treat as read-only)."""
+    return field(default_factory=dict, hash=False, compare=False)
+
+
+def player_qid(moment_id: str, player_id: str) -> str:
+    """qid of a player moment, which differs per user: ``<moment id>-<player_id>``."""
+    return f"{moment_id}-{player_id}"
 
 
 def clock_key(half: int, t: float) -> tuple[int, float]:
@@ -70,15 +85,24 @@ class Roster:
     home_name: str
     away_name: str
     players: tuple[Player, ...]
+    _index: dict[str, Player] = field(init=False, repr=False, hash=False, compare=False)
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "_index", {p.player_id: p for p in self.players})
 
     def by_id(self) -> dict[str, Player]:
-        return {p.player_id: p for p in self.players}
+        """Player lookup (cached; do not mutate)."""
+        return self._index
 
     def team_players(self, team: str) -> tuple[Player, ...]:
         return tuple(p for p in self.players if p.team == team)
 
     def opponent(self, team: str) -> str:
-        return self.away if team == self.home else self.home
+        if team == self.home:
+            return self.away
+        if team == self.away:
+            return self.home
+        raise ValueError(f"unknown team {team!r}")
 
 
 @dataclass(frozen=True)
@@ -100,17 +124,22 @@ class MatchEvent:
     amends: str | None = None
     related_player_id: str | None = None
 
+    def __post_init__(self) -> None:
+        if self.type not in EVENT_TYPES:
+            raise ValueError(f"unknown event type {self.type!r}")
+
     def to_contract(self) -> dict[str, Any]:
         """Contract dict; drops absent optional fields (start/end may not be null)."""
-        d = asdict(self)
-        out: dict[str, Any] = {k: d[k] for k in ("id", "t", "half", "team", "type")}
-        out["player_id"] = self.player_id
+        out: dict[str, Any] = {"id": self.id, "t": self.t, "half": self.half, "team": self.team,
+                               "type": self.type, "player_id": self.player_id}
         for k in ("start", "end"):
-            if d[k] is not None:
-                out[k] = list(d[k])
+            v = getattr(self, k)
+            if v is not None:
+                out[k] = list(v)
         for k in ("outcome", "amends", "related_player_id"):
-            if d[k] is not None:
-                out[k] = d[k]
+            v = getattr(self, k)
+            if v is not None:
+                out[k] = v
         return out
 
 
@@ -137,7 +166,7 @@ class TrackingFrame:
 
 @dataclass(frozen=True)
 class Tracking:
-    frames: dict[tuple[int, int], TrackingFrame]  # key: (half, int(t))
+    frames: dict[tuple[int, int], TrackingFrame] = field(hash=False, compare=False)  # (half, int(t))
 
     def at(self, half: int, t: float) -> TrackingFrame | None:
         return self.frames.get((half, int(t)))
@@ -175,21 +204,21 @@ class DetectorState:
     score_home: int
     score_away: int
     situation: Situation
-    situation_detail: dict[str, Any]  # e.g. {"restart": "corner", "team": "NBR", "x": 105}
     dull_score: float  # pipeline.md §[1] mean of sub-scores, 0–1
-    dull_parts: dict[str, float]  # pass_rate, not_final_third, low_threat, shot_gap, possession
     threat: float  # max xT in the last 10 s, 0–1
     movement: float | None  # mean player speed over 3 s, 0 m/s → 0, ≥ 3 m/s → 1
     pressure_m: float | None  # ball carrier to nearest opponent, metres
     ball_xy: tuple[float, float] | None  # in the possession team's attacking frame
     ball_zone: BallZone | None  # relative to the possession team
     possession_team: str | None
-    seconds_since_shot: float  # since kickoff if no shot yet
+    seconds_since_shot: float  # since the last shot, or since kickoff if none yet
     last_attack_end_t: float | None
     attack_active: bool
     restart_pending: bool  # a restart was awarded and has not been taken yet
     restart_taken: bool  # the pending restart was taken in this second
-    new_event_ids: tuple[str, ...] = ()
+    new_events: tuple[MatchEvent, ...] = ()  # events that arrived in this second
+    situation_detail: dict[str, Any] = _dict_field()  # e.g. {"restart": "corner", "team": "NBR"}
+    dull_parts: dict[str, float] = _dict_field()  # pass_rate, not_final_third, low_threat, ...
 
 
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -215,10 +244,10 @@ class Moment:
     lock_at: float
     lock_rule: LockRule
     situation: MomentSituation
-    situation_detail: dict[str, Any]
     cost: float
     half: int
     tone: str | None = None
+    situation_detail: dict[str, Any] = _dict_field()
 
 
 @dataclass(frozen=True)
@@ -230,11 +259,17 @@ class TimingDecision:
     action: TimingAction
     source: TimingSource
     reason: str
-    inputs: dict[str, Any]  # must contain "cost"
     moment_ids: tuple[str, ...] = ()
     situation: str | None = None
     tone: str | None = None
     blocked_by: str | None = None
+    inputs: dict[str, Any] = _dict_field()  # must contain "cost"
+
+    def __post_init__(self) -> None:
+        if "cost" not in self.inputs:
+            raise ValueError("TimingDecision.inputs must contain 'cost'")
+        if len(self.reason) > 200 or (self.tone is not None and len(self.tone) > 40):
+            raise ValueError("reason ≤ 200 and tone ≤ 40 characters (contract)")
 
     def to_contract(self) -> dict[str, Any]:
         d = asdict(self)
@@ -263,18 +298,23 @@ class Outcome:
     status: Literal["resolved", "void"]
     correct_option: str | None
     evidence: tuple[str, ...]
-    facts: dict[str, Any] = field(default_factory=dict)
     resolved_at: float | None = None
+    facts: dict[str, Any] = _dict_field()
 
 
 @dataclass(frozen=True)
 class Answer:
-    """One user's interaction with one card they were shown."""
+    """One user's interaction with one card they were shown.
+
+    Scoring joins it to the shared ``Outcome`` by ``qid``. ``answer_latency_s`` is measured
+    from the moment the card reached this user.
+    """
 
     qid: str
     category: Category
     situation: MomentSituation
     open_at: float
+    lock_at: float
     half: int
     option: str | None  # None = shown but not answered
     answer_latency_s: float | None
