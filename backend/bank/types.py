@@ -3,7 +3,10 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
-from typing import Literal
+from typing import TYPE_CHECKING, Literal
+
+if TYPE_CHECKING:
+    from backend.resolve.primitives import Ctx
 
 Kind = Literal["instant", "window", "player"]
 CATEGORY = {"instant": "instant", "window": "forecast", "player": "player"}
@@ -73,6 +76,7 @@ class Candidate:
     window: Window
     resolve_by: float | Literal["HT", "FT"]
     player_id: str | None
+    context: Ctx  # match context when asked (possession, trailing team); used to settle
 
     @property
     def key(self) -> str:

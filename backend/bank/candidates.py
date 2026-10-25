@@ -1,6 +1,7 @@
 """Build every valid candidate question of one kind at this moment."""
 from __future__ import annotations
 
+from backend.bank.context import ctx_for
 from backend.bank.guards import GUARDS, HALF_LEN, _seconds, window_for
 from backend.bank.loader import fill_text
 from backend.bank.types import CATEGORY, Candidate, Kind, MatchState, Player, Template
@@ -86,6 +87,7 @@ def _try(t: Template, params: dict, state: MatchState, player, lock_at: float) -
         window=window_for(t, params, state, lock_at),
         resolve_by=_resolve_by(params, state, lock_at),
         player_id=player.player_id if player else None,
+        context=ctx_for(t, params, state, player),
     )
 
 
