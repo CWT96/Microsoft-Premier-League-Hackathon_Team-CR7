@@ -377,7 +377,8 @@
       "fits_clock",
       "prob_band",
       "no_repeat",
-      "max_open_windows"
+      "max_open_windows",
+      "p_none_below_0.35"
     ],
     "teaches": "shot"
   },

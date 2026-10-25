@@ -133,3 +133,11 @@ def test_forward_gets_shot_window_at_20min():
     c = only(build_candidates("player", s, BANK, 1200, fw), "player_shot_window")
     assert 1206 + c.params["window_s"] <= 2700
     assert 0.40 <= c.p["yes"] <= 0.60
+
+
+def test_who_shoots_first_skipped_when_no_shot_is_likely(monkeypatch):
+    assert "p_none_below_0.35" in BANK["who_shoots_first"].guards
+    monkeypatch.setitem(PRICERS, "poisson_first",
+                        lambda *a: {"home": 0.3, "away": 0.3, "none": 0.4})
+    ids = {c.template_id for c in build_candidates("window", _state(), BANK, 1200)}
+    assert "who_shoots_first" not in ids
