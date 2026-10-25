@@ -104,14 +104,18 @@ def max_open_windows(t: Template, params: dict, s: MatchState, player, probs) ->
     return s.open_window_count < 2
 
 
+def sent_off(player: Player, events: list[dict]) -> bool:
+    """True if the player has been shown a red card."""
+    return any(e.get("player_id") == player.player_id and e.get("type") == "card"
+               and e.get("outcome") == "red" for e in events)
+
+
 def player_active(t: Template, params: dict, s: MatchState, player, probs) -> bool:
     """Player acted in the last 10 minutes and has not been sent off."""
-    if player is None:
+    if player is None or sent_off(player, s.events):
         return False
-    mine = [e for e in s.events if e.get("player_id") == player.player_id]
-    if any(e.get("type") == "card" and e.get("outcome") == "red" for e in mine):
-        return False
-    return any(e["t"] >= s.t - _ACTIVE_S for e in mine)
+    return any(e["t"] >= s.t - _ACTIVE_S for e in s.events
+               if e.get("player_id") == player.player_id)
 
 
 def position_fit(t: Template, params: dict, s: MatchState, player, probs) -> bool:

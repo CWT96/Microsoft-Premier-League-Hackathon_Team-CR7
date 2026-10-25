@@ -21,15 +21,18 @@ def slot_rng(match_id: str, open_at: float) -> random.Random:
 
 
 def _player_candidates(state: MatchState, bank: dict[str, Template], open_at: float,
-                       player: Player) -> list[Candidate]:
-    """Candidates for the player, else a touch question about a same-position teammate."""
-    cands = build_candidates("player", state, bank, open_at, player)
+                       player: Player, **opts) -> list[Candidate]:
+    """Candidates for the player, else a touch question about a same-position teammate.
+
+    opts are passed to build_candidates (stacks use them for serve_lag, skip_guards, phase).
+    """
+    cands = build_candidates("player", state, bank, open_at, player, **opts)
     if cands:
         return cands
     for mate in state.roster.values():
         if (mate.player_id != player.player_id and mate.team == player.team
                 and mate.position == player.position):
-            found = [c for c in build_candidates("player", state, bank, open_at, mate)
+            found = [c for c in build_candidates("player", state, bank, open_at, mate, **opts)
                      if c.template_id == "player_touch_window"]
             if found:
                 return found

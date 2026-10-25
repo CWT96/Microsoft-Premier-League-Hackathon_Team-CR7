@@ -2,9 +2,9 @@
 from __future__ import annotations
 
 from backend.bank.context import ctx_for
-from backend.bank.guards import GUARDS, HALF_LEN, _seconds, window_for
+from backend.bank.guards import GUARDS, HALF_LEN, _seconds, sent_off, window_for
 from backend.bank.loader import fill_text
-from backend.bank.types import CATEGORY, Candidate, Kind, MatchState, Player, Template
+from backend.bank.types import CATEGORY, Candidate, Kind, MatchState, Phase, Player, Template
 from backend.model.poisson import PRICERS, count_already, tune_player
 
 _SERVE_LAG = 6.0
@@ -75,15 +75,19 @@ def _options(t: Template, probs: dict[str, float]) -> tuple[list[str], dict[str,
     return opts, p
 
 
-def _try(t: Template, params: dict, state: MatchState, player, lock_at: float) -> Candidate | None:
+def _try(t: Template, params: dict, state: MatchState, player, lock_at: float,
+         skip_guards: frozenset[str] = frozenset(),
+         phase: Phase | None = None) -> Candidate | None:
+    if phase and player is not None and sent_off(player, state.events):
+        return None  # stacks skip player_active, but a sent-off player is never asked about
     probs = PRICERS[t.prob](t, params, state, player)
     for name in t.guards:
-        if not GUARDS[name](t, params, state, player, probs):
+        if name not in skip_guards and not GUARDS[name](t, params, state, player, probs):
             return None
     opts, p = _options(t, probs)
     return Candidate(
         template_id=t.id, kind=t.kind, category=CATEGORY[t.kind], params=params,
-        text=fill_text(t, params, state, player), options=opts, p=p,
+        text=fill_text(t, params, state, player, phase), options=opts, p=p,
         window=window_for(t, params, state, lock_at),
         resolve_by=_resolve_by(params, state, lock_at),
         player_id=player.player_id if player else None,
@@ -92,11 +96,16 @@ def _try(t: Template, params: dict, state: MatchState, player, lock_at: float) -
 
 
 def build_candidates(kind: Kind, state: MatchState, bank: dict[str, Template],
-                     open_at: float, player: Player | None = None) -> list[Candidate]:
-    """All valid candidates of one kind at this moment."""
+                     open_at: float, player: Player | None = None, *,
+                     serve_lag: float = _SERVE_LAG, skip_guards: frozenset[str] = frozenset(),
+                     phase: Phase | None = None) -> list[Candidate]:
+    """All valid candidates of one kind at this moment.
+
+    Stacks pass serve_lag=0, the guards to skip and their phase (for the "first N minutes" text).
+    """
     if kind == "player" and player is None:
         return []
-    lock_at = open_at + _SERVE_LAG
+    lock_at = open_at + serve_lag
     half_end = HALF_LEN * state.half
     minutes_left = (half_end - state.t) / 60
     # A tuned window starts at the lock, so it must fit between lock_at and half end.
@@ -138,7 +147,7 @@ def build_candidates(kind: Kind, state: MatchState, bank: dict[str, Template],
                         params["line"] = count_already(t, params, state, pl) + tuned
                     else:
                         params["line"] = _tune_line(t, params, state, pl)
-                c = _try(t, params, state, pl, lock_at)
+                c = _try(t, params, state, pl, lock_at, skip_guards, phase)
                 if c is not None:
                     found.append(c)
         if t.rare and found:

@@ -9,6 +9,7 @@ if TYPE_CHECKING:
     from backend.resolve.primitives import Ctx
 
 Kind = Literal["instant", "window", "player"]
+Phase = Literal["kickoff", "half_time"]
 CATEGORY = {"instant": "instant", "window": "forecast", "player": "player"}
 
 
@@ -90,3 +91,12 @@ class SlotDecision:
     kind: Kind
     shared: Candidate | None  # set for instant/window
     per_user: dict[str, Candidate] | None  # user_id -> candidate, set for player
+
+
+@dataclass(frozen=True)
+class StackDecision:
+    """Questions asked together at a restart: kickoff or half time."""
+    phase: Phase
+    open_at: float  # match second the stack opens (the restart t)
+    shared: list[Candidate]  # 0..2 window candidates, distinct template ids
+    per_user: dict[str, Candidate] | None  # user_id -> candidate, None if no player card

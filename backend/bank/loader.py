@@ -19,6 +19,7 @@ _WINDOW_LABELS = {
     "half": "the rest of this half",
     "match": "this match",
 }
+_MINUTE_WINDOWS = {"5m": 300, "10m": 600, "20m": 1200}
 _STAT_WORDS = {
     "save": "saves",
     "clearance": "clearances",
@@ -43,17 +44,29 @@ def load_bank(path: Path | None = None) -> dict[str, Template]:
     return bank
 
 
-def window_label(window: str | int) -> str:
-    """Plain-English label: a window name ("5m", "half", "match") or a length in seconds."""
+def window_label(window: str | int, phase: str | None = None) -> str:
+    """Plain-English label: a window name ("5m", "half", "match") or a length in seconds.
+
+    phase "kickoff" or "half_time" (a stack) turns "the next N minutes" into
+    "the first N minutes" (of the second half, at half time). Named windows are unchanged.
+    """
     if isinstance(window, str):
-        return _WINDOW_LABELS[window]
+        if window in _MINUTE_WINDOWS:
+            window = _MINUTE_WINDOWS[window]
+        else:
+            return _WINDOW_LABELS[window]
     if window % 60 == 0:
         minutes = window // 60
-        return "the next minute" if minutes == 1 else f"the next {minutes} minutes"
-    return f"the next {window} seconds"
+        span = "minute" if minutes == 1 else f"{minutes} minutes"
+    else:
+        span = f"{window} seconds"
+    if phase is None:
+        return f"the next {span}"
+    return f"the first {span}" + (" of the second half" if phase == "half_time" else "")
 
 
-def fill_text(template: Template, params: dict, state: MatchState, player: Player | None) -> str:
+def fill_text(template: Template, params: dict, state: MatchState, player: Player | None,
+              phase: str | None = None) -> str:
     """Fill a template's placeholders. params["team"] is a team code; team names come from state."""
     names = state.team_names
     team = params.get("team") or state.possession_team or state.home
@@ -69,5 +82,5 @@ def fill_text(template: Template, params: dict, state: MatchState, player: Playe
     }
     window = params.get("window", params.get("window_s"))
     if window is not None:
-        values["window_label"] = window_label(window)
+        values["window_label"] = window_label(window, phase)
     return template.text.format_map(values)
