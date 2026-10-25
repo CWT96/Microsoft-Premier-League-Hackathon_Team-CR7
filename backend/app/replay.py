@@ -40,8 +40,7 @@ from backend.app.pacer import Pacer
 from backend.core.constants import DEFAULT_MATCH_ID
 from backend.core.types import (Answer, DetectorState, Match, Moment, Outcome, Roster)
 from backend.resolve import Resolver
-from backend.scoring import final_score
-from backend.scoring.scoring import _scored  # same streak rule as the final score
+from backend.scoring import current_streak, final_score
 from backend.social.bots import Bot, make_bots
 from backend.social.crowd import split_for_result
 from backend.social.leaderboard import (GLOBAL_PLAYERS, leaderboard, simulated_global_entries)
@@ -68,6 +67,10 @@ TYPICAL_CARDS_FALLBACK = 40
 TIMED_KINDS = frozenset({"instant", "player_instant"})
 BOT_PLAYER_STRIDE = 3  # bot i follows roster player (i * stride + 1)
 TIMING_POLICY_ENV = "TIMING_POLICY"
+MAX_ROOM_MEMBERS_ENV = "MAX_ROOM_MEMBERS"
+DEFAULT_MAX_ROOM_MEMBERS = 12
+EMPTY_ROOM_TTL_S = 60.0  # a room without a human is reaped after this
+LOBBY_TTL_S = 900.0  # a lobby nobody resumes is reaped after 15 minutes
 MAX_CONSECUTIVE_FAILURES = 5  # failing ticks in a row before the room is ended
 
 Send = Callable[[dict[str, Any]], None]
@@ -136,6 +139,7 @@ class Card:
     used_hint: bool = False
     hint: tuple[str, float] | None = None
     locked: bool = False
+    seq: int = 0  # delivery order for this member
     free_t: float | None = None  # bots: match time when the bot is free again
 
 
@@ -152,12 +156,17 @@ class Member:
     cards: dict[str, Card] = field(default_factory=dict)
     terms: list[str] = field(default_factory=list)
     nudged: bool = False
+    next_seq: int = 0
 
     def __post_init__(self) -> None:
         self.pacer = Pacer(self.user_id)
 
     def emit(self, type_: str, data: dict[str, Any]) -> None:
         self.send({"type": type_, "data": data})
+
+
+class RoomFull(Exception):
+    """The room already has the maximum number of human members."""
 
 
 @dataclass
@@ -193,7 +202,8 @@ class Room:
 
     def __init__(self, room_id: str, bundle: MatchBundle, *, propose: Callable | None = None,
                  now: Callable[[], float] = time.monotonic, speed: float | None = None,
-                 on_final: Callable[[str, str, dict[str, Any]], None] | None = None) -> None:
+                 on_final: Callable[[str, str, dict[str, Any]], None] | None = None,
+                 max_members: int | None = None) -> None:
         self.room_id = room_id
         self.lock = threading.RLock()
         self.bundle = bundle
@@ -203,6 +213,9 @@ class Room:
         self.states = bundle.states
         self.model = bundle.model
         self.now = now
+        self.max_members = max_members if max_members is not None else int(
+            os.environ.get(MAX_ROOM_MEMBERS_ENV, DEFAULT_MAX_ROOM_MEMBERS))
+        self.empty_since: float | None = now()  # set while no human is present
         self.speed = speed if speed is not None else default_speed()
         self.on_final = on_final
         self._propose = propose or get_propose()
@@ -267,9 +280,12 @@ class Room:
     def add_member(self, user_id: str, display_name: str, team: str | None,
                    player_id: str | None, send: Send) -> Member:
         """Add a human member (the first one is the host) and send them ``session``."""
+        if len(self.humans) >= self.max_members:
+            raise RoomFull(self.room_id)
         member = Member(user_id, display_name, team, player_id, send,
                         is_host=not self.humans)
         self.members[user_id] = member
+        self.empty_since = None
         self._send_session(member)
         return member
 
@@ -286,6 +302,19 @@ class Room:
             heir = self.humans[0]
             heir.is_host = True
             self._send_session(heir)  # fresh session carries is_host true
+        if not self.humans:
+            self.empty_since = self.now()
+
+    def idle_reason(self) -> str | None:
+        """Why the room should be reaped ("empty" or "lobby"), or None while it is in use."""
+        now = self.now()
+        if not self.humans and self.empty_since is not None \
+                and now - self.empty_since >= EMPTY_ROOM_TTL_S:
+            return "empty"
+        if self.pause is not None and self.pause.kind == "lobby" \
+                and now - self.pause.started >= LOBBY_TTL_S:
+            return "lobby"
+        return None
 
     def _broadcast(self, type_: str, data: dict[str, Any]) -> None:
         for m in self.humans:
@@ -324,8 +353,9 @@ class Room:
         if card is None or card.question.qid != qid or card.locked \
                 or not card.question.hint_available:
             return False
-        if card.hint is None:
-            card.hint = self.model.hint(self.probs[qid])
+        if card.hint is not None:
+            return False  # one hint per card; repeats are ignored
+        card.hint = self.model.hint(self.probs[qid])
         card.used_hint = True
         m.emit("hint", {"qid": qid, "ai_pick": card.hint[0], "p": card.hint[1]})
         return True
@@ -481,9 +511,13 @@ class Room:
         return PAUSE_TICK_S
 
     def _end_pause(self) -> None:
-        self.pause = None
+        """Leave a pause. Break stacks lock now; the kickoff stack stays open for its window."""
+        kind, self.pause = self.pause.kind, None
         for m in [m for m in self.open_moments if m.kind not in TIMED_KINDS]:
-            self._lock_moment(m, self.state.t, self.state.half, early=True)
+            if m.kind == "kickoff_stack" and kind == "lobby":
+                self.deadlines[m.moment_id] = self.now() + (m.lock_at - m.open_at)
+            else:
+                self._lock_moment(m, self.state.t, self.state.half, early=True)
 
     def _skip_ahead(self) -> None:
         """Play silently up to SKIP_LEAD_STATES before the next scheduled stop (never past it)."""
@@ -512,7 +546,9 @@ class Room:
 
     def _open_moment(self, moment: Moment) -> None:
         self.open_moments.append(moment)
-        if moment.kind not in TIMED_KINDS:
+        if moment.kind == "kickoff_stack":
+            self.deadlines[moment.moment_id] = math.inf  # starts at the host's resume
+        elif moment.kind not in TIMED_KINDS:
             self.deadlines[moment.moment_id] = self.now() + (moment.lock_at - moment.open_at)
 
     def _question_for(self, member: Member, moment: Moment, state: DetectorState
@@ -568,7 +604,8 @@ class Room:
                 else:
                     self._drop_moment(moment)
                 continue
-            card = Card(moment, q, state.t, self.now())
+            card = Card(moment, q, state.t, self.now(), seq=m.next_seq)
+            m.next_seq += 1
             m.open = m.cards[q.qid] = card
             if m.bot is None:
                 self.human_moments.add(moment.moment_id)
@@ -630,6 +667,8 @@ class Room:
             self.open_moments.remove(moment)
         mid = moment.moment_id
         self.locked_moment_ids.add(mid)
+        if moment.kind == "kickoff_stack":  # answered before kickoff, whenever the card locks
+            lock_t, lock_half = moment.open_at, moment.half
         for qid in self.moment_qids.get(mid, []):
             holders = [m for m in self.members.values() if qid in m.cards]
             if not holders:
@@ -702,8 +741,7 @@ class Room:
 
     def _streak(self, m: Member) -> int:
         """Current streak over the cards resolved so far, in issue order (scoring's rule)."""
-        rows = _scored(self._answers(m), self.outcomes)
-        return rows[-1]["streak"] if rows else 0
+        return current_streak(self._answers(m), self.outcomes)
 
     # .........................................................................
     # catch-up, state, nudge
@@ -765,7 +803,7 @@ class Room:
         return [Answer(
             qid=c.question.qid, category=c.question.category, situation=c.moment.situation,
             open_at=c.question.open_at, lock_at=c.question.lock_at, half=c.moment.half,
-            option=c.option, answer_latency_s=c.latency_s, used_hint=c.used_hint)
+            option=c.option, answer_latency_s=c.latency_s, used_hint=c.used_hint, seq=c.seq)
             for c in m.cards.values()]
 
     def _score(self, m: Member, **ranks: Sequence[int]) -> FinalScore:

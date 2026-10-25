@@ -19,7 +19,7 @@ from backend.agents import timing_rules as TR
 from backend.core.types import MatchEvent
 from backend.tests.contract_utils import validate
 from backend.tests.fixtures.replay_fixtures import (
-    ATTACK_START, HT_T, WATER_T, Harness, tiny_states)
+    ATTACK_START, HT_T, N, WATER_T, Harness, tiny_states)
 from backend.tests.fixtures.timing_scenarios import run, st
 
 SCHEMAS = {"question.open": "question", "question.result": "result", "score.final": "score",
@@ -38,6 +38,14 @@ def started(h: Harness) -> Harness:
     h.tick()
     h.room.control("u0", "resume")
     return h
+
+
+def answer_stack(h: Harness) -> None:
+    """Answer the kickoff stack cards so instants flow (the stack stays open after resume)."""
+    for _ in range(4):
+        card = h.room.members["u0"].open
+        if card is not None:
+            h.room.answer("u0", card.question.qid, card.question.options[0].id)
 
 
 def open_after_lobby() -> Harness:
@@ -89,23 +97,42 @@ def test_resume_locks_stack_and_starts_the_replay():
     h = open_after_lobby()
     qid = h.msgs("question.open")[0]["qid"]
     assert h.room.control("u0", "resume") is True
-    assert {"qid": qid} in h.msgs("question.locked")
+    assert h.msgs("question.locked") == []  # the stack window starts at the resume
     assert h.room.pause is None
     h.tick()
     assert h.msgs("match.state")[-1]["t"] == 1
     assert h.msgs("match.state")[-1]["mode"] in ("live", "game")
 
 
-def test_stack_locks_after_60_real_seconds():
+def test_kickoff_stack_locks_60_real_seconds_after_the_host_resumes():
     h = open_after_lobby()
     qid = h.msgs("question.open")[0]["qid"]
-    h.clock.t += 57  # the lobby tick already advanced the clock by 1 s
+    h.clock.t += 600  # a long lobby does not use up the window
+    h.tick()
+    assert h.msgs("question.locked") == []
+    h.room.control("u0", "resume")
+    h.clock.t += 57
     h.tick()
     assert h.msgs("question.locked") == []
     h.clock.t += 3
     h.tick()
     assert {"qid": qid} in h.msgs("question.locked")
     assert h.room.answer("u0", qid, "yes") is False
+
+
+def test_humans_joining_the_lobby_or_the_stack_window_get_the_stack_cards():
+    h = Harness()
+    h.tick()  # lobby, kickoff stack open
+    h.logs["late"] = []
+    h.room.add_member("late", "Late", N, "nbr-1-ward", h.logs["late"].append)
+    h.tick()
+    assert [q for q in h.msgs("question.open", "late")]  # joined in the lobby
+    h.room.control("u0", "resume")
+    h.clock.t += 30
+    h.logs["later"] = []
+    h.room.add_member("later", "Later", N, "nbr-1-ward", h.logs["later"].append)
+    h.tick()
+    assert [q for q in h.msgs("question.open", "later") if q["lock_at"] - q["open_at"] == 60]
 
 
 def test_only_host_may_send_controls():
@@ -136,7 +163,8 @@ def state_t_at_each_message(h: Harness) -> list[tuple[str, dict, float]]:
 
 
 def test_calm_moments_reach_the_user_and_attack_locks_the_open_card():
-    h = Harness()
+    h = open_after_lobby()
+    answer_stack(h)
     h.play(answer=False)
     seq = state_t_at_each_message(h)
     opens = [(d, t) for ty, d, t in seq if ty == "question.open" and d["category"] == "instant"]
@@ -220,7 +248,9 @@ def test_answer_after_lock_is_rejected():
 
 
 def test_speed_is_one_in_calm_play_and_host_speed_in_attack():
-    h = started(Harness())
+    h = open_after_lobby()
+    answer_stack(h)
+    h.room.control("u0", "resume")
     delays = []
     while (d := h.tick()) is not None and h.room.state.t < ATTACK_START + 2:
         delays.append((h.room.state.t, d))
@@ -529,6 +559,7 @@ def test_run_ends_the_room_after_five_failures_in_a_row():
 def test_scheduled_card_rejects_answers_after_its_real_time_deadline():
     h = open_after_lobby()
     q = h.msgs("question.open")[0]
+    h.room.control("u0", "resume")
     h.clock.t += 61  # past the 60 s window, before the next tick locks it
     assert h.room.answer("u0", q["qid"], q["options"][0]["id"]) is False
 
@@ -576,3 +607,69 @@ def test_you_streak_follows_scorings_rule_over_the_cards_resolved_so_far():
     assert h.room._streak(m) == rows[-1]["streak"]
     # once every card is resolved the on-screen rule and best_streak read the same sequence
     assert max(r["streak"] for r in rows) == h.msgs("score.final")[0]["best_streak"]
+
+
+# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+#
+# Final review: member cap, idle reaping, one hint per card, delivery order
+#
+# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+def test_room_refuses_members_beyond_the_cap():
+    from backend.app.replay import Room, RoomFull
+    from backend.tests.fixtures.replay_fixtures import tiny_bundle
+    room = Room("r-cap", tiny_bundle(), max_members=2)
+    room.add_member("a", "A", N, None, lambda m: None)
+    room.add_member("b", "B", N, None, lambda m: None)
+    with pytest.raises(RoomFull):
+        room.add_member("c", "C", N, None, lambda m: None)
+    room.remove_member("a")
+    room.add_member("c", "C", N, None, lambda m: None)  # a seat freed up
+
+
+def test_member_cap_reads_the_environment(monkeypatch):
+    from backend.app.replay import Room
+    from backend.tests.fixtures.replay_fixtures import tiny_bundle
+    monkeypatch.setenv("MAX_ROOM_MEMBERS", "3")
+    assert Room("r-env", tiny_bundle()).max_members == 3
+    monkeypatch.delenv("MAX_ROOM_MEMBERS")
+    assert Room("r-env", tiny_bundle()).max_members == 12
+
+
+def test_empty_room_is_idle_after_60_seconds_and_a_member_resets_it():
+    h = Harness()
+    h.room.remove_member("u0")
+    assert h.room.idle_reason() is None
+    h.clock.t += 59
+    assert h.room.idle_reason() is None
+    h.clock.t += 2
+    assert h.room.idle_reason() == "empty"
+    h.room.add_member("u1", "Back", N, None, lambda m: None)
+    assert h.room.idle_reason() is None
+
+
+def test_lobby_nobody_resumes_is_idle_after_15_minutes():
+    h = open_after_lobby()
+    h.clock.t += 897  # the lobby tick already moved the clock by a second
+    assert h.room.idle_reason() is None
+    h.clock.t += 4
+    assert h.room.idle_reason() == "lobby"
+    h.room.control("u0", "resume")
+    assert h.room.idle_reason() is None
+
+
+def test_a_card_gets_one_hint_and_repeats_are_ignored():
+    h = open_after_lobby()
+    qid = h.msgs("question.open")[0]["qid"]
+    assert h.room.hint_request("u0", qid) is True
+    assert h.room.hint_request("u0", qid) is False
+    assert len(h.msgs("hint")) == 1
+
+
+def test_answers_carry_delivery_order_per_user():
+    h = Harness(humans=2)
+    h.play()
+    for uid in ("u0", "u1"):
+        seqs = [a.seq for a in h.room._answers(h.room.members[uid])]
+        assert sorted(seqs) == list(range(len(seqs))) and len(seqs) > 3

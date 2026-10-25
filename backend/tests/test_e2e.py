@@ -50,6 +50,7 @@ pytestmark = [pytest.mark.slow,
               pytest.mark.skipif(not _available(), reason="ingest/detect/model/dataset missing")]
 
 
+FAST_RATE = (10_000.0, 10_000.0)  # the scripted clients answer faster than a human
 MIN_SLEEP_S = 0.002  # a browser at 15x gets a tick every 67 ms; stay well above the flood rate
 SLEEP_SCALE = 0.005  # real delay per replay second; long enough for a client round trip
 
@@ -63,7 +64,7 @@ def log() -> list[dict]:
     from fastapi.testclient import TestClient
 
     from backend.app.main import create_app
-    app = create_app(sleep=scaled_sleep, speed=15)
+    app = create_app(sleep=scaled_sleep, speed=15, rate_limit=FAST_RATE)
     out: list[dict] = []
     with TestClient(app) as client, client.websocket_connect("/ws") as ws:
         ws.send_json({"type": "join", "data": {"display_name": "Judge", "team": "NBR",
@@ -244,16 +245,17 @@ def room_logs() -> dict[str, list[dict]]:
     from fastapi.testclient import TestClient
 
     from backend.app.main import create_app
-    app = create_app(sleep=scaled_sleep, speed=15)
+    app = create_app(sleep=scaled_sleep, speed=15, rate_limit=FAST_RATE)
     logs = {"host": [], "plain": [], "idle": []}
     errors: list[str] = []
     with TestClient(app) as client:
         roster = client.get("/api/matches/nbr-cal-seed42/players").json()
         home = [p["player_id"] for p in roster if p["position"] == "GK"]
         pids = {"host": home[0], "plain": home[1], "idle": None}
+        room = client.post("/api/rooms").json()["room_id"]
         joined = {role: threading.Event() for role in logs}
         threads = [threading.Thread(target=_client, args=(
-            client, "r-multi", pids[role], role, joined, logs[role], errors)) for role in logs]
+            client, room, pids[role], role, joined, logs[role], errors)) for role in logs]
         for t in threads:
             t.start()
             time.sleep(0.2)  # the host joins first
@@ -315,7 +317,7 @@ def test_skip_sequence_over_the_websocket():
     from fastapi.testclient import TestClient
 
     from backend.app.main import create_app
-    app = create_app(sleep=scaled_sleep, speed=15)
+    app = create_app(sleep=scaled_sleep, speed=15, rate_limit=FAST_RATE)
     landings: list[tuple[int, float]] = []
     prev = None
     awaiting = False
