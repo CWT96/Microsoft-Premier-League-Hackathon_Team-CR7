@@ -182,7 +182,7 @@ The catalog is extended by adding a row here, a resolver rule in `backend/resolv
   2. **AI hint.** The hint is hidden by default. A user can tap to reveal it (*"AI leans Back, 52%"*). The probability is renormalised over the two options shown. Answering correctly after using the hint earns half points (see [6]).
   3. **Fair lines for favourite-player questions.** Players differ a lot: a goalkeeper may touch the ball 20 times, a central midfielder 80. To give everyone questions of equal count **and** equal difficulty:
      - **Forecast:** `fair_line` picks the threshold that puts P(yes) closest to 0.5 for *that* player, for example GK saves ≥2 (P=0.49), CB clearances ≥4 (P=0.52), ST shots ≥2 (P=0.47).
-     - **Instant:** `player_touch_window` runs at fixed slots, with a window tuned so P(touch)≈0.5, for example GK 3 min, CB 60s, ST 90s.
+     - **Instant:** `player_touch_window` runs at fixed slots, with a window tuned so P(touch)≈0.5, for example GK 2 min, CB 60s, ST 90s.
      - **Guardrail:** a player question is issued only if its tuned P(yes) lies in [0.4, 0.6]. Otherwise it falls back to `player_touch_window`, which can always be tuned.
 - **Lock:** answers close at `lock_at` (6 seconds after the question appears). Only events after `lock_at` count, and answers that reach the server late are rejected. *Future work:* offset each user's stream delay so the game stays fair and resistant to cheating.
 
@@ -245,7 +245,7 @@ Final score: final = round(1000 × earned / max_possible)
 ```
 
 - `max_possible` is identical for every user for three reasons: everyone gets the same questions in the same issue order; shared voids hit everyone; and player templates never void. That keeps the scale 0–1000 even with streak bonuses.
-- Streaks are counted in issue order, not resolution order, because players' windows differ (GK 3 min, ST 90 s) and would otherwise reorder the sequence per user.
+- Streaks are counted in issue order, not resolution order, because players' windows differ (GK 2 min, ST 90 s) and would otherwise reorder the sequence per user.
 - Unanswered questions, including those missed by joining late, earn 0 and still count in the denominator.
 - `by_category.points` splits `final` by category. Largest-remainder rounding makes the three parts add up exactly to `final`.
 - **During the match:** only ✓ and coin animations appear. No point numbers and no running total, because `per_q` is not known until full time.
@@ -378,9 +378,9 @@ Guard check: 16 and 27 are both in `facts`, so the explanation is sent. The crow
 
 Alex now knows why the room shouted, and that it involved their own player. No new instant question until 35:25 at the earliest (45s cooldown after the attack ended at 34:40).
 
-**⑦ A later dull slot: favourite-player question.** The slot's random draw picks "player", so every user gets a question about *their own* player at the same moment. For Ward, a goalkeeper, `fair_line` tunes the window to 3 minutes (P(touch)=0.50):
+**⑦ A later dull slot: favourite-player question.** The slot's random draw picks "player", so every user gets a question about *their own* player at the same moment. For Ward, a goalkeeper, `fair_line` tunes the window to 2 minutes (P(touch)≈0.54):
 
-> "Will **Ward** touch the ball in the next 3 minutes?"  Yes · No
+> "Will **Ward** touch the ball in the next 2 minutes?"  Yes · No
 
 A friend who picked striker Doyle, in the same dull slot, gets "…in the next 90 seconds?". The question count and difficulty are the same for both.
 

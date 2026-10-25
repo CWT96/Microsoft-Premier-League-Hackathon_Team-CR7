@@ -37,7 +37,7 @@ Match dataset ─► Detector (code) ─► Timing agent ─► Question generat
 ### Three kinds of questions, all with two options
 - **Instant:** settles in seconds, asked during dull stretches.
 - **Forecast:** settles at half time or full time.
-- **Favourite player:** about the player you picked, in instant and forecast versions. A goalkeeper and a striker play very different matches, so the probability model tunes each player's question to roughly 50/50. The goalkeeper gets "touch the ball in the next 3 minutes?" while the striker gets "…in the next 90 seconds?". Every player gets the same count at the same difficulty.
+- **Favourite player:** about the player you picked, in instant and forecast versions. A goalkeeper and a striker play very different matches, so the probability model tunes each player's question to roughly 50/50. The goalkeeper gets "touch the ball in the next 2 minutes?" while the striker gets "…in the next 90 seconds?". Every player gets the same count at the same difficulty.
 
 ### Scoring
 
