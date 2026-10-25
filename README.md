@@ -18,7 +18,7 @@ The non-fan scans a QR code on the table, picks a team and a favourite player, a
 |---|---|
 | Dull stretch | Pops a quick **two-option question** ("Next pass: forward or back?"). 6 seconds to answer, optional AI hint. |
 | Attack | Goes quiet so everyone watches the TV. When the attack ends, shows a **catch-up card**: a 2D replay plus one plain sentence. |
-| Kickoff / half time | **Forecast** questions for the whole match, plus questions about *your* player |
+| Kickoff / half time | **Forecast** questions (short windows such as the first 10 minutes, or the whole match), plus a question about *your* player |
 | Full time | **Score card** (0–1000) → email sign-up → **membership card** with a QR code for partner-store rewards |
 
 Everyone in the room answers the same question at the same moment, so they see how their friends voted. That is where the conversation starts.
@@ -37,7 +37,7 @@ Match dataset ─► Detector (code) ─► Timing agent ─► Question generat
 ### Three kinds of questions, all with two options
 - **Instant:** settles in seconds, asked during dull stretches.
 - **Forecast:** settles at half time or full time.
-- **Favourite player:** about the player you picked, in instant and forecast versions. A goalkeeper and a striker play very different matches, so the probability model tunes each player's question to roughly 50/50. The goalkeeper gets "touch the ball in the next 3 minutes?" while the striker gets "…in the next 90 seconds?". Every player gets the same count at the same difficulty.
+- **Favourite player:** about the player you picked, in instant and forecast versions. A goalkeeper and a striker play very different matches, so the probability model tunes each player's question to roughly 50/50. The goalkeeper gets "touch the ball in the next 2 minutes?" while the striker gets "…in the next 90 seconds?". Every player gets the same count at the same difficulty.
 
 ### Scoring
 

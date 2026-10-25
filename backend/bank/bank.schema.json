@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Question bank",
+  "type": "array",
+  "items": { "$ref": "#/$defs/template" },
+  "$defs": {
+    "template": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "kind", "text", "options", "params", "counts_from", "resolve",
+                   "prob", "rare", "positions", "guards", "teaches"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9_]+$" },
+        "kind": { "enum": ["instant", "window", "player"] },
+        "text": { "type": "string", "minLength": 1 },
+        "options": { "type": "array", "items": { "type": "string" }, "minItems": 2, "maxItems": 3 },
+        "params": {
+          "type": "object",
+          "additionalProperties": {
+            "oneOf": [ { "type": "array", "minItems": 1 }, { "const": "tuned" } ]
+          }
+        },
+        "counts_from": { "enum": ["lock", "half_start", "kickoff"] },
+        "resolve": {
+          "type": "object",
+          "required": ["primitive"],
+          "properties": {
+            "primitive": {
+              "enum": ["count_at_least", "compare_counts", "first_of", "final_state", "next_matching"]
+            }
+          }
+        },
+        "prob": {
+          "enum": ["poisson_count", "poisson_first", "poisson_compare", "goal_grid", "player", "instant"]
+        },
+        "rare": { "type": "boolean" },
+        "positions": {
+          "oneOf": [
+            { "type": "null" },
+            { "type": "array", "items": { "enum": ["GK", "DF", "MF", "FW"] }, "minItems": 1 }
+          ]
+        },
+        "guards": { "type": "array", "items": { "type": "string" } },
+        "teaches": { "type": "string" },
+        "team_from": { "enum": ["none", "possession", "trailing", "each"] }
+      }
+    }
+  }
+}

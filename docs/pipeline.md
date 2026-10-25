@@ -29,8 +29,7 @@ Scan QR / open link ─► pick match ─► pick team ─► pick favourite pla
   Match view (2D pitch, score, clock)
         │   dull stretch ───► instant question (2 options, 6s to answer, optional AI hint)
         │   attack ─────────► questions vanish; when it ends ─► catch-up card
-        │   kickoff / HT ───► forecast + favourite-player forecast questions
-        │   timed slots ────► favourite-player instant question
+        │   dull stretch ───► (kind drawn at random) instant, window or favourite-player question
         ▼
   Full time ─► score card (0–1000 + metrics) ─► email sign-up (mock)
            ─► web membership card with QR + "Add to Wallet" (mock) ─► gift redemption (concept)
@@ -119,21 +118,17 @@ It's deterministic and can be tested against the labelled stretches. Report the 
 
 ### [2b] Timing agent (LLM decides format; code enforces the schedule)
 
-The timing agent decides **when** a question appears and **in what rhythm**. The detector code runs every second. The LLM is called only at decision points: a dull stretch begins, half time, a scheduled slot. It is never called inside the per-second loop, which would be too slow and too costly.
+The timing agent decides **when** a question appears and **in what rhythm**. The detector code runs every second. The LLM is called only at decision points: a dull stretch begins. It is never called inside the per-second loop, which would be too slow and too costly.
 
 **Hard rules (code, identical for every user):**
 
 | Category | When | Count per match |
 |---|---|---|
 | Instant | Dull stretch entered; cooldown 45s or more; a stretch that stays dull for 90s or more may get a rapid-fire pair 10s apart | At most 8 per half |
-| Forecast | 2 at kickoff (`goals_over`, `team_wins`, resolve FT); 2 at half time (`card_second_half`, `second_half_goal`, resolve FT) | 4 |
-| Favourite-player forecast | 1 at kickoff (first half, resolves HT), 1 at half time (second half, resolves FT) | 2 |
-| Favourite-player instant | Fixed slots at about 40:00 and 70:00. If an attack is under way, wait until it ends. | 2 |
+| All kinds | Dull slots during play; kind drawn at random, see `backend/bank/` | See `backend/bank/` |
+| Kickoff / half time | One stack in the pre-match lobby and one in the half-time pause: 2 shared window questions plus 1 favourite-player question per user | 1 stack at each |
 
-**Kickoff and half time:** the three questions appear together as a stack the user swipes through.
-- Kickoff questions appear in a pre-match lobby before the replay starts.
-- At half time the replay pauses in `break` mode.
-- Each stacked question locks after **60 seconds of real time**, or earlier when the room host presses resume or skip.
+**Kickoff and half-time stacks.** The pre-match lobby and the half-time pause (`break` mode) each show a stack: 2 shared window (forecast) questions, which have different templates and are the same for everyone, plus 1 favourite-player question per user. If any user has no valid player question, nobody gets the player card, so everyone still sees the same number of questions. The stack locks after 60 real seconds, or when the host sends resume or skip. The questions count from the restart (the first whistle, or the start of the second half), so a timed question reads "the first 10 minutes" at kickoff and "the first 10 minutes of the second half" at half time. Stack questions do not count toward the limit of 2 open window questions, and a player who has been sent off is never asked about. All other questions come through dull slots during play. See `backend/bank/stack.py`.
 
 **Time units:** `open_at`, `lock_at` and `resolve_by` are match seconds, but answer windows are real time.
 - While an instant or player-instant question is open, the replay **drops to 1×** until the result is shown, then returns to the chosen speed (default 15×). So "6 seconds to answer" is 6 real seconds at every speed.
@@ -154,14 +149,16 @@ Every user in the match receives the same questions at the same match second. Fa
   - `option_probs(template_id, state, params)`, from [3]
   - `fair_line(template_id, player_id, state)`, from [3]
   - `validate_question(q)`, a schema check plus "the resolver has a rule for this template"
-- **Top-2 rule:** every question shows exactly two options. When a template has three possible outcomes, only the two most likely ones under [3] are shown. If the excluded third outcome happens, the question is **void for everyone** and left out of the score denominator. The UI never says "void". It shows a playful line such as *"Plot twist, he went sideways! Nobody saw that coming 😄"*.
+- **Top-2 rule:** every question shows exactly two options. When a template has three possible outcomes, only the two most likely ones under [3] are shown. If the excluded third outcome happens, the question is **void for everyone** and left out of the score denominator. The UI never says "void". It shows a playful line such as *"Plot twist, nobody scored! Nobody saw that coming 😄"*.
 - **Output** is strict JSON matching `contracts/question.schema.json`. If validation fails, it falls back to a default template question with canned text.
 
 **Template catalog (all binary):**
 
+Source of truth: `backend/bank/templates.json` (28 templates); this table lists the v2 originals.
+
 | ID | Category | Question | Options | Resolution rule | Window |
 |---|---|---|---|---|---|
-| `next_pass_dir` | instant | Next pass: forward or back? | top-2 of forward / sideways / backward | dx > +5m forward, dx < −5m backward, else sideways (void if not shown) | First pass after lock; void after 15s |
+| `next_pass_dir` | instant | Next pass: forward or back? | forward / back | dx > 0 forward, else back (a sideways pass counts as back, so it never voids) | First pass after lock; void after 15s |
 | `keep_ball` | instant | Will they keep the ball for 15s? | yes / no | No turnover. A turnover is any change of possession, including the ball going out of play to the opponent. A restart for the same team is still "kept". | 15s |
 | `reach_final_third` | instant | Will they reach the final third? | yes / no | Ball x > 70 while still in possession | 20s |
 | `shot_soon` | instant | Shot in the next 60s? | yes / no | Any shot event | 60s |
@@ -169,10 +166,10 @@ Every user in the match receives the same questions at the same match second. Fa
 | `team_wins` | forecast | Will `{team}` win? | yes / no | Result at FT | FT |
 | `card_second_half` | forecast | Any card in the second half? | yes / no | Any card event after HT | FT |
 | `second_half_goal` | forecast | Will there be a goal in the second half? | yes / no | Any goal after HT | FT |
-| `player_stat_over` | player | Will `{player}` make `{line}`+ `{stat}` this half? | yes / no | Count in the half it was asked for (kickoff → first half, HT → second half). Stat by position: GK saves, DF clearances, MF completed passes, FW shots. `line` from [3] so P≈0.5 | HT or FT |
+| `player_stat_over` | player | Will `{player}` make `{line}`+ `{stat}` this half? | yes / no | Count in the half it was asked for (first half or second half, whichever the question was asked in). Stat by position: GK saves, DF clearances, MF completed passes, FW shots. `line` from [3] so P≈0.5 | HT or FT |
 | `player_touch_window` | player | Will `{player}` touch the ball in the next `{window_s}`? | yes / no | Any event with that `player_id`. `window_s` from [3] so P≈0.5 | `window_s` |
 
-Template parameters go in `question.params` and use the names shown in braces: `line`, `window_s`, `team`, plus `dead_zone_m` for `next_pass_dir`.
+Template parameters go in `question.params` and use the names shown in braces: `line`, `window_s`, `team`.
 
 **Player templates never void.** Both always resolve yes or no. This keeps every user's player-question count equal, which the scoring in [6] depends on. A favourite player who is substituted off counts as "no" for the remaining window, so a good `fair_line` avoids late slots for likely substitutes.
 
@@ -183,10 +180,10 @@ The catalog is extended by adding a row here, a resolver rule in `backend/resolv
 - A simple model trained on the synthetic data, such as logistic regression or a frequency table. Features include zone, pressure (nearest opponent distance), passes in the possession, and the player's position and touch rate.
 - **It never sets points.** It has three jobs:
   1. **Top-2 options.** It ranks a template's outcomes so the generator shows the two most likely.
-  2. **AI hint.** The hint is hidden by default. A user can tap to reveal it (*"AI leans Back, 52%"*). The probability is renormalised over the two options shown. Answering correctly after using the hint earns half points (see [6]).
+  2. **AI hint.** The hint is hidden by default. A user can tap to reveal it (*"AI leans Forward, 57%"*). The probability is renormalised over the two options shown. Answering correctly after using the hint earns half points (see [6]).
   3. **Fair lines for favourite-player questions.** Players differ a lot: a goalkeeper may touch the ball 20 times, a central midfielder 80. To give everyone questions of equal count **and** equal difficulty:
-     - **Forecast:** `fair_line` picks the threshold that puts P(yes) closest to 0.5 for *that* player, for example GK saves ≥2 (P=0.49), CB clearances ≥4 (P=0.52), ST shots ≥2 (P=0.47).
-     - **Instant:** `player_touch_window` runs at fixed slots, with a window tuned so P(touch)≈0.5, for example GK 3 min, CB 60s, ST 90s.
+     - **Forecast:** `fair_line` picks the threshold that puts P(yes) closest to 0.5 for *that* player, for example, over a full 45-minute half: GK saves ≥2 (P=0.44), CB clearances ≥2 (P=0.59), CM completed passes ≥23 (P=0.49). A striker's shots have no line inside the band over a full half (1+ is 0.71, 2+ is 0.36), so a different player question is picked instead.
+     - **Instant:** `player_touch_window` runs at fixed slots, with a window tuned so P(touch)≈0.5, for example GK 2 min, CB 60s, ST 90s.
      - **Guardrail:** a player question is issued only if its tuned P(yes) lies in [0.4, 0.6]. Otherwise it falls back to `player_touch_window`, which can always be tuned.
 - **Lock:** answers close at `lock_at` (6 seconds after the question appears). Only events after `lock_at` count, and answers that reach the server late are rejected. *Future work:* offset each user's stream delay so the game stays fair and resistant to cheating.
 
@@ -249,7 +246,7 @@ Final score: final = round(1000 × earned / max_possible)
 ```
 
 - `max_possible` is identical for every user for three reasons: everyone gets the same questions in the same issue order; shared voids hit everyone; and player templates never void. That keeps the scale 0–1000 even with streak bonuses.
-- Streaks are counted in issue order, not resolution order, because players' windows differ (GK 3 min, ST 90 s) and would otherwise reorder the sequence per user.
+- Streaks are counted in issue order, not resolution order, because players' windows differ (GK 2 min, ST 90 s) and would otherwise reorder the sequence per user.
 - Unanswered questions, including those missed by joining late, earn 0 and still count in the denominator.
 - `by_category.points` splits `final` by category. Largest-remainder rounding makes the three parts add up exactly to `final`.
 - **During the match:** only ✓ and coin animations appear. No point numbers and no running total, because `per_q` is not known until full time.
@@ -347,16 +344,15 @@ Detector at 34:10: `ball_mid_third=1.0, max_xT=0.04, last_shot=6m12s, poss_len=1
 
 | Outcome | P | Shown? |
 |---|---|---|
-| Backward | 0.44 | ✅ |
-| Forward | 0.41 | ✅ |
-| Sideways | 0.15 | ❌ (excluded third: if it happens, the question is void) |
+| Forward | 0.57 | ✅ |
+| Back | 0.43 | ✅ |
 
 Every phone in the match shows the same card:
 
 > "Northbridge are passing it around midfield. **Next pass: forward or back?**
 > ⬆ Forward · ⬇ Back"  ·  💡 *Hint (costs half points)*
 
-If Alex tapped the hint, it would show *"AI leans Back, 52%"* (0.44 renormalised over the two options shown). Alex skips the hint and picks **Forward**. Answers lock at **34:24**.
+If Alex tapped the hint, it would show *"AI leans Forward, 57%"*. Alex skips the hint and picks **Forward**. Answers lock at **34:24**.
 
 **③ 34:26: the resolver.** The first pass after the lock:
 
@@ -365,7 +361,7 @@ If Alex tapped the hint, it would show *"AI leans Back, 52%"* (0.44 renormalised
  "start":[52,30],"end":[68,22],"outcome":"complete"}
 ```
 
-dx = 68 − 52 = **+16m**, which is more than 5m, so the answer is **forward ✅**. Alex sees a ✓ and a coin burst, with no number. The streak goes to 2, so this answer will count ×1.2.
+dx = 68 − 52 = **+16m**, so the pass went up the pitch and the answer is **forward ✅**. Alex sees a ✓ and a coin burst, with no number. The streak goes to 2, so this answer will count ×1.2.
 
 **④ The explainer** gets `facts = {dx_m:16, crowd_forward:27}`:
 
@@ -382,15 +378,15 @@ Guard check: 16 and 27 are both in `facts`, so the explanation is sent. The crow
 
 Alex now knows why the room shouted, and that it involved their own player. No new instant question until 35:25 at the earliest (45s cooldown after the attack ended at 34:40).
 
-**⑦ 40:00: favourite-player slot.** Every user gets a question about *their own* player at the same moment. For Ward, a goalkeeper, `fair_line` tunes the window to 3 minutes (P(touch)=0.50):
+**⑦ A later dull slot: favourite-player question.** The slot's random draw picks "player", so every user gets a question about *their own* player at the same moment. For Ward, a goalkeeper, `fair_line` tunes the window to 2 minutes (P(touch)≈0.54):
 
-> "Will **Ward** touch the ball in the next 3 minutes?"  Yes · No
+> "Will **Ward** touch the ball in the next 2 minutes?"  Yes · No
 
-A friend who picked striker Doyle gets "…in the next 90 seconds?" at the same moment. The question count and difficulty are the same for both.
+A friend who picked striker Doyle, in the same dull slot, gets "…in the next 90 seconds?". The question count and difficulty are the same for both.
 
-**⑧ Half time.** The replay pauses, and three cards stack up: `card_second_half`, `second_half_goal` and Ward's `player_stat_over` "2+ saves this half?" (P=0.49). (At kickoff the stack was `goals_over` with line 2 (P=0.51), `team_wins`, and Ward's first-half stat question.)
+**⑧ Half time, then more dull slots.** The replay pauses at half time and a stack appears: two shared forecast (window) questions such as `card_window` ("Any card in the first 10 minutes of the second half?", P(yes)=0.32) and `goal_window` ("Goal in the first 10 minutes of the second half?", P(yes)=0.26), plus Ward's `player_stat_over` "2+ saves this half?" (P=0.44) as the player question. It locks after 60 real seconds, or when the host resumes. Dull slots after the restart carry on as before.
 
-**⑨ Full time.** In issue order Alex got 22 non-void questions: 14 instant, 4 forecast and 4 player. So per_q is 400/14 ≈ 28.6, 300/4 = 75 and 300/4 = 75. A perfect run would earn max_possible = 1440.
+**⑨ Full time.** In issue order Alex got 22 non-void questions: 14 instant, 4 forecast and 4 player (the kickoff and half-time stacks supply 2 forecast and 1 player each). So per_q is 400/14 ≈ 28.6, 300/4 = 75 and 300/4 = 75. A perfect run would earn max_possible = 1440.
 
 Alex's results:
 - answered 19 of 22, got 13 right
@@ -404,7 +400,7 @@ Alex's results:
 
 The scoring agent adds *"You called 3 of 4 questions about Ward, your goalkeeper."* 431 is Silver tier. Alex enters an email (mock) and gets the membership card with a QR code.
 
-These numbers come from running the formula exactly as written: streak in issue order, hints ×0.5, largest-remainder split. Use this case as the first unit-test fixture for `backend/scoring/`. The answer sequence by issue order is `C W H | W - C C W | C | C C | W C C | C C W C | - | - W H` (C = correct, H = correct with hint, W = wrong, - = unanswered). The issue order is: 2 forecast + 1 player at kickoff · 5 instant · player slot · 2 instant · 2 forecast + 1 player at HT · 4 instant · player slot · 3 instant.
+These numbers come from running the formula exactly as written: streak in issue order, hints ×0.5, largest-remainder split. Use this case as the first unit-test fixture for `backend/scoring/`. The answer sequence by issue order is `C W H | W - C C W | C | C C | W C C | C C W C | - | - W H` (C = correct, H = correct with hint, W = wrong, - = unanswered). The issue order is: kickoff stack (2 forecast + 1 player) · 5 instant · player slot · 2 instant · half-time stack (2 forecast + 1 player) · 4 instant · player slot · 3 instant.
 
 ---
 
@@ -435,7 +431,7 @@ The scope is larger than 3 people can build in 3 days, and only one of them work
 | 0:00–0:10 | The problem: a friend on the sofa, bored, phone out. Scan the QR, pick a team and Ward. |
 | 0:10–0:35 | Dull meter rises → question → lock → ✓ coins → explanation + room split |
 | 0:35–0:50 | Attack: the phone goes quiet → catch-up card |
-| 0:50–1:05 | Half time: forecast + favourite-player question (show GK vs ST windows side by side) |
+| 0:50–1:05 | Dull slot: a window question and a favourite-player question (show GK vs ST windows side by side) |
 | 1:05–1:30 | Skip to FT: score card → sign-up → membership card |
 | 1:30–1:45 | Ops funnel dashboard (enterprise value) |
 | 1:45–1:58 | Evidence slide: detector hits/misses on labelled stretches; favourite-player P(yes) per position ≈ 0.5 (fairness); agent diagram |

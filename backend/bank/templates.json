@@ -1,0 +1,1002 @@
+[
+  {
+    "id": "next_pass_dir",
+    "kind": "instant",
+    "text": "Next pass: forward or back?",
+    "options": [
+      "forward",
+      "back"
+    ],
+    "params": {
+      "window_s": [
+        15
+      ]
+    },
+    "counts_from": "lock",
+    "resolve": {
+      "primitive": "next_matching",
+      "filter": {
+        "type": "pass",
+        "team": "possession"
+      },
+      "test": {
+        "forward_back": true
+      },
+      "no_event": "void"
+    },
+    "prob": "instant",
+    "rare": false,
+    "positions": null,
+    "guards": [
+      "no_repeat",
+      "prob_band"
+    ],
+    "teaches": "line-breaking pass"
+  },
+  {
+    "id": "keep_ball",
+    "kind": "instant",
+    "text": "Will {team} keep the ball for the next 15 seconds?",
+    "options": [
+      "yes",
+      "no"
+    ],
+    "params": {
+      "window_s": [
+        15
+      ]
+    },
+    "counts_from": "lock",
+    "resolve": {
+      "primitive": "count_at_least",
+      "filter": {
+        "team": "opponent",
+        "type": [
+          "pass",
+          "carry",
+          "shot",
+          "clearance",
+          "tackle",
+          "interception"
+        ]
+      },
+      "n": 1,
+      "negate": true
+    },
+    "prob": "instant",
+    "rare": false,
+    "positions": null,
+    "guards": [
+      "no_repeat",
+      "prob_band"
+    ],
+    "teaches": "possession",
+    "team_from": "possession"
+  },
+  {
+    "id": "reach_final_third",
+    "kind": "instant",
+    "text": "Will the attack reach the final third in the next 20 seconds?",
+    "options": [
+      "yes",
+      "no"
+    ],
+    "params": {
+      "window_s": [
+        20
+      ]
+    },
+    "counts_from": "lock",
+    "resolve": {
+      "primitive": "count_at_least",
+      "filter": {
+        "team": "possession",
+        "end_x_gt": 70
+      },
+      "n": 1
+    },
+    "prob": "instant",
+    "rare": false,
+    "positions": null,
+    "guards": [
+      "no_repeat",
+      "prob_band"
+    ],
+    "teaches": "final third"
+  },
+  {
+    "id": "shot_soon",
+    "kind": "instant",
+    "text": "Shot in the next 60 seconds?",
+    "options": [
+      "yes",
+      "no"
+    ],
+    "params": {
+      "window_s": [
+        60
+      ]
+    },
+    "counts_from": "lock",
+    "resolve": {
+      "primitive": "count_at_least",
+      "filter": {
+        "type": "shot"
+      },
+      "n": 1
+    },
+    "prob": "instant",
+    "rare": false,
+    "positions": null,
+    "guards": [
+      "no_repeat",
+      "prob_band"
+    ],
+    "teaches": "shot"
+  },
+  {
+    "id": "next_pass_complete",
+    "kind": "instant",
+    "text": "Will the next pass find a teammate?",
+    "options": [
+      "yes",
+      "no"
+    ],
+    "params": {
+      "window_s": [
+        15
+      ]
+    },
+    "counts_from": "lock",
+    "resolve": {
+      "primitive": "next_matching",
+      "filter": {
+        "type": "pass",
+        "team": "possession"
+      },
+      "test": {
+        "complete": true
+      },
+      "no_event": "void"
+    },
+    "prob": "instant",
+    "rare": false,
+    "positions": null,
+    "guards": [
+      "no_repeat",
+      "prob_band"
+    ],
+    "teaches": "completed pass"
+  },
+  {
+    "id": "next_pass_long",
+    "kind": "instant",
+    "text": "Next pass: long or short?",
+    "options": [
+      "long",
+      "short"
+    ],
+    "params": {
+      "window_s": [
+        15
+      ]
+    },
+    "counts_from": "lock",
+    "resolve": {
+      "primitive": "next_matching",
+      "filter": {
+        "type": "pass",
+        "team": "possession"
+      },
+      "test": {
+        "min_length_m": 25
+      },
+      "no_event": "void"
+    },
+    "prob": "instant",
+    "rare": false,
+    "positions": null,
+    "guards": [
+      "no_repeat",
+      "prob_band"
+    ],
+    "teaches": "long ball"
+  },
+  {
+    "id": "switch_play",
+    "kind": "instant",
+    "text": "Will the ball switch to the other side of the pitch in the next 15 seconds?",
+    "options": [
+      "yes",
+      "no"
+    ],
+    "params": {
+      "window_s": [
+        15
+      ]
+    },
+    "counts_from": "lock",
+    "resolve": {
+      "primitive": "count_at_least",
+      "filter": {
+        "derived": "switch"
+      },
+      "n": 1
+    },
+    "prob": "instant",
+    "rare": false,
+    "positions": null,
+    "guards": [
+      "no_repeat",
+      "prob_band"
+    ],
+    "teaches": "switching play"
+  },
+  {
+    "id": "back_to_keeper",
+    "kind": "instant",
+    "text": "Will the ball go back to {team}'s goalkeeper in the next 30 seconds?",
+    "options": [
+      "yes",
+      "no"
+    ],
+    "params": {
+      "window_s": [
+        30
+      ]
+    },
+    "counts_from": "lock",
+    "resolve": {
+      "primitive": "count_at_least",
+      "filter": {
+        "player": "team_gk"
+      },
+      "n": 1
+    },
+    "prob": "instant",
+    "rare": false,
+    "positions": null,
+    "guards": [
+      "no_repeat",
+      "prob_band"
+    ],
+    "teaches": "playing out from the back",
+    "team_from": "possession"
+  },
+  {
+    "id": "goal_window",
+    "kind": "window",
+    "text": "Goal in {window_label}?",
+    "options": [
+      "yes",
+      "no"
+    ],
+    "params": {
+      "window": [
+        "5m",
+        "10m",
+        "20m",
+        "half"
+      ]
+    },
+    "counts_from": "lock",
+    "resolve": {
+      "primitive": "count_at_least",
+      "filter": {
+        "type": "goal"
+      },
+      "n": 1,
+      "rate": "goal"
+    },
+    "prob": "poisson_count",
+    "rare": false,
+    "positions": null,
+    "guards": [
+      "fits_clock",
+      "prob_band",
+      "no_repeat",
+      "max_open_windows"
+    ],
+    "teaches": "goal"
+  },
+  {
+    "id": "shot_on_target_window",
+    "kind": "window",
+    "text": "Shot on target in {window_label}?",
+    "options": [
+      "yes",
+      "no"
+    ],
+    "params": {
+      "window": [
+        "5m",
+        "10m"
+      ]
+    },
+    "counts_from": "lock",
+    "resolve": {
+      "primitive": "count_at_least",
+      "filter": {
+        "type": "shot",
+        "outcome": [
+          "on_target",
+          "saved",
+          "goal"
+        ]
+      },
+      "n": 1,
+      "rate": "shot_on_target"
+    },
+    "prob": "poisson_count",
+    "rare": false,
+    "positions": null,
+    "guards": [
+      "fits_clock",
+      "prob_band",
+      "no_repeat",
+      "max_open_windows"
+    ],
+    "teaches": "shot on target"
+  },
+  {
+    "id": "who_shoots_first",
+    "kind": "window",
+    "text": "Who shoots first in {window_label}: {home} or {away}?",
+    "options": [
+      "home",
+      "away"
+    ],
+    "params": {
+      "window": [
+        "5m",
+        "10m"
+      ]
+    },
+    "counts_from": "lock",
+    "resolve": {
+      "primitive": "first_of",
+      "filter_a": {
+        "type": "shot",
+        "team": "home"
+      },
+      "filter_b": {
+        "type": "shot",
+        "team": "away"
+      },
+      "options": [
+        "home",
+        "away"
+      ],
+      "rate": "shot"
+    },
+    "prob": "poisson_first",
+    "rare": false,
+    "positions": null,
+    "guards": [
+      "fits_clock",
+      "prob_band",
+      "no_repeat",
+      "max_open_windows",
+      "p_none_below_0.35"
+    ],
+    "teaches": "shot"
+  },
+  {
+    "id": "card_window",
+    "kind": "window",
+    "text": "Any card in {window_label}?",
+    "options": [
+      "yes",
+      "no"
+    ],
+    "params": {
+      "window": [
+        "10m",
+        "20m",
+        "half"
+      ]
+    },
+    "counts_from": "lock",
+    "resolve": {
+      "primitive": "count_at_least",
+      "filter": {
+        "type": "card"
+      },
+      "n": 1,
+      "rate": "card"
+    },
+    "prob": "poisson_count",
+    "rare": false,
+    "positions": null,
+    "guards": [
+      "fits_clock",
+      "prob_band",
+      "no_repeat",
+      "max_open_windows"
+    ],
+    "teaches": "card"
+  },
+  {
+    "id": "fouls_over_window",
+    "kind": "window",
+    "text": "{line}+ fouls in {window_label}?",
+    "options": [
+      "yes",
+      "no"
+    ],
+    "params": {
+      "window": [
+        "10m",
+        "20m"
+      ],
+      "line": "tuned"
+    },
+    "counts_from": "lock",
+    "resolve": {
+      "primitive": "count_at_least",
+      "filter": {
+        "type": "foul"
+      },
+      "n": "line",
+      "rate": "foul"
+    },
+    "prob": "poisson_count",
+    "rare": false,
+    "positions": null,
+    "guards": [
+      "fits_clock",
+      "prob_band",
+      "no_repeat",
+      "max_open_windows"
+    ],
+    "teaches": "foul"
+  },
+  {
+    "id": "more_shots_window",
+    "kind": "window",
+    "text": "Will {team} have more shots than {opp} in {window_label}?",
+    "options": [
+      "yes",
+      "no"
+    ],
+    "params": {
+      "window": [
+        "10m",
+        "20m"
+      ]
+    },
+    "counts_from": "lock",
+    "resolve": {
+      "primitive": "compare_counts",
+      "filter_a": {
+        "type": "shot",
+        "team": "possession"
+      },
+      "filter_b": {
+        "type": "shot",
+        "team": "opponent"
+      },
+      "rate": "shot"
+    },
+    "prob": "poisson_compare",
+    "rare": false,
+    "positions": null,
+    "guards": [
+      "fits_clock",
+      "prob_band",
+      "no_repeat",
+      "max_open_windows"
+    ],
+    "teaches": "shots",
+    "team_from": "possession"
+  },
+  {
+    "id": "save_window",
+    "kind": "window",
+    "text": "Will a goalkeeper make a save in {window_label}?",
+    "options": [
+      "yes",
+      "no"
+    ],
+    "params": {
+      "window": [
+        "10m",
+        "20m"
+      ]
+    },
+    "counts_from": "lock",
+    "resolve": {
+      "primitive": "count_at_least",
+      "filter": {
+        "type": "save"
+      },
+      "n": 1,
+      "rate": "save"
+    },
+    "prob": "poisson_count",
+    "rare": false,
+    "positions": null,
+    "guards": [
+      "fits_clock",
+      "prob_band",
+      "no_repeat",
+      "max_open_windows"
+    ],
+    "teaches": "save"
+  },
+  {
+    "id": "goals_over",
+    "kind": "window",
+    "text": "{line}+ goals in this match?",
+    "options": [
+      "yes",
+      "no"
+    ],
+    "params": {
+      "window": [
+        "match"
+      ],
+      "line": "tuned"
+    },
+    "counts_from": "kickoff",
+    "resolve": {
+      "primitive": "count_at_least",
+      "filter": {
+        "type": "goal"
+      },
+      "n": "line",
+      "rate": "goal"
+    },
+    "prob": "poisson_count",
+    "rare": false,
+    "positions": null,
+    "guards": [
+      "fits_clock",
+      "not_decided",
+      "prob_band",
+      "no_repeat",
+      "max_open_windows"
+    ],
+    "teaches": "goal"
+  },
+  {
+    "id": "team_wins",
+    "kind": "window",
+    "text": "Will {team} win?",
+    "options": [
+      "yes",
+      "no"
+    ],
+    "params": {
+      "window": [
+        "match"
+      ]
+    },
+    "counts_from": "kickoff",
+    "resolve": {
+      "primitive": "final_state",
+      "predicate": "team_wins"
+    },
+    "prob": "goal_grid",
+    "rare": false,
+    "positions": null,
+    "guards": [
+      "fits_clock",
+      "not_decided",
+      "prob_band",
+      "no_repeat",
+      "max_open_windows"
+    ],
+    "teaches": "result",
+    "team_from": "each"
+  },
+  {
+    "id": "both_teams_score",
+    "kind": "window",
+    "text": "Will both teams score in this match?",
+    "options": [
+      "yes",
+      "no"
+    ],
+    "params": {
+      "window": [
+        "match"
+      ]
+    },
+    "counts_from": "kickoff",
+    "resolve": {
+      "primitive": "final_state",
+      "predicate": "both_score"
+    },
+    "prob": "goal_grid",
+    "rare": false,
+    "positions": null,
+    "guards": [
+      "fits_clock",
+      "not_decided",
+      "prob_band",
+      "no_repeat",
+      "max_open_windows"
+    ],
+    "teaches": "both teams to score"
+  },
+  {
+    "id": "equaliser_window",
+    "kind": "window",
+    "text": "Will {team} equalise in {window_label}?",
+    "options": [
+      "yes",
+      "no"
+    ],
+    "params": {
+      "window": [
+        "10m",
+        "20m",
+        "match"
+      ]
+    },
+    "counts_from": "lock",
+    "resolve": {
+      "primitive": "final_state",
+      "predicate": "equalise"
+    },
+    "prob": "goal_grid",
+    "rare": false,
+    "positions": null,
+    "guards": [
+      "fits_clock",
+      "prob_band",
+      "no_repeat",
+      "max_open_windows",
+      "needs_lead_of_one"
+    ],
+    "teaches": "equaliser",
+    "team_from": "trailing"
+  },
+  {
+    "id": "next_goal_team",
+    "kind": "window",
+    "text": "Who scores next: {home} or {away}?",
+    "options": [
+      "home",
+      "away"
+    ],
+    "params": {
+      "window": [
+        "match"
+      ]
+    },
+    "counts_from": "lock",
+    "resolve": {
+      "primitive": "first_of",
+      "filter_a": {
+        "type": "goal",
+        "team": "home"
+      },
+      "filter_b": {
+        "type": "goal",
+        "team": "away"
+      },
+      "options": [
+        "home",
+        "away"
+      ],
+      "rate": "goal"
+    },
+    "prob": "poisson_first",
+    "rare": false,
+    "positions": null,
+    "guards": [
+      "fits_clock",
+      "prob_band",
+      "no_repeat",
+      "max_open_windows",
+      "p_none_below_0.35"
+    ],
+    "teaches": "next goal"
+  },
+  {
+    "id": "penalty_window",
+    "kind": "window",
+    "text": "Will there be a penalty in {window_label}?",
+    "options": [
+      "yes",
+      "no"
+    ],
+    "params": {
+      "window": [
+        "half",
+        "match"
+      ]
+    },
+    "counts_from": "lock",
+    "resolve": {
+      "primitive": "count_at_least",
+      "filter": {
+        "derived": "penalty"
+      },
+      "n": 1,
+      "rate": "penalty"
+    },
+    "prob": "poisson_count",
+    "rare": true,
+    "positions": null,
+    "guards": [
+      "fits_clock",
+      "prob_band",
+      "no_repeat",
+      "max_open_windows"
+    ],
+    "teaches": "penalty"
+  },
+  {
+    "id": "player_touch_window",
+    "kind": "player",
+    "text": "Will {player} touch the ball in {window_label}?",
+    "options": [
+      "yes",
+      "no"
+    ],
+    "params": {
+      "window_s": "tuned"
+    },
+    "counts_from": "lock",
+    "resolve": {
+      "primitive": "count_at_least",
+      "filter": {
+        "player": "favourite",
+        "stat": "touch"
+      },
+      "n": 1,
+      "rate": "stat"
+    },
+    "prob": "player",
+    "rare": false,
+    "positions": [
+      "GK",
+      "DF",
+      "MF",
+      "FW"
+    ],
+    "guards": [
+      "fits_clock",
+      "prob_band",
+      "no_repeat",
+      "player_active",
+      "position_fit"
+    ],
+    "teaches": "touch"
+  },
+  {
+    "id": "player_stat_over",
+    "kind": "player",
+    "text": "Will {player} make {line}+ {stat} this half?",
+    "options": [
+      "yes",
+      "no"
+    ],
+    "params": {
+      "line": "tuned"
+    },
+    "counts_from": "half_start",
+    "resolve": {
+      "primitive": "count_at_least",
+      "filter": {
+        "player": "favourite"
+      },
+      "n": "line",
+      "rate": "stat",
+      "stat_by_position": {
+        "GK": "save",
+        "DF": "clearance",
+        "MF": "pass_complete",
+        "FW": "shot"
+      }
+    },
+    "prob": "player",
+    "rare": false,
+    "positions": [
+      "GK",
+      "DF",
+      "MF",
+      "FW"
+    ],
+    "guards": [
+      "fits_clock",
+      "prob_band",
+      "no_repeat",
+      "player_active",
+      "position_fit",
+      "not_decided"
+    ],
+    "teaches": "player stats"
+  },
+  {
+    "id": "player_next_pass_forward",
+    "kind": "player",
+    "text": "Will {player}'s next pass go forward?",
+    "options": [
+      "yes",
+      "no"
+    ],
+    "params": {
+      "window_s": [
+        600
+      ]
+    },
+    "counts_from": "lock",
+    "resolve": {
+      "primitive": "next_matching",
+      "filter": {
+        "type": "pass",
+        "player": "favourite"
+      },
+      "test": {
+        "forward": true
+      },
+      "no_event": "no"
+    },
+    "prob": "player",
+    "rare": false,
+    "positions": [
+      "DF",
+      "MF"
+    ],
+    "guards": [
+      "fits_clock",
+      "prob_band",
+      "no_repeat",
+      "player_active",
+      "position_fit"
+    ],
+    "teaches": "forward pass"
+  },
+  {
+    "id": "player_next_pass_long",
+    "kind": "player",
+    "text": "{player}'s next pass: long or short?",
+    "options": [
+      "long",
+      "short"
+    ],
+    "params": {
+      "window_s": [
+        600
+      ]
+    },
+    "counts_from": "lock",
+    "resolve": {
+      "primitive": "next_matching",
+      "filter": {
+        "type": "pass",
+        "player": "favourite"
+      },
+      "test": {
+        "min_length_m": 25
+      },
+      "no_event": "short"
+    },
+    "prob": "player",
+    "rare": false,
+    "positions": [
+      "GK",
+      "DF",
+      "MF"
+    ],
+    "guards": [
+      "fits_clock",
+      "prob_band",
+      "no_repeat",
+      "player_active",
+      "position_fit"
+    ],
+    "teaches": "long ball"
+  },
+  {
+    "id": "player_shot_window",
+    "kind": "player",
+    "text": "Will {player} take a shot in {window_label}?",
+    "options": [
+      "yes",
+      "no"
+    ],
+    "params": {
+      "window_s": "tuned"
+    },
+    "counts_from": "lock",
+    "resolve": {
+      "primitive": "count_at_least",
+      "filter": {
+        "player": "favourite",
+        "stat": "shot"
+      },
+      "n": 1,
+      "rate": "stat"
+    },
+    "prob": "player",
+    "rare": false,
+    "positions": [
+      "MF",
+      "FW"
+    ],
+    "guards": [
+      "fits_clock",
+      "prob_band",
+      "no_repeat",
+      "player_active",
+      "position_fit"
+    ],
+    "teaches": "shot"
+  },
+  {
+    "id": "player_win_ball_window",
+    "kind": "player",
+    "text": "Will {player} win the ball back in {window_label}?",
+    "options": [
+      "yes",
+      "no"
+    ],
+    "params": {
+      "window_s": "tuned"
+    },
+    "counts_from": "lock",
+    "resolve": {
+      "primitive": "count_at_least",
+      "filter": {
+        "player": "favourite",
+        "stat": "win_ball"
+      },
+      "n": 1,
+      "rate": "stat"
+    },
+    "prob": "player",
+    "rare": false,
+    "positions": [
+      "DF",
+      "MF"
+    ],
+    "guards": [
+      "fits_clock",
+      "prob_band",
+      "no_repeat",
+      "player_active",
+      "position_fit"
+    ],
+    "teaches": "tackle"
+  },
+  {
+    "id": "player_save_window",
+    "kind": "player",
+    "text": "Will {player} make a save in {window_label}?",
+    "options": [
+      "yes",
+      "no"
+    ],
+    "params": {
+      "window_s": "tuned"
+    },
+    "counts_from": "lock",
+    "resolve": {
+      "primitive": "count_at_least",
+      "filter": {
+        "player": "favourite",
+        "stat": "save"
+      },
+      "n": 1,
+      "rate": "stat"
+    },
+    "prob": "player",
+    "rare": false,
+    "positions": [
+      "GK"
+    ],
+    "guards": [
+      "fits_clock",
+      "prob_band",
+      "no_repeat",
+      "player_active",
+      "position_fit"
+    ],
+    "teaches": "save"
+  }
+]
