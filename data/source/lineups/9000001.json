@@ -1,0 +1,772 @@
+[
+  {
+    "team_id": 9101,
+    "team_name": "Northbridge FC",
+    "lineup": [
+      {
+        "player_id": 910101,
+        "player_name": "Tomas Lindqvist",
+        "player_nickname": null,
+        "jersey_number": 1,
+        "country": {
+          "id": 68,
+          "name": "England"
+        },
+        "cards": [],
+        "positions": [
+          {
+            "position_id": 1,
+            "position": "Goalkeeper",
+            "from": "00:00",
+            "to": null,
+            "from_period": 1,
+            "to_period": null,
+            "start_reason": "Starting XI",
+            "end_reason": "Final Whistle"
+          }
+        ]
+      },
+      {
+        "player_id": 910102,
+        "player_name": "Ryan Achterberg",
+        "player_nickname": null,
+        "jersey_number": 2,
+        "country": {
+          "id": 68,
+          "name": "England"
+        },
+        "cards": [],
+        "positions": [
+          {
+            "position_id": 2,
+            "position": "Right Back",
+            "from": "00:00",
+            "to": null,
+            "from_period": 1,
+            "to_period": null,
+            "start_reason": "Starting XI",
+            "end_reason": "Final Whistle"
+          }
+        ]
+      },
+      {
+        "player_id": 910105,
+        "player_name": "Kofi Hale",
+        "player_nickname": null,
+        "jersey_number": 5,
+        "country": {
+          "id": 68,
+          "name": "England"
+        },
+        "cards": [],
+        "positions": [
+          {
+            "position_id": 3,
+            "position": "Right Center Back",
+            "from": "00:00",
+            "to": null,
+            "from_period": 1,
+            "to_period": null,
+            "start_reason": "Starting XI",
+            "end_reason": "Final Whistle"
+          }
+        ]
+      },
+      {
+        "player_id": 910104,
+        "player_name": "Mateo Duarte",
+        "player_nickname": null,
+        "jersey_number": 4,
+        "country": {
+          "id": 68,
+          "name": "England"
+        },
+        "cards": [],
+        "positions": [
+          {
+            "position_id": 5,
+            "position": "Left Center Back",
+            "from": "00:00",
+            "to": null,
+            "from_period": 1,
+            "to_period": null,
+            "start_reason": "Starting XI",
+            "end_reason": "Final Whistle"
+          }
+        ]
+      },
+      {
+        "player_id": 910103,
+        "player_name": "Liam Fairbanks",
+        "player_nickname": null,
+        "jersey_number": 3,
+        "country": {
+          "id": 68,
+          "name": "England"
+        },
+        "cards": [],
+        "positions": [
+          {
+            "position_id": 6,
+            "position": "Left Back",
+            "from": "00:00",
+            "to": null,
+            "from_period": 1,
+            "to_period": null,
+            "start_reason": "Starting XI",
+            "end_reason": "Final Whistle"
+          }
+        ]
+      },
+      {
+        "player_id": 910108,
+        "player_name": "Chidi Okafor",
+        "player_nickname": null,
+        "jersey_number": 8,
+        "country": {
+          "id": 68,
+          "name": "England"
+        },
+        "cards": [],
+        "positions": [
+          {
+            "position_id": 13,
+            "position": "Right Center Midfield",
+            "from": "00:00",
+            "to": null,
+            "from_period": 1,
+            "to_period": null,
+            "start_reason": "Starting XI",
+            "end_reason": "Final Whistle"
+          }
+        ]
+      },
+      {
+        "player_id": 910106,
+        "player_name": "Jonah Pryce",
+        "player_nickname": null,
+        "jersey_number": 6,
+        "country": {
+          "id": 68,
+          "name": "England"
+        },
+        "cards": [],
+        "positions": [
+          {
+            "position_id": 10,
+            "position": "Center Defensive Midfield",
+            "from": "00:00",
+            "to": "60:04",
+            "from_period": 1,
+            "to_period": 2,
+            "start_reason": "Starting XI",
+            "end_reason": "Substitution - Off (Tactical)"
+          }
+        ]
+      },
+      {
+        "player_id": 910110,
+        "player_name": "Aurelien Sabatier",
+        "player_nickname": null,
+        "jersey_number": 10,
+        "country": {
+          "id": 68,
+          "name": "England"
+        },
+        "cards": [],
+        "positions": [
+          {
+            "position_id": 15,
+            "position": "Left Center Midfield",
+            "from": "00:00",
+            "to": "75:39",
+            "from_period": 1,
+            "to_period": 2,
+            "start_reason": "Starting XI",
+            "end_reason": "Substitution - Off (Tactical)"
+          }
+        ]
+      },
+      {
+        "player_id": 910107,
+        "player_name": "Dario Quintero",
+        "player_nickname": null,
+        "jersey_number": 7,
+        "country": {
+          "id": 68,
+          "name": "England"
+        },
+        "cards": [],
+        "positions": [
+          {
+            "position_id": 17,
+            "position": "Right Wing",
+            "from": "00:00",
+            "to": null,
+            "from_period": 1,
+            "to_period": null,
+            "start_reason": "Starting XI",
+            "end_reason": "Final Whistle"
+          }
+        ]
+      },
+      {
+        "player_id": 910109,
+        "player_name": "Samuel Mensah",
+        "player_nickname": null,
+        "jersey_number": 9,
+        "country": {
+          "id": 68,
+          "name": "England"
+        },
+        "cards": [],
+        "positions": [
+          {
+            "position_id": 23,
+            "position": "Center Forward",
+            "from": "00:00",
+            "to": null,
+            "from_period": 1,
+            "to_period": null,
+            "start_reason": "Starting XI",
+            "end_reason": "Final Whistle"
+          }
+        ]
+      },
+      {
+        "player_id": 910111,
+        "player_name": "Elliot Rook",
+        "player_nickname": null,
+        "jersey_number": 11,
+        "country": {
+          "id": 68,
+          "name": "England"
+        },
+        "cards": [],
+        "positions": [
+          {
+            "position_id": 21,
+            "position": "Left Wing",
+            "from": "00:00",
+            "to": null,
+            "from_period": 1,
+            "to_period": null,
+            "start_reason": "Starting XI",
+            "end_reason": "Final Whistle"
+          }
+        ]
+      },
+      {
+        "player_id": 910113,
+        "player_name": "Ben Ashdown",
+        "player_nickname": null,
+        "jersey_number": 13,
+        "country": {
+          "id": 68,
+          "name": "England"
+        },
+        "cards": [],
+        "positions": []
+      },
+      {
+        "player_id": 910115,
+        "player_name": "Isak Brandt",
+        "player_nickname": null,
+        "jersey_number": 15,
+        "country": {
+          "id": 68,
+          "name": "England"
+        },
+        "cards": [],
+        "positions": [
+          {
+            "position_id": 15,
+            "position": "Left Center Midfield",
+            "from": "75:39",
+            "to": null,
+            "from_period": 2,
+            "to_period": null,
+            "start_reason": "Substitution - On (Tactical)",
+            "end_reason": "Final Whistle"
+          }
+        ]
+      },
+      {
+        "player_id": 910122,
+        "player_name": "Noah Kettering",
+        "player_nickname": null,
+        "jersey_number": 22,
+        "country": {
+          "id": 68,
+          "name": "England"
+        },
+        "cards": [],
+        "positions": []
+      },
+      {
+        "player_id": 910114,
+        "player_name": "Felix Amadi",
+        "player_nickname": null,
+        "jersey_number": 14,
+        "country": {
+          "id": 68,
+          "name": "England"
+        },
+        "cards": [],
+        "positions": [
+          {
+            "position_id": 10,
+            "position": "Center Defensive Midfield",
+            "from": "60:04",
+            "to": "64:56",
+            "from_period": 2,
+            "to_period": 2,
+            "start_reason": "Substitution - On (Tactical)",
+            "end_reason": "Substitution - Off (Tactical)"
+          }
+        ]
+      },
+      {
+        "player_id": 910118,
+        "player_name": "Luca Ferreri",
+        "player_nickname": null,
+        "jersey_number": 18,
+        "country": {
+          "id": 68,
+          "name": "England"
+        },
+        "cards": [],
+        "positions": [
+          {
+            "position_id": 10,
+            "position": "Center Defensive Midfield",
+            "from": "64:56",
+            "to": null,
+            "from_period": 2,
+            "to_period": null,
+            "start_reason": "Substitution - On (Tactical)",
+            "end_reason": "Final Whistle"
+          }
+        ]
+      },
+      {
+        "player_id": 910119,
+        "player_name": "Dev Raman",
+        "player_nickname": null,
+        "jersey_number": 19,
+        "country": {
+          "id": 68,
+          "name": "England"
+        },
+        "cards": [],
+        "positions": []
+      },
+      {
+        "player_id": 910120,
+        "player_name": "Owen Thistle",
+        "player_nickname": null,
+        "jersey_number": 20,
+        "country": {
+          "id": 68,
+          "name": "England"
+        },
+        "cards": [],
+        "positions": []
+      }
+    ]
+  },
+  {
+    "team_id": 9102,
+    "team_name": "Calder Town",
+    "lineup": [
+      {
+        "player_id": 910201,
+        "player_name": "Harvey Ward",
+        "player_nickname": null,
+        "jersey_number": 1,
+        "country": {
+          "id": 68,
+          "name": "England"
+        },
+        "cards": [],
+        "positions": [
+          {
+            "position_id": 1,
+            "position": "Goalkeeper",
+            "from": "00:00",
+            "to": null,
+            "from_period": 1,
+            "to_period": null,
+            "start_reason": "Starting XI",
+            "end_reason": "Final Whistle"
+          }
+        ]
+      },
+      {
+        "player_id": 910202,
+        "player_name": "Marcus Oyelaran",
+        "player_nickname": null,
+        "jersey_number": 2,
+        "country": {
+          "id": 68,
+          "name": "England"
+        },
+        "cards": [],
+        "positions": [
+          {
+            "position_id": 2,
+            "position": "Right Back",
+            "from": "00:00",
+            "to": null,
+            "from_period": 1,
+            "to_period": null,
+            "start_reason": "Starting XI",
+            "end_reason": "Final Whistle"
+          }
+        ]
+      },
+      {
+        "player_id": 910204,
+        "player_name": "Callum Reid",
+        "player_nickname": null,
+        "jersey_number": 4,
+        "country": {
+          "id": 68,
+          "name": "England"
+        },
+        "cards": [],
+        "positions": [
+          {
+            "position_id": 3,
+            "position": "Right Center Back",
+            "from": "00:00",
+            "to": null,
+            "from_period": 1,
+            "to_period": null,
+            "start_reason": "Starting XI",
+            "end_reason": "Final Whistle"
+          }
+        ]
+      },
+      {
+        "player_id": 910205,
+        "player_name": "Piotr Zielinski",
+        "player_nickname": null,
+        "jersey_number": 5,
+        "country": {
+          "id": 68,
+          "name": "England"
+        },
+        "cards": [],
+        "positions": [
+          {
+            "position_id": 5,
+            "position": "Left Center Back",
+            "from": "00:00",
+            "to": "84:47",
+            "from_period": 1,
+            "to_period": 2,
+            "start_reason": "Starting XI",
+            "end_reason": "Substitution - Off (Tactical)"
+          }
+        ]
+      },
+      {
+        "player_id": 910203,
+        "player_name": "Nathan Grigg",
+        "player_nickname": null,
+        "jersey_number": 3,
+        "country": {
+          "id": 68,
+          "name": "England"
+        },
+        "cards": [],
+        "positions": [
+          {
+            "position_id": 6,
+            "position": "Left Back",
+            "from": "00:00",
+            "to": null,
+            "from_period": 1,
+            "to_period": null,
+            "start_reason": "Starting XI",
+            "end_reason": "Final Whistle"
+          }
+        ]
+      },
+      {
+        "player_id": 910206,
+        "player_name": "Yusuf Demir",
+        "player_nickname": null,
+        "jersey_number": 6,
+        "country": {
+          "id": 68,
+          "name": "England"
+        },
+        "cards": [
+          {
+            "time": "28:41",
+            "card_type": "Yellow Card",
+            "reason": "Foul Committed",
+            "period": 1
+          }
+        ],
+        "positions": [
+          {
+            "position_id": 9,
+            "position": "Right Defensive Midfield",
+            "from": "00:00",
+            "to": "79:07",
+            "from_period": 1,
+            "to_period": 2,
+            "start_reason": "Starting XI",
+            "end_reason": "Substitution - Off (Tactical)"
+          }
+        ]
+      },
+      {
+        "player_id": 910208,
+        "player_name": "Arlo Penhale",
+        "player_nickname": null,
+        "jersey_number": 8,
+        "country": {
+          "id": 68,
+          "name": "England"
+        },
+        "cards": [],
+        "positions": [
+          {
+            "position_id": 11,
+            "position": "Left Defensive Midfield",
+            "from": "00:00",
+            "to": "65:20",
+            "from_period": 1,
+            "to_period": 2,
+            "start_reason": "Starting XI",
+            "end_reason": "Substitution - Off (Tactical)"
+          }
+        ]
+      },
+      {
+        "player_id": 910207,
+        "player_name": "Jamal Whitcombe",
+        "player_nickname": null,
+        "jersey_number": 7,
+        "country": {
+          "id": 68,
+          "name": "England"
+        },
+        "cards": [],
+        "positions": [
+          {
+            "position_id": 17,
+            "position": "Right Wing",
+            "from": "00:00",
+            "to": null,
+            "from_period": 1,
+            "to_period": null,
+            "start_reason": "Starting XI",
+            "end_reason": "Final Whistle"
+          }
+        ]
+      },
+      {
+        "player_id": 910210,
+        "player_name": "Tobias Venn",
+        "player_nickname": null,
+        "jersey_number": 10,
+        "country": {
+          "id": 68,
+          "name": "England"
+        },
+        "cards": [],
+        "positions": [
+          {
+            "position_id": 19,
+            "position": "Center Attacking Midfield",
+            "from": "00:00",
+            "to": null,
+            "from_period": 1,
+            "to_period": null,
+            "start_reason": "Starting XI",
+            "end_reason": "Final Whistle"
+          }
+        ]
+      },
+      {
+        "player_id": 910211,
+        "player_name": "Rafael Ortega",
+        "player_nickname": null,
+        "jersey_number": 11,
+        "country": {
+          "id": 68,
+          "name": "England"
+        },
+        "cards": [],
+        "positions": [
+          {
+            "position_id": 21,
+            "position": "Left Wing",
+            "from": "00:00",
+            "to": "76:36",
+            "from_period": 1,
+            "to_period": 2,
+            "start_reason": "Starting XI",
+            "end_reason": "Substitution - Off (Tactical)"
+          }
+        ]
+      },
+      {
+        "player_id": 910209,
+        "player_name": "Conor Doyle",
+        "player_nickname": null,
+        "jersey_number": 9,
+        "country": {
+          "id": 68,
+          "name": "England"
+        },
+        "cards": [],
+        "positions": [
+          {
+            "position_id": 23,
+            "position": "Center Forward",
+            "from": "00:00",
+            "to": null,
+            "from_period": 1,
+            "to_period": null,
+            "start_reason": "Starting XI",
+            "end_reason": "Final Whistle"
+          }
+        ]
+      },
+      {
+        "player_id": 910213,
+        "player_name": "Sami Laine",
+        "player_nickname": null,
+        "jersey_number": 13,
+        "country": {
+          "id": 68,
+          "name": "England"
+        },
+        "cards": [],
+        "positions": []
+      },
+      {
+        "player_id": 910215,
+        "player_name": "Kai Morrow",
+        "player_nickname": null,
+        "jersey_number": 15,
+        "country": {
+          "id": 68,
+          "name": "England"
+        },
+        "cards": [],
+        "positions": [
+          {
+            "position_id": 5,
+            "position": "Left Center Back",
+            "from": "84:47",
+            "to": null,
+            "from_period": 2,
+            "to_period": null,
+            "start_reason": "Substitution - On (Tactical)",
+            "end_reason": "Final Whistle"
+          }
+        ]
+      },
+      {
+        "player_id": 910223,
+        "player_name": "Ethan Blackwood",
+        "player_nickname": null,
+        "jersey_number": 23,
+        "country": {
+          "id": 68,
+          "name": "England"
+        },
+        "cards": [],
+        "positions": []
+      },
+      {
+        "player_id": 910216,
+        "player_name": "Joel Mbeki",
+        "player_nickname": null,
+        "jersey_number": 16,
+        "country": {
+          "id": 68,
+          "name": "England"
+        },
+        "cards": [],
+        "positions": [
+          {
+            "position_id": 11,
+            "position": "Left Defensive Midfield",
+            "from": "65:20",
+            "to": null,
+            "from_period": 2,
+            "to_period": null,
+            "start_reason": "Substitution - On (Tactical)",
+            "end_reason": "Final Whistle"
+          }
+        ]
+      },
+      {
+        "player_id": 910217,
+        "player_name": "Aidan Cross",
+        "player_nickname": null,
+        "jersey_number": 17,
+        "country": {
+          "id": 68,
+          "name": "England"
+        },
+        "cards": [],
+        "positions": [
+          {
+            "position_id": 9,
+            "position": "Right Defensive Midfield",
+            "from": "79:07",
+            "to": null,
+            "from_period": 2,
+            "to_period": null,
+            "start_reason": "Substitution - On (Tactical)",
+            "end_reason": "Final Whistle"
+          }
+        ]
+      },
+      {
+        "player_id": 910214,
+        "player_name": "Theo Lindgren",
+        "player_nickname": null,
+        "jersey_number": 14,
+        "country": {
+          "id": 68,
+          "name": "England"
+        },
+        "cards": [],
+        "positions": [
+          {
+            "position_id": 21,
+            "position": "Left Wing",
+            "from": "76:36",
+            "to": null,
+            "from_period": 2,
+            "to_period": null,
+            "start_reason": "Substitution - On (Tactical)",
+            "end_reason": "Final Whistle"
+          }
+        ]
+      },
+      {
+        "player_id": 910219,
+        "player_name": "Dominic Hart",
+        "player_nickname": null,
+        "jersey_number": 19,
+        "country": {
+          "id": 68,
+          "name": "England"
+        },
+        "cards": [],
+        "positions": []
+      }
+    ]
+  }
+]

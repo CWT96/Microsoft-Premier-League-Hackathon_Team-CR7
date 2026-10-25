@@ -26,7 +26,8 @@ backend/             Python 3.11 + FastAPI                       stephenwzkong, 
   social/            rooms + simulated users: global crowd, bot friends, ops funnel
   tests/             pytest, one file per module
 frontend/            phone UI, framework chosen by CWT96         CWT96
-data/source/         simulated MATCH dataset, uploaded by a teammate (pending)  uploader + backend
+data/source/         simulated MATCH dataset (Hudl/StatsBomb format), generated  backend
+data/generator/      seeded match simulator + validator that builds data/source/ backend
 data/generated/      derived files, gitignored                    backend
 infra/               .env.example, Dockerfile, ACA notes          backend
 .github/CODEOWNERS   auto-assigns reviewers per folder
@@ -75,6 +76,8 @@ python -m venv .venv && source .venv/bin/activate
 pip install -r backend/requirements.txt
 uvicorn backend.app.main:app --reload      # http://localhost:8000
 pytest backend/tests                        # must pass before every PR
+python -m data.generator.generate           # rebuild data/source/ (deterministic)
+python -m data.generator.check              # validate the dataset (must-haves + realism)
 # frontend: see frontend/README.md once CWT96 picks the stack
 ```
 

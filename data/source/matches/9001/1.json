@@ -1,0 +1,272 @@
+[
+  {
+    "match_id": 9000001,
+    "match_date": "2026-08-15",
+    "kick_off": "15:00:00.000",
+    "competition": {
+      "competition_id": 9001,
+      "country_name": "England",
+      "competition_name": "Quick-Play Synthetic League"
+    },
+    "season": {
+      "season_id": 1,
+      "season_name": "2026/2027"
+    },
+    "home_team": {
+      "home_team_id": 9101,
+      "home_team_name": "Northbridge FC",
+      "home_team_gender": "male",
+      "home_team_group": null,
+      "country": {
+        "id": 68,
+        "name": "England"
+      },
+      "managers": [
+        {
+          "id": 9301,
+          "name": "Colm Brennan",
+          "nickname": null,
+          "dob": "1978-03-14",
+          "country": {
+            "id": 68,
+            "name": "England"
+          }
+        }
+      ]
+    },
+    "away_team": {
+      "away_team_id": 9102,
+      "away_team_name": "Calder Town",
+      "away_team_gender": "male",
+      "away_team_group": null,
+      "country": {
+        "id": 68,
+        "name": "England"
+      },
+      "managers": [
+        {
+          "id": 9302,
+          "name": "Ingrid Solheim",
+          "nickname": null,
+          "dob": "1981-11-02",
+          "country": {
+            "id": 68,
+            "name": "England"
+          }
+        }
+      ]
+    },
+    "home_score": 2,
+    "away_score": 1,
+    "match_status": "available",
+    "match_status_360": "unscheduled",
+    "last_updated": "2026-10-25T00:00:00.000000",
+    "last_updated_360": null,
+    "metadata": {
+      "data_version": "1.1.0",
+      "shot_fidelity_version": "2",
+      "xy_fidelity_version": "2"
+    },
+    "match_week": 1,
+    "competition_stage": {
+      "id": 1,
+      "name": "Regular Season"
+    },
+    "stadium": {
+      "id": 9201,
+      "name": "Riverside Park",
+      "country": {
+        "id": 68,
+        "name": "England"
+      }
+    },
+    "referee": {
+      "id": 9401,
+      "name": "Alan Pickering",
+      "country": {
+        "id": 68,
+        "name": "England"
+      }
+    }
+  },
+  {
+    "match_id": 9000002,
+    "match_date": "2026-08-16",
+    "kick_off": "13:30:00.000",
+    "competition": {
+      "competition_id": 9001,
+      "country_name": "England",
+      "competition_name": "Quick-Play Synthetic League"
+    },
+    "season": {
+      "season_id": 1,
+      "season_name": "2026/2027"
+    },
+    "home_team": {
+      "home_team_id": 9103,
+      "home_team_name": "Harrowgate Athletic",
+      "home_team_gender": "male",
+      "home_team_group": null,
+      "country": {
+        "id": 68,
+        "name": "England"
+      },
+      "managers": [
+        {
+          "id": 9303,
+          "name": "Desmond Achebe",
+          "nickname": null,
+          "dob": "1975-06-21",
+          "country": {
+            "id": 68,
+            "name": "England"
+          }
+        }
+      ]
+    },
+    "away_team": {
+      "away_team_id": 9104,
+      "away_team_name": "Wexmoor Rovers",
+      "away_team_gender": "male",
+      "away_team_group": null,
+      "country": {
+        "id": 68,
+        "name": "England"
+      },
+      "managers": [
+        {
+          "id": 9304,
+          "name": "Paulo Esteves",
+          "nickname": null,
+          "dob": "1983-01-30",
+          "country": {
+            "id": 68,
+            "name": "England"
+          }
+        }
+      ]
+    },
+    "home_score": 1,
+    "away_score": 0,
+    "match_status": "available",
+    "match_status_360": "unscheduled",
+    "last_updated": "2026-10-25T00:00:00.000000",
+    "last_updated_360": null,
+    "metadata": {
+      "data_version": "1.1.0",
+      "shot_fidelity_version": "2",
+      "xy_fidelity_version": "2"
+    },
+    "match_week": 1,
+    "competition_stage": {
+      "id": 1,
+      "name": "Regular Season"
+    },
+    "stadium": {
+      "id": 9203,
+      "name": "The Old Kiln",
+      "country": {
+        "id": 68,
+        "name": "England"
+      }
+    },
+    "referee": {
+      "id": 9402,
+      "name": "Sofia Marchetti",
+      "country": {
+        "id": 68,
+        "name": "England"
+      }
+    }
+  },
+  {
+    "match_id": 9000003,
+    "match_date": "2026-08-22",
+    "kick_off": "17:30:00.000",
+    "competition": {
+      "competition_id": 9001,
+      "country_name": "England",
+      "competition_name": "Quick-Play Synthetic League"
+    },
+    "season": {
+      "season_id": 1,
+      "season_name": "2026/2027"
+    },
+    "home_team": {
+      "home_team_id": 9104,
+      "home_team_name": "Wexmoor Rovers",
+      "home_team_gender": "male",
+      "home_team_group": null,
+      "country": {
+        "id": 68,
+        "name": "England"
+      },
+      "managers": [
+        {
+          "id": 9304,
+          "name": "Paulo Esteves",
+          "nickname": null,
+          "dob": "1983-01-30",
+          "country": {
+            "id": 68,
+            "name": "England"
+          }
+        }
+      ]
+    },
+    "away_team": {
+      "away_team_id": 9102,
+      "away_team_name": "Calder Town",
+      "away_team_gender": "male",
+      "away_team_group": null,
+      "country": {
+        "id": 68,
+        "name": "England"
+      },
+      "managers": [
+        {
+          "id": 9302,
+          "name": "Ingrid Solheim",
+          "nickname": null,
+          "dob": "1981-11-02",
+          "country": {
+            "id": 68,
+            "name": "England"
+          }
+        }
+      ]
+    },
+    "home_score": 3,
+    "away_score": 3,
+    "match_status": "available",
+    "match_status_360": "unscheduled",
+    "last_updated": "2026-10-25T00:00:00.000000",
+    "last_updated_360": null,
+    "metadata": {
+      "data_version": "1.1.0",
+      "shot_fidelity_version": "2",
+      "xy_fidelity_version": "2"
+    },
+    "match_week": 2,
+    "competition_stage": {
+      "id": 1,
+      "name": "Regular Season"
+    },
+    "stadium": {
+      "id": 9204,
+      "name": "Moorgate Ground",
+      "country": {
+        "id": 68,
+        "name": "England"
+      }
+    },
+    "referee": {
+      "id": 9403,
+      "name": "Gavin Thorne",
+      "country": {
+        "id": 68,
+        "name": "England"
+      }
+    }
+  }
+]
