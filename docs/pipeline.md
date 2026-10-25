@@ -126,14 +126,7 @@ The timing agent decides **when** a question appears and **in what rhythm**. The
 | Category | When | Count per match |
 |---|---|---|
 | Instant | Dull stretch entered; cooldown 45s or more; a stretch that stays dull for 90s or more may get a rapid-fire pair 10s apart | At most 8 per half |
-| Forecast | 2 at kickoff (`goals_over`, `team_wins`, resolve FT); 2 at half time (`card_second_half`, `second_half_goal`, resolve FT) | 4 |
-| Favourite-player forecast | 1 at kickoff (first half, resolves HT), 1 at half time (second half, resolves FT) | 2 |
-| Favourite-player instant | Fixed slots at about 40:00 and 70:00. If an attack is under way, wait until it ends. | 2 |
-
-**Kickoff and half time:** the three questions appear together as a stack the user swipes through.
-- Kickoff questions appear in a pre-match lobby before the replay starts.
-- At half time the replay pauses in `break` mode.
-- Each stacked question locks after **60 seconds of real time**, or earlier when the room host presses resume or skip.
+| All kinds | All kinds come through dull slots; kind drawn at random, see `backend/bank/` | See `backend/bank/` |
 
 **Time units:** `open_at`, `lock_at` and `resolve_by` are match seconds, but answer windows are real time.
 - While an instant or player-instant question is open, the replay **drops to 1×** until the result is shown, then returns to the chosen speed (default 15×). So "6 seconds to answer" is 6 real seconds at every speed.
@@ -158,6 +151,8 @@ Every user in the match receives the same questions at the same match second. Fa
 - **Output** is strict JSON matching `contracts/question.schema.json`. If validation fails, it falls back to a default template question with canned text.
 
 **Template catalog (all binary):**
+
+Source of truth: `backend/bank/templates.json` (28 templates); this table lists the v2 originals.
 
 | ID | Category | Question | Options | Resolution rule | Window |
 |---|---|---|---|---|---|
