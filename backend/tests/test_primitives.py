@@ -130,6 +130,16 @@ def test_next_matching_complete_and_direction():
         assert settle(d, [p], WIN, CTX, False) == want
 
 
+
+def test_next_matching_forward_is_two_way():
+    fwd = {"primitive": "next_matching", "filter": {"type": "pass"},
+           "test": {"forward": True}, "no_event": "no"}
+    for end, want in (([21, 10], "yes"), ([20, 30], "no"), ([10, 10], "no")):
+        p = ev(150, "pass", start=[20, 10], end=end)
+        assert settle(fwd, [p], WIN, CTX, False) == want
+    assert settle(fwd, [ev(150, "pass")], WIN, CTX, False) == "no"
+    assert settle(fwd, [], WIN, CTX, True) == "no"
+
 def test_filters():
     assert event_matches(ev(1, "pass", outcome="complete"), {"type": ["pass"], "outcome": "complete"}, CTX)
     assert event_matches(ev(1, team="TGT"), {"team": "opponent"}, CTX)

@@ -813,9 +813,9 @@
     "teaches": "player stats"
   },
   {
-    "id": "player_next_pass_complete",
+    "id": "player_next_pass_forward",
     "kind": "player",
-    "text": "Will {player}'s next pass find a teammate?",
+    "text": "Will {player}'s next pass go forward?",
     "options": [
       "yes",
       "no"
@@ -833,14 +833,13 @@
         "player": "favourite"
       },
       "test": {
-        "complete": true
+        "forward": true
       },
       "no_event": "no"
     },
     "prob": "player",
     "rare": false,
     "positions": [
-      "GK",
       "DF",
       "MF"
     ],
@@ -851,7 +850,7 @@
       "player_active",
       "position_fit"
     ],
-    "teaches": "completed pass"
+    "teaches": "forward pass"
   },
   {
     "id": "player_next_pass_long",

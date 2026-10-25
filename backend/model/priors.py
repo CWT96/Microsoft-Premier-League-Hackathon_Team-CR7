@@ -30,6 +30,6 @@ INSTANT_DEFAULTS: dict[str, dict[str, float]] = {
 }
 
 PLAYER_NEXT_PASS: dict[str, dict[str, float]] = {
-    "complete": {"GK": 0.75, "DF": 0.85, "MF": 0.82},
+    "forward": {"DF": 0.55, "MF": 0.45},
     "long": {"GK": 0.55, "DF": 0.30, "MF": 0.25},
 }

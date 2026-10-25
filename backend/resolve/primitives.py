@@ -187,6 +187,8 @@ def _test_event(test: dict, e: dict) -> str:
     if "complete" in test:
         return "yes" if e.get("outcome") == "complete" else "no"
     start, end = e.get("start"), e.get("end")
+    if "forward" in test:
+        return "yes" if start and end and end[0] > start[0] else "no"
     if "min_length_m" in test:
         if not start or not end:
             return "short"

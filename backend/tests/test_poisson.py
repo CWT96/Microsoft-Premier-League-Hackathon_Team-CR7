@@ -149,9 +149,9 @@ def test_instant_uses_defaults():
 
 
 def test_player_next_pass_from_position():
-    t = load_bank()["player_next_pass_complete"]
+    t = load_bank()["player_next_pass_forward"]
     p = PRICERS["player"](t, {"window_s": 600}, _state(), Player("p", "P", "DF", "DF"))
-    assert p["yes"] == pytest.approx(0.85) and p["no"] == pytest.approx(0.15)
+    assert p["yes"] == pytest.approx(0.55) and p["no"] == pytest.approx(0.45)
     t = load_bank()["player_next_pass_long"]
     p = PRICERS["player"](t, {"window_s": 600}, _state(), Player("p", "P", "GK", "GK"))
     assert p["long"] == pytest.approx(0.55)

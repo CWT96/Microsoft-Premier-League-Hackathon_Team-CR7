@@ -190,9 +190,9 @@ def _price_player(t: Template, params: dict, state: MatchState,
     spec = t.resolve
     if spec["primitive"] == "next_matching":
         test = spec["test"]
-        kind = "complete" if "complete" in test else "long"
+        kind = "forward" if "forward" in test else "long"
         p = PLAYER_NEXT_PASS[kind][player.position]
-        return {"yes": p, "no": 1 - p} if kind == "complete" else {"long": p, "short": 1 - p}
+        return {"yes": p, "no": 1 - p} if kind == "forward" else {"long": p, "short": 1 - p}
     stat = spec["filter"].get("stat") or spec["stat_by_position"][player.position]
     need = _n_needed(t, params) - count_already(t, params, state, player)
     if "window_s" in params:

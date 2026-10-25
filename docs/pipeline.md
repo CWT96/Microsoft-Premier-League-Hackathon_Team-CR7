@@ -181,7 +181,7 @@ The catalog is extended by adding a row here, a resolver rule in `backend/resolv
   1. **Top-2 options.** It ranks a template's outcomes so the generator shows the two most likely.
   2. **AI hint.** The hint is hidden by default. A user can tap to reveal it (*"AI leans Back, 52%"*). The probability is renormalised over the two options shown. Answering correctly after using the hint earns half points (see [6]).
   3. **Fair lines for favourite-player questions.** Players differ a lot: a goalkeeper may touch the ball 20 times, a central midfielder 80. To give everyone questions of equal count **and** equal difficulty:
-     - **Forecast:** `fair_line` picks the threshold that puts P(yes) closest to 0.5 for *that* player, for example GK saves ≥2 (P=0.49), CB clearances ≥4 (P=0.52), ST shots ≥2 (P=0.47).
+     - **Forecast:** `fair_line` picks the threshold that puts P(yes) closest to 0.5 for *that* player, for example, over a full 45-minute half: GK saves ≥2 (P=0.44), CB clearances ≥2 (P=0.59), CM completed passes ≥23 (P=0.49). A striker's shots have no line inside the band over a full half (1+ is 0.71, 2+ is 0.36), so a different player question is picked instead.
      - **Instant:** `player_touch_window` runs at fixed slots, with a window tuned so P(touch)≈0.5, for example GK 2 min, CB 60s, ST 90s.
      - **Guardrail:** a player question is issued only if its tuned P(yes) lies in [0.4, 0.6]. Otherwise it falls back to `player_touch_window`, which can always be tuned.
 - **Lock:** answers close at `lock_at` (6 seconds after the question appears). Only events after `lock_at` count, and answers that reach the server late are rejected. *Future work:* offset each user's stream delay so the game stays fair and resistant to cheating.

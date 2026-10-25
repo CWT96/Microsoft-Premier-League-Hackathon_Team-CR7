@@ -154,7 +154,7 @@ The v2 templates `card_second_half` and `second_half_goal` become `card_window` 
 |---|---|---|---|---|
 | `player_touch_window` *(v2)* | Will {player} touch the ball in {window_label}? | all | any event by the player; window tuned | |
 | `player_stat_over` *(v2)* | Will {player} make {line}+ {stat} this half? | all (stat by position) | GK saves, DF clearances, MF completed passes, FW shots | |
-| `player_next_pass_complete` | Will {player}'s next pass find a teammate? | GK DF MF | next pass by the player within 10m is `complete`; no pass → No | |
+| `player_next_pass_forward` | Will {player}'s next pass go forward? | DF MF | next pass by the player within 10m ends further up the pitch (`end.x > start.x`); no pass → No. Replaced "find a teammate?" (75–85% yes, never near 50/50) | |
 | `player_next_pass_long` | {player}'s next pass: long or short? | GK DF MF | > 25m; no pass in 10m → short | |
 | `player_shot_window` | Will {player} take a shot in {window_label}? | MF FW | window tuned | |
 | `player_win_ball_window` | Will {player} win the ball back in {window_label}? | DF MF | tackle `won` or interception; window tuned | |
