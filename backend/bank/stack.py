@@ -23,15 +23,23 @@ def stack_rng(match_id: str, phase: Phase) -> random.Random:
 
 
 def restart_state(state: MatchState, phase: Phase) -> MatchState:
-    """The match as it is at the restart: clock reset, nothing open, nobody in possession."""
+    """The match at the restart: clock reset, no window count, nobody in possession.
+
+    Questions still open (open_template_ids) are kept so they are not asked again.
+    """
     t, half = _RESTART[phase]
+    # open_template_ids stays: a whole-match question still open must not be asked again.
     return replace(state, t=t, half=half, possession_team=None, open_window_count=0,
-                   open_template_ids=[], last_template_id=None)
+                   last_template_id=None)
 
 
 def select_stack(state: MatchState, phase: Phase, users: dict[str, Player],
                  bank: dict[str, Template]) -> StackDecision | None:
-    """Choose the stack for this restart, or None if there is nothing to ask."""
+    """Choose the stack for this restart, or None if there is nothing to ask.
+
+    Caller contract: add the stack's template ids to state.open_template_ids while they are
+    open. Stack questions are NOT added to open_window_count (they skip that limit).
+    """
     rs = restart_state(state, phase)
     open_at = rs.t
     rng = stack_rng(state.match_id, phase)

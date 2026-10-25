@@ -167,5 +167,30 @@ def test_half_label_in_stacks():
 def test_restart_state():
     s = restart_state(_half_time_state(open_window_count=2), "half_time")
     assert (s.t, s.half, s.possession_team, s.open_window_count) == (2700.0, 2, None, 0)
-    assert s.open_template_ids == [] and s.last_template_id is None
+    assert s.open_template_ids == [] and s.last_template_id is None  # input had none open
     assert s.score == {"AAA": 2, "BBB": 1} and len(s.events) == 6
+
+
+def test_restart_state_keeps_open_template_ids():
+    s = restart_state(_half_time_state(open_template_ids=["team_wins"], last_template_id="x"),
+                      "half_time")
+    assert s.open_template_ids == ["team_wins"] and s.last_template_id is None
+
+
+def test_open_whole_match_questions_not_asked_again():
+    for i in range(60):
+        st = _half_time_state(match_id=f"o{i}", open_template_ids=["team_wins", "goals_over"])
+        d = select_stack(st, "half_time", USERS, BANK)
+        assert not {"team_wins", "goals_over"} & {c.template_id for c in d.shared}
+
+
+def test_half_time_kickoff_counted_cards_wait_for_second_half_events():
+    first_half = _half_time_state().events
+    found = 0
+    for i in range(60):
+        d = select_stack(_half_time_state(match_id=f"k{i}"), "half_time", USERS, BANK)
+        for c in d.shared + list(d.per_user.values()):
+            if BANK[c.template_id].counts_from == "kickoff":
+                found += 1
+                assert settle_candidate(c, first_half, BANK, closed=False) is None, c.template_id
+    assert found > 0
