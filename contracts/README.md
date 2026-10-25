@@ -32,7 +32,7 @@ Every message, in both directions, uses one envelope:
 | `join` | `{match_id, room_id, display_name, team, player_id}` | First message after connect. `room_id` may be null (global only). |
 | `answer` | `{qid, option}` | Rejected if it arrives after `lock_at` or after `question.locked`, whichever comes first. One answer per question. |
 | `hint.request` | `{qid}` | Reveals the AI hint; halves points for this question. |
-| `control` | `{action: "speed" \| "skip" \| "resume", value}` | Demo controls, accepted **only from the room host** (the room creator; a solo player is host of a private room). `speed`: 1–15. `skip`: `"next"` only: jumps to 3 s before the next calm spell or scheduled moment (player slot, water break, half time, full time), never past one. `resume`: leave a half-time or water-break pause. |
+| `control` | `{action: "speed" \| "skip" \| "resume", value}` | Demo controls, accepted **only from the room host** (the room creator; a solo player is host of a private room). `speed`: 1–15. `skip`: `"next"` only: jumps to 3 s before the next scheduled moment (player slot, water break, half time, full time), never past one. Calm play resumes within seconds after every jump, so a judge still sees the feed. `resume`: leave a half-time or water-break pause. |
 | `feed.resume` | `{}` | The user tapped the nudge; their feed restarts. |
 
 ### Server → client
