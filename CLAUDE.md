@@ -17,6 +17,7 @@ backend/             Python 3.11 + FastAPI                       stephenwzkong, 
   app/               FastAPI app, /ws, /api/*, replay clock, Pydantic models mirroring contracts/
   ingest/            [0] adapter: teammate's match dataset (data/source/) → MatchEvent stream
   detect/            [1] dull-moment + attack-end detector
+  bank/              question bank: templates, guards, slot selection
   model/             [3] probability model (top-2, hint, fair lines)
   resolve/           [4] resolver (one rule per catalog template)
   scoring/           [6] scoring formula (pure functions)
