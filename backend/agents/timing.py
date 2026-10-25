@@ -354,6 +354,11 @@ class TimingAgent:
             self._live(state, cost, sig, moments, decisions)
         return TimingOutput(tuple(moments), tuple(decisions))
 
+    @property
+    def calm(self) -> bool:
+        """True if the last live step was calm (cost at or below the candidate threshold)."""
+        return self._calm_since is not None
+
     def _check_values(self, state: DetectorState) -> None:
         """Log once per unknown categorical value (detector and agent out of step)."""
         for name in ("ball_zone", "situation", "mode", "break_kind"):

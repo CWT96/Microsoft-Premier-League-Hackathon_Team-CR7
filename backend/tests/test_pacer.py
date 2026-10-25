@@ -17,7 +17,8 @@ from backend.app.pacer import Pacer
 from backend.core.types import Moment
 
 
-def mom(i: int, open_at: float, kind="instant", category="instant", window=6.0, half=1) -> Moment:
+def mom(i: int, open_at: float, kind="instant", category="instant", window=R.CARD_WINDOW_S,
+        half=1) -> Moment:
     return Moment(moment_id=f"q-{i}", kind=kind, category=category, open_at=open_at,
                   lock_at=open_at + window, lock_rule="fixed", situation="calm_play", cost=0.1,
                   half=half)
@@ -65,13 +66,13 @@ def test_takes_newest_open_moment_with_enough_time_left():
     assert p.next_card(104, 1, ms).moment_id == "q-2"
 
 
-def test_never_delivers_with_less_than_three_seconds_left():
+def test_never_delivers_with_less_than_the_margin_left():
     p = Pacer("u")
-    m = mom(1, 100)  # locks at 106
+    m = mom(1, 100)  # locks at 108, margin 5 s
     assert p.next_card(103.5, 1, [m]) is None
     assert p.next_card(103.0, 1, [m]).moment_id == "q-1"
     p2 = Pacer("v")
-    assert p2.next_card(107, 1, [m]) is None  # already locked
+    assert p2.next_card(109, 1, [m]) is None  # already locked
 
 
 def test_never_redelivers_and_blocks_while_card_is_open():
@@ -160,7 +161,7 @@ def test_open_card_past_lock_counts_as_unanswered_lock():
     p2 = Pacer("v")
     for i in (1, 2):
         p2.next_card(100 * i, 1, [mom(i, 100 * i)])
-        p2.next_card(100 * i + 6, 1, [])  # app never called on_lock
+        p2.next_card(100 * i + R.CARD_WINDOW_S, 1, [])  # app never called on_lock
     assert p2.paused and p2.pending_nudge() == R.NUDGE_TEXT
 
 
