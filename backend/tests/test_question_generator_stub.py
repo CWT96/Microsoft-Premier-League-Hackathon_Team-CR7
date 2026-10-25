@@ -67,7 +67,8 @@ def test_next_pass_dir_options_are_the_model_top2_and_dead_zone() -> None:
         ids = [o.id for o in q.options]
         assert len(ids) == 2 and set(ids) <= {"forward", "sideways", "backward"}
         assert q.params == {"dead_zone_m": 5}
-        assert q.text == "Next pass: forward or back?"
+        labels = [o.label.lower() for o in q.options]
+        assert q.text == f"Next pass: {labels[0]} or {labels[1]}?"
 
 
 def test_next_pass_dir_shows_sideways_when_the_model_ranks_it(monkeypatch) -> None:
