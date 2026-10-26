@@ -1,0 +1,22 @@
+{
+  "v": 3,
+  "createdOnFiles": {"v": 1, "at": "2026-10-25T16:20:00Z"},
+  "title": "Matchday Call — Demo UX",
+  "launch": {"view": "canvas"},
+  "pages": [],
+  "boards": {
+    "Main.dc.html": {"x": 0, "y": 0, "w": 390, "h": 844, "title": "01 · Scan → Landing", "is_interactive": true},
+    "Pick.dc.html": {"x": 470, "y": 0, "w": 390, "h": 844, "title": "02 · Pick team + players", "is_interactive": true},
+    "Live.dc.html": {"x": 940, "y": 0, "w": 390, "h": 844, "title": "03 · Live — Real-time calls", "is_interactive": true},
+    "Forecast.dc.html": {"x": 1410, "y": 0, "w": 390, "h": 844, "title": "04 · Live — Forecast", "is_interactive": true},
+    "Result.dc.html": {"x": 1880, "y": 0, "w": 390, "h": 844, "title": "05 · Full-time results", "is_interactive": true},
+    "Signup.dc.html": {"x": 2350, "y": 0, "w": 390, "h": 844, "title": "06 · Save points (semi sign-up)", "is_interactive": true},
+    "HUD.dc.html": {"x": 0, "y": 1264, "w": 1440, "h": 1100, "title": "Score HUD + points system"}
+  },
+  "order": ["Main.dc.html", "Pick.dc.html", "Live.dc.html", "Forecast.dc.html", "Result.dc.html", "Signup.dc.html", "HUD.dc.html"],
+  "notes": {
+    "flow": {"x": 0, "y": -300, "text": "Matchday Call — demo flow", "kind": "title1", "maxW": 2740},
+    "hud": {"x": 0, "y": 1000, "text": "Score HUD + points system", "kind": "title1", "maxW": 1440}
+  },
+  "designSystems": []
+}

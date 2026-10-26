@@ -2,6 +2,8 @@
 
 **Owner:** `CWT96`. Framework is CWT96's choice. Record it here once picked, with the run command.
 
+**UX prototype:** [`demo-ux/`](demo-ux/README.md) holds the design-canvas prototype: all screens, the points model, the motion spec, and a list of where it differs from `docs/pipeline.md`.
+
 The frontend talks to the backend only through `../contracts/` (WebSocket `/ws` + `/api/*`). Ask in a `contracts/` PR if a field is missing; do not work around it.
 
 ## Screens (priority from the root README)

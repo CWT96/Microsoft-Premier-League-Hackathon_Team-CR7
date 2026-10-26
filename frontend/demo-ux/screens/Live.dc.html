@@ -1,0 +1,565 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Matchday Call — Live real-time calls</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,600;0,700;0,800;1,800&amp;family=Inter:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;background:#1A0020}
+a{color:#04F5FF}a:hover{color:#8AFAFF}
+@keyframes mcLive{0%{opacity:1}50%{opacity:.25}100%{opacity:1}}
+@keyframes mcOrbit{0%{transform:translate(-50%,-50%) translate(7px,3px)}50%{transform:translate(-50%,-50%) translate(11px,-5px)}100%{transform:translate(-50%,-50%) translate(7px,3px)}}
+@keyframes mcPulse{0%{transform:translate(-50%,-50%) scale(.7);opacity:.9}100%{transform:translate(-50%,-50%) scale(2.4);opacity:0}}
+@keyframes mcClose{from{transform:translate(-50%,-50%) translate(46px,-38px)}to{transform:translate(-50%,-50%) translate(11px,-9px)}}
+@keyframes mcPop{0%{transform:scale(1.9);opacity:0}14%{transform:scale(.94);opacity:1}22%{transform:scale(1)}100%{transform:scale(1);opacity:1}}
+@keyframes mcRibbon{0%{transform:translateX(-28px);opacity:0}100%{transform:translateX(0);opacity:1}}
+@keyframes mcRise{0%{transform:translateY(6px);opacity:0}20%{opacity:1}100%{transform:translateY(-14px);opacity:0}}
+@keyframes mcBump{0%{transform:scale(1.28)}100%{transform:scale(1)}}
+@keyframes mcDim{0%{background:rgba(26,0,32,0)}100%{background:rgba(26,0,32,.6)}}
+@keyframes mcGlow{0%{box-shadow:0 0 0 0 rgba(4,245,255,.5)}100%{box-shadow:0 0 0 10px rgba(4,245,255,0)}}
+.mc-live-dot{animation:mcLive 1.4s ease-in-out infinite}
+.mc-ball{animation:mcOrbit 1.6s ease-in-out infinite}
+.mc-ring{animation:mcPulse 1.3s ease-out infinite}
+.mc-pop{animation:mcPop .9s cubic-bezier(.2,.9,.2,1) both}
+.mc-rib1{animation:mcRibbon .28s ease-out .18s both}
+.mc-rib2{animation:mcRibbon .28s ease-out .28s both}
+.mc-rise{animation:mcRise 1.2s ease-out both}
+.mc-bump{animation:mcBump .4s ease-out both}
+.mc-dim{animation:mcDim .2s ease-out both}
+.mc-glow{animation:mcGlow 1.1s ease-out infinite}
+@keyframes mcPulse2{0%{transform:scale(.7);opacity:.9}100%{transform:scale(2.2);opacity:0}}
+.mc-ring2{animation:mcPulse2 1.3s ease-out infinite}
+@keyframes mcFeed{0%{opacity:0;transform:translateX(-10px)}8%{opacity:1;transform:translateX(0)}75%{opacity:1;transform:translateX(0)}100%{opacity:0;transform:translateX(0)}}
+.mc-opt{cursor:pointer}
+.mc-opt:disabled{cursor:default}
+.mc-btn{cursor:pointer}
+</style>
+</helmet>
+<div style="position: relative; width: 390px; height: 844px; box-sizing: border-box; background: #1A0020; color: #F3F6F9; font-family: Inter, system-ui, sans-serif; display: flex; flex-direction: column; overflow: hidden">
+
+  <div style="display: flex; align-items: center; justify-content: space-between; padding: 14px 16px 10px">
+    <div style="display: flex; flex-direction: column; gap: 4px">
+      <div style="display: flex; align-items: center; gap: 6px; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 14px; letter-spacing: 1px; color: #FF5C93">
+        <span class="mc-live-dot" style="width: 7px; height: 7px; border-radius: 50%; background: #FF5C93; display: inline-block"></span>
+        <span>LIVE 23'</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 6px; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 22px; line-height: 1">
+        <span style="width: 24px; height: 24px; border-radius: 7px; background: #FFFFFF; display: flex; align-items: center; justify-content: center; flex: none"><img src="../assets/crests/ars.svg" alt="Arsenal" style="width: 18px; height: 18px; object-fit: contain"></span>
+        <span>ARS</span><span>1 – 0</span><span>CHE</span>
+        <span style="width: 24px; height: 24px; border-radius: 7px; background: #FFFFFF; display: flex; align-items: center; justify-content: center; flex: none"><img src="../assets/crests/che.svg" alt="Chelsea" style="width: 18px; height: 18px; object-fit: contain"></span>
+      </div>
+    </div>
+    <div style="position: relative; display: flex; flex-direction: column; align-items: flex-end">
+      <sc-if value="{{isReveal}}" hint-placeholder-val="{{ false }}">
+        <div class="mc-rise" style="position: absolute; right: 0; top: -14px; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-style: italic; font-size: 18px; color: #00FF85">+{{gained}}</div>
+      </sc-if>
+      <div class="{{bumpClass}}" style="display: flex; align-items: baseline; gap: 4px">
+        <span style="font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-style: italic; font-size: 34px; line-height: 1; color: #00FF85">{{scoreText}}</span>
+        <span style="font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 13px; color: #CDB8D1">PTS</span>
+      </div>
+      <div style="font-size: 11px; color: #CDB8D1">#1 in your room</div>
+    </div>
+  </div>
+
+  <div style="display: flex; gap: 6px; margin: 0 16px; padding: 4px; background: #37003C; border-radius: 12px">
+    <div aria-current="page" style="flex: 1; height: 38px; border-radius: 9px; background: #F3F6F9; color: #1A0020; display: flex; align-items: center; justify-content: center; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 17px; letter-spacing: 1px">REAL TIME</div>
+    <a href="Forecast.dc.html" style="flex: 1; height: 38px; border-radius: 9px; color: #F3F6F9; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 6px; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 17px; letter-spacing: 1px">
+      <span>FORECAST</span>
+      <span style="padding: 2px 6px; border-radius: 6px; background: #00FF85; color: #1A0020; font-size: 12px; letter-spacing: 0.5px">+500 OPEN</span>
+    </a>
+  </div>
+
+  <div style="display: flex; align-items: center; gap: 10px; margin: 10px 16px 0; font-size: 12px; color: #CDB8D1">
+    <span style="font-family: 'Barlow Condensed', sans-serif; font-weight: 700; letter-spacing: 1px">ROOM 4K7Q</span>
+    <span style="display: flex; align-items: center; gap: 4px"><span style="width: 18px; height: 18px; border-radius: 50%; background: #04F5FF; color: #002A2C; font-size: 10px; font-weight: 700; display: flex; align-items: center; justify-content: center">M</span>1,180</span>
+    <span style="display: flex; align-items: center; gap: 4px"><span style="width: 18px; height: 18px; border-radius: 50%; background: #C9A2FF; color: #1E0A3A; font-size: 10px; font-weight: 700; display: flex; align-items: center; justify-content: center">D</span>960</span>
+    <button class="mc-btn" onClick="{{toggleSync}}" aria-expanded="{{syncOpen}}" style="margin-left: auto; height: 28px; padding: 0 10px; border-radius: 999px; border: 1px solid #5C2A63; background: #37003C; color: #F3F6F9; display: flex; align-items: center; gap: 6px; font-family: inherit; font-size: 11px; font-weight: 600">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#04F5FF" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 0 1 15.5-6.2L21 8M21 3v5h-5M21 12a9 9 0 0 1-15.5 6.2L3 16M3 21v-5h5"></path></svg>
+      <span>{{syncLabel}}</span>
+    </button>
+  </div>
+
+  <sc-if value="{{syncOpen}}" hint-placeholder-val="{{ false }}">
+    <div style="position: absolute; left: 16px; right: 16px; top: 168px; z-index: 5; padding: 14px; border-radius: 14px; background: #37003C; border: 1px solid #04F5FF; box-shadow: 0 14px 30px rgba(0,0,0,0.5); display: flex; flex-direction: column; gap: 10px">
+      <div style="font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 18px; letter-spacing: 1px">WHERE ARE YOU WATCHING?</div>
+      <div style="font-size: 12px; color: #CDB8D1; line-height: 1.4">TV and streams run behind the live data. We hold each call back by the same amount, so it opens and locks in step with your screen and nobody gets a head start.</div>
+      <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px">
+        <sc-for list="{{sources}}" as="s" hint-placeholder-count="3">
+          <button class="mc-btn" onClick="{{s.pick}}" aria-pressed="{{s.on}}" style="{{s.style}}">
+            <span style="font-size: 13px; font-weight: 700">{{s.label}}</span>
+            <span style="font-size: 11px; color: #CDB8D1">{{s.delay}}</span>
+          </button>
+        </sc-for>
+      </div>
+      <div style="font-size: 11px; color: #CDB8D1">Still off? Tap the <span style="color: #04F5FF; font-weight: 700">sync chip</span> when you hear the next whistle and we fine-tune it.</div>
+    </div>
+  </sc-if>
+
+  <div style="position: relative; margin: 10px 16px 0; height: 206px; border-radius: 14px; overflow: hidden; background: #14492F; background-image: repeating-linear-gradient(90deg, rgba(255,255,255,0.035) 0, rgba(255,255,255,0.035) 36px, rgba(0,0,0,0) 36px, rgba(0,0,0,0) 72px)">
+    <div style="position: absolute; left: 8px; right: 8px; top: 8px; bottom: 8px; border: 1.5px solid rgba(255,255,255,0.38); border-radius: 2px"></div>
+    <div style="position: absolute; left: 50%; top: 8px; bottom: 8px; border-left: 1.5px solid rgba(255,255,255,0.38)"></div>
+    <div style="position: absolute; left: 50%; top: 50%; width: 54px; height: 54px; margin: -27px 0 0 -27px; border: 1.5px solid rgba(255,255,255,0.38); border-radius: 50%"></div>
+    <div style="position: absolute; left: 8px; top: 28%; height: 44%; width: 46px; border: 1.5px solid rgba(255,255,255,0.38); border-left: none"></div>
+    <div style="position: absolute; right: 8px; top: 28%; height: 44%; width: 46px; border: 1.5px solid rgba(255,255,255,0.38); border-right: none"></div>
+
+    <sc-for list="{{players}}" as="p" hint-placeholder-count="22">
+      <div style="position: absolute; left: {{p.l}}; top: {{p.t}}; width: 15px; height: 15px; margin: -7.5px 0 0 -7.5px; box-sizing: border-box; border-radius: 50%; background: {{p.bg}}; border: 1.5px solid {{p.edge}}; color: {{p.ink}}; display: flex; align-items: center; justify-content: center; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 8.5px; line-height: 1; transition: left {{p.dur}}ms linear, top {{p.dur}}ms linear">{{p.n}}</div>
+    </sc-for>
+
+    <div style="position: absolute; left: {{hl.l}}; top: {{hl.t}}; width: 0; height: 0; transition: left {{hl.dur}}ms {{hl.ease}}, top {{hl.dur}}ms {{hl.ease}}">
+      <div class="mc-ring2" style="position: absolute; left: -11px; top: -11px; width: 22px; height: 22px; box-sizing: border-box; border-radius: 50%; border: 2px solid #00FF85"></div>
+      <div style="position: absolute; left: 0; top: -27px; transform: translateX(-50%); padding: 1px 5px; border-radius: 5px; background: #00FF85; color: #1A0020; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 12px; white-space: nowrap">{{hl.tag}}</div>
+    </div>
+    <div style="position: absolute; left: {{ball.l}}; top: {{ball.t}}; width: 7px; height: 7px; margin: -3.5px 0 0 -3.5px; border-radius: 50%; background: #FFFFFF; box-shadow: 0 0 0 1.5px #1A0020, 0 0 6px rgba(255,255,255,0.7); transition: left {{ball.dur}}ms {{ball.ease}}, top {{ball.dur}}ms {{ball.ease}}"></div>
+
+    <sc-if value="{{feedOn}}" hint-placeholder-val="{{ false }}">
+    <div style="position: absolute; left: 12px; top: 12px; display: flex; flex-direction: column; gap: 4px">
+      <sc-for list="{{feed}}" as="f" hint-placeholder-count="2">
+        <div style="display: flex; align-items: center; gap: 6px; padding: 3px 7px; border-radius: 6px; background: rgba(26,0,32,0.8); font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 12px; letter-spacing: 0.5px; animation: mcFeed 3600ms ease-out {{f.delay}} both">
+          <span style="color: {{f.color}}">{{f.pts}}</span><span style="color: #EEDFF0">{{f.label}}</span>
+        </div>
+      </sc-for>
+    </div>
+    </sc-if>
+    <div style="position: absolute; right: 12px; bottom: 10px; font-size: 10px; color: rgba(255,255,255,0.8)">Live positions · {{syncShort}}</div>
+
+    <sc-if value="{{isReveal}}" hint-placeholder-val="{{ false }}">
+      <div class="mc-dim" style="position: absolute; left: 0; top: 0; right: 0; bottom: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px">
+        <div class="mc-pop" style="display: flex; flex-direction: column; align-items: center; gap: 2px">
+          <div style="font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-style: italic; font-size: 70px; line-height: 0.9; color: {{popColor}}; text-shadow: 0 0 22px {{popGlow}}">+{{gained}}</div>
+          <div style="font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 20px; letter-spacing: 3px; color: #FFFFFF">{{popLabel}}</div>
+        </div>
+        <div class="mc-rib1" style="display: flex; align-items: center; gap: 8px; padding: 4px 10px; border-radius: 6px; background: rgba(26,0,32,0.88); font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 14px; letter-spacing: 1px">
+          <span style="color: {{popColor}}">+{{basePts}}</span><span>{{ribbon1}}</span>
+        </div>
+        <sc-if value="{{hasBonus}}" hint-placeholder-val="{{ false }}">
+          <div class="mc-rib2" style="display: flex; align-items: center; gap: 8px; padding: 4px 10px; border-radius: 6px; background: rgba(26,0,32,0.88); font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 14px; letter-spacing: 1px">
+            <span style="color: #00FF85">+{{bonusPts}}</span><span>STREAK x{{streak}}</span>
+          </div>
+        </sc-if>
+      </div>
+    </sc-if>
+    <sc-if value="{{isMissed}}" hint-placeholder-val="{{ false }}">
+      <div class="mc-dim" style="position: absolute; left: 0; top: 0; right: 0; bottom: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px">
+        <div class="mc-pop" style="font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-style: italic; font-size: 52px; line-height: 0.9; color: #FFFFFF">TOO QUICK!</div>
+        <div class="mc-rib1" style="padding: 4px 10px; border-radius: 6px; background: rgba(26,0,32,0.88); font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 14px; letter-spacing: 1px">IT WAS A {{answerLabel}} · STREAK SAFE</div>
+      </div>
+    </sc-if>
+  </div>
+
+  <div style="flex: 1; margin: 10px 16px 0; padding: 14px; background: #37003C; border: 1px solid #5C2A63; border-radius: 16px; display: flex; flex-direction: column; gap: 10px">
+    <sc-if value="{{isStandby}}" hint-placeholder-val="{{ false }}">
+      <div style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; text-align: center">
+        <div style="display: flex; align-items: center; gap: 8px; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 15px; letter-spacing: 2px; color: #04F5FF">
+          <span class="mc-live-dot" style="width: 8px; height: 8px; border-radius: 50%; background: #04F5FF; display: inline-block"></span>
+          <span>READING THE PLAY</span>
+        </div>
+        <div style="font-size: 14px; color: #CDB8D1; line-height: 1.45; max-width: 280px">The next call drops at the next decision moment: a player on the ball, a free kick, a one-on-one.</div>
+        <div style="font-size: 12px; color: #CDB8D1">Keep watching. It pops up the moment it's on.</div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{hasCall}}" hint-placeholder-val="{{ true }}">
+      <div style="display: flex; align-items: center; justify-content: space-between">
+        <div style="display: flex; align-items: center; gap: 6px">
+          <span style="display: flex; align-items: center; gap: 5px; padding: 3px 8px; border-radius: 6px; background: rgba(4,245,255,0.14); color: #04F5FF; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 13px; letter-spacing: 1px">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5L18 18M6 18l2.5-2.5M15.5 8.5L18 6"></path></svg>
+            <span>AI CALL</span>
+          </span>
+          <span style="padding: 3px 8px; border-radius: 6px; background: #4A0E52; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 13px; letter-spacing: 1px">{{prompt.kind}}</span>
+        </div>
+        <div style="font-size: 12px; color: #CDB8D1">+100 if you're right</div>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 2px">
+        <div style="font-size: 13px; color: #CDB8D1">{{prompt.ctx}}</div>
+        <div style="font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 28px; line-height: 1.05; text-transform: uppercase">{{prompt.q}}</div>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 8px; height: 22px; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 14px; letter-spacing: 1px">
+        <sc-if value="{{isAsk}}" hint-placeholder-val="{{ true }}">
+          <span class="mc-glow" style="width: 10px; height: 10px; border-radius: 50%; background: #04F5FF; display: inline-block"></span>
+          <span style="color: #04F5FF">OPEN · LOCKS THE MOMENT {{prompt.who}} PLAYS IT</span>
+        </sc-if>
+        <sc-if value="{{isLocked}}" hint-placeholder-val="{{ false }}">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#04F5FF" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg>
+          <span style="color: #04F5FF">LOCKED IN · WAITING FOR THE PLAY</span>
+        </sc-if>
+        <sc-if value="{{isDone}}" hint-placeholder-val="{{ false }}">
+          <span style="color: #CDB8D1">CALL CLOSED</span>
+        </sc-if>
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px">
+        <sc-for list="{{options}}" as="o" hint-placeholder-count="3">
+          <button class="mc-opt" onClick="{{o.pick}}" disabled="{{o.disabled}}" aria-label="{{o.label}}" style="{{o.style}}">
+            <span style="color: {{o.iconColor}}; display: flex">
+              <sc-if value="{{o.isPass}}" hint-placeholder-val="{{ false }}">
+                <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5" cy="17" r="2.2"></circle><circle cx="19" cy="7" r="2.2"></circle><path d="M7 15.5L16.8 8.5M13 8h4v4"></path></svg>
+              </sc-if>
+              <sc-if value="{{o.isShoot}}" hint-placeholder-val="{{ false }}">
+                <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h7v16h-7"></path><path d="M3 12h11M10 8l4 4-4 4"></path></svg>
+              </sc-if>
+              <sc-if value="{{o.isDribble}}" hint-placeholder-val="{{ false }}">
+                <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 18c3 0 3-6 6-6s3 6 6 6 3-6 6-6"></path><circle cx="20" cy="6" r="2"></circle></svg>
+              </sc-if>
+            </span>
+            <span style="font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 21px; letter-spacing: 1px; color: #F3F6F9">{{o.label}}</span>
+            <span style="font-size: 11px; font-weight: 600; color: {{o.subColor}}">{{o.sub}}</span>
+          </button>
+        </sc-for>
+      </div>
+
+      <div style="min-height: 44px; display: flex; align-items: center; justify-content: space-between; gap: 10px">
+        <sc-if value="{{isAsk}}" hint-placeholder-val="{{ true }}">
+          <div style="font-size: 13px; color: #CDB8D1">Call it before the ball moves.</div>
+        </sc-if>
+        <sc-if value="{{isLocked}}" hint-placeholder-val="{{ false }}">
+          <div style="font-size: 13px; color: #CDB8D1">Points land the instant it happens.</div>
+        </sc-if>
+        <sc-if value="{{isDone}}" hint-placeholder-val="{{ false }}">
+          <div style="font-size: 13px; font-weight: 600; color: #F3F6F9; line-height: 1.3">{{resultLine}}</div>
+        </sc-if>
+      </div>
+    </sc-if>
+  </div>
+
+  <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px 18px">
+    <div style="display: flex; align-items: center; gap: 8px">
+      <span style="font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 14px; letter-spacing: 1px; color: #CDB8D1">STREAK</span>
+      <div style="display: flex; gap: 4px">
+        <sc-for list="{{pips}}" as="p" hint-placeholder-count="5">
+          <span style="width: 14px; height: 6px; border-radius: 3px; background: {{p.color}}"></span>
+        </sc-for>
+      </div>
+      <span style="font-size: 11px; color: #CDB8D1">{{streakHint}}</span>
+    </div>
+    <a href="Result.dc.html" style="font-size: 12px; font-weight: 600">End match (demo)</a>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    var self = this;
+    this.TICK = 400;
+    this.timer = null; this.sim = null; this.noise = {}; this.P = {}; this.V = {}; this.speed = {};
+    this.roster().home.concat(this.roster().away).forEach(function (p) { self.P[p.id] = [p.x, p.y]; self.V[p.id] = [0, 0]; });
+    this.holder = "h36"; this.ball = this.off(this.P.h36); this.ballDur = 400; this.ballEase = "linear"; this.passing = 0;
+    this.mode = "circulate"; this.pending = null; this.outcome = null; this.since = 0; this.callStart = 0;
+    this.state = {
+      phase: "standby", idx: 0, choice: null, score: 1240, streak: 2, gained: 0, basePts: 0, bonusPts: 0, correct: false,
+      syncOpen: false, source: "tv", started: false, frame: 0,
+      feed: [ { label: "CORRECT CALL", pts: "+100", color: "#00FF85" }, { label: "CALLED IT", pts: "+10", color: "#EEDFF0" } ]
+    };
+  }
+  componentDidMount() {
+    var self = this;
+    this.sim = setInterval(function () { self.tick(); }, this.TICK);
+    this.timer = setTimeout(function () {
+      self.beginBuild();
+      self.timer = setTimeout(function () { self.startCall(); }, 4200);
+    }, 1500);
+  }
+  componentWillUnmount() { if (this.timer) { clearTimeout(this.timer); } if (this.sim) { clearInterval(this.sim); } }
+  roster() {
+    return {
+      home: [
+        { id: "h1", n: 1, name: "RAYA", x: 7, y: 50 }, { id: "h4", n: 4, name: "WHITE", x: 30, y: 84 },
+        { id: "h2", n: 2, name: "SALIBA", x: 24, y: 62 }, { id: "h6", n: 6, name: "GABRIEL", x: 24, y: 38 },
+        { id: "h33", n: 33, name: "CALAFIORI", x: 30, y: 16 }, { id: "h36", n: 36, name: "ZUBIMENDI", x: 40, y: 52 },
+        { id: "h41", n: 41, name: "RICE", x: 48, y: 32 }, { id: "h8", n: 8, name: "ØDEGAARD", x: 52, y: 66 },
+        { id: "h7", n: 7, name: "SAKA", x: 64, y: 86 }, { id: "h14", n: 14, name: "GYÖKERES", x: 68, y: 50 },
+        { id: "h10", n: 10, name: "EZE", x: 64, y: 16 }
+      ],
+      away: [
+        { id: "a1", n: 1, name: "SÁNCHEZ", x: 94, y: 50 }, { id: "a24", n: 24, name: "JAMES", x: 81, y: 20 },
+        { id: "a3", n: 3, name: "FOFANA", x: 84, y: 40 }, { id: "a6", n: 6, name: "COLWILL", x: 84, y: 60 },
+        { id: "a21", n: 21, name: "HATO", x: 81, y: 80 }, { id: "a25", n: 25, name: "CAICEDO", x: 72, y: 42 },
+        { id: "a8", n: 8, name: "ENZO", x: 72, y: 60 }, { id: "a10", n: 10, name: "PALMER", x: 61, y: 50 },
+        { id: "a7", n: 7, name: "NETO", x: 63, y: 24 }, { id: "a41", n: 41, name: "ESTÊVÃO", x: 63, y: 76 },
+        { id: "a9", n: 9, name: "JOÃO PEDRO", x: 52, y: 48 }
+      ]
+    };
+  }
+  prompts() {
+    return [
+      { kind: "FREE KICK", ctx: "Free kick, 25 yards out. Rice (#41) stands over it.", q: "What does he do?", who: "RICE", answer: "shoot", win: 9000,
+        carrier: "h41", spot: [70, 45], wall: ["a3", "a25", "a8"], outcome: { type: "shot" } },
+      { kind: "OPEN PLAY", ctx: "Ødegaard (#8) has it at the edge of the box", q: "What's his next move?", who: "ØDEGAARD", answer: "pass", win: 5500,
+        carrier: "h8", spot: [70, 42], drift: [1.2, -1], presser: "a25", outcome: { type: "pass", to: "h14" } },
+      { kind: "ONE-ON-ONE", ctx: "Saka (#7) faces his defender down the right", q: "What happens next?", who: "SAKA", answer: "dribble", win: 4500,
+        carrier: "h7", spot: [68, 82], drift: [0.8, 0], presser: "a21", outcome: { type: "dribble", to: [84, 70] } }
+    ];
+  }
+  rnd(a, b) { return a + Math.random() * (b - a); }
+  clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
+  off(xy) { return [xy[0] + 1.6, xy[1] + 2.2]; }
+  isHome(id) { return id && id.charAt(0) === "h"; }
+  passTo(id, ease) {
+    var to = this.off(this.P[id]);
+    var dist = Math.sqrt(Math.pow(to[0] - this.ball[0], 2) + Math.pow((to[1] - this.ball[1]) * 0.65, 2));
+    this.ballDur = Math.round(260 + dist * 22);
+    this.ballEase = ease || "cubic-bezier(.25,.7,.35,1)";
+    this.ball = to; this.holder = id;
+    this.passing = Math.ceil(this.ballDur / this.TICK);
+  }
+  formation(anchor) {
+    var self = this, r = this.roster(), T = {};
+    var dxH = (anchor[0] - 58) * 0.32, dxA = (anchor[0] - 58) * 0.2, dy = (anchor[1] - 50) * 0.16;
+    function jit(id) {
+      var n = self.noise[id] || [0, 0];
+      n = [self.clamp(n[0] + self.rnd(-0.5, 0.5), -2.5, 2.5), self.clamp(n[1] + self.rnd(-0.7, 0.7), -3.5, 3.5)];
+      self.noise[id] = n;
+      return n;
+    }
+    r.home.forEach(function (p) {
+      var j = jit(p.id), gk = p.n === 1;
+      T[p.id] = [p.x + (gk ? dxH * 0.2 : dxH) + j[0], p.y + (gk ? dy * 0.3 : dy) + j[1]];
+    });
+    r.away.forEach(function (p) {
+      var j = jit(p.id), gk = p.n === 1;
+      T[p.id] = [p.x + (gk ? 0 : dxA) + j[0] * (gk ? 0.2 : 1), p.y + (gk ? dy * 0.4 : dy) + j[1]];
+    });
+    return T;
+  }
+  move(T, speed) {
+    var self = this;
+    Object.keys(this.P).forEach(function (id) {
+      var p = self.P[id], t = T[id] || p, v = self.V[id];
+      var dx = (t[0] - p[0]) * 1.05, dy = (t[1] - p[1]) * 0.68;
+      var dist = Math.sqrt(dx * dx + dy * dy);
+      var max = speed[id] || 1.5;
+      var len = Math.min(dist * 0.6, max);
+      var sx = dist > 0 ? dx / dist * len : 0, sy = dist > 0 ? dy / dist * len : 0;
+      v[0] = v[0] * 0.45 + sx * 0.55; v[1] = v[1] * 0.45 + sy * 0.55;
+      self.P[id] = [self.clamp(p[0] + v[0] / 1.05, 3, 97), self.clamp(p[1] + v[1] / 0.68, 6, 94)];
+    });
+  }
+  tick() {
+    var self = this;
+    var s = this.state, phase = s.phase;
+    var anchor = this.passing > 0 ? this.ball : (this.holder ? this.P[this.holder] : this.ball);
+    var T = this.formation(anchor), speed = {};
+    var p = this.pending, h = this.holder;
+    if (this.mode === "circulate") {
+      if (h && this.isHome(h) && this.passing === 0) {
+        var hp = this.P[h];
+        T[h] = [this.clamp(hp[0] + this.rnd(0.4, 1.6), 14, 74), this.clamp(hp[1] + this.rnd(-1.5, 1.5), 10, 90)];
+      }
+      if (h && !this.isHome(h)) { T[h] = this.P[h].slice(); }
+      this.since += 1;
+      if (this.passing === 0 && this.since >= (this.isHome(h) ? 5 : 3)) {
+        this.since = 0;
+        var from = this.P[h] || this.ball;
+        var mates = this.roster().home.filter(function (m) {
+          if (m.n === 1 || m.id === h) { return false; }
+          var q = self.P[m.id];
+          return Math.abs(q[0] - from[0]) < 30 && Math.abs(q[1] - from[1]) < 40;
+        });
+        if (!this.isHome(h)) { mates = [ { id: "h6" }, { id: "h2" } ]; }
+        if (mates.length) { this.passTo(mates[Math.floor(Math.random() * mates.length)].id); }
+      }
+    } else if (this.mode === "build" && p) {
+      if (this.holder === p.carrier && this.passing === 0) { T[p.carrier] = p.spot.slice(); speed[p.carrier] = 2.6; }
+      if (p.wall) { p.wall.forEach(function (id, i) { T[id] = [p.spot[0] + 8, p.spot[1] - 4.5 + i * 4.5]; speed[id] = 2.4; }); }
+      if (p.presser) { var c = this.P[p.carrier]; T[p.presser] = [c[0] + 7, c[1] - 9]; speed[p.presser] = 2.2; }
+    } else if (this.mode === "call" && p) {
+      var k = Math.min(1, (Date.now() - this.callStart) / p.win);
+      var base = this.callSpot, dr = p.drift || [0, 0];
+      T[p.carrier] = p.wall ? base.slice() : [base[0] + dr[0] * k * 2, base[1] + dr[1] * k * 2];
+      speed[p.carrier] = 0.9;
+      if (p.wall) { p.wall.forEach(function (id, i) { T[id] = [p.spot[0] + 8, p.spot[1] - 4.5 + i * 4.5]; speed[id] = 1; }); }
+      if (p.presser) {
+        var cc = this.P[p.carrier], gap = 9 - 6 * k;
+        T[p.presser] = [cc[0] + gap * 0.6, cc[1] - gap * 0.8]; speed[p.presser] = 1.8;
+      }
+    } else if (this.mode === "outcome" && this.outcome) {
+      var o = this.outcome;
+      if (o.type === "dribble") {
+        T[o.carrier] = o.to.slice(); speed[o.carrier] = 3.2;
+        var cp = this.P[o.carrier]; T[o.presser] = [cp[0] - 2.5, cp[1] - 3]; speed[o.presser] = 2.6;
+      }
+      if (o.type === "pass" && this.holder && this.passing === 0) {
+        var rp = this.P[this.holder]; T[this.holder] = [rp[0] + 1.2, rp[1]]; speed[this.holder] = 1.6;
+      }
+      if (o.wall) { o.wall.forEach(function (id, i) { T[id] = [o.spot[0] + 8, o.spot[1] - 4.5 + i * 4.5]; }); }
+    }
+    this.move(T, speed);
+    if (this.passing > 0) {
+      this.passing -= 1;
+    } else if (this.holder) {
+      this.ball = this.off(this.P[this.holder]); this.ballDur = this.TICK; this.ballEase = "linear";
+    }
+    this.setState({ frame: s.frame + 1 });
+  }
+  beginBuild() {
+    var p = this.prompts()[this.state.idx];
+    this.pending = p; this.mode = "build";
+    if (this.holder !== p.carrier) { this.passTo(p.carrier); }
+  }
+  wrapUp() {
+    var self = this;
+    this.timer = setTimeout(function () {
+      self.mode = "circulate"; self.outcome = null; self.since = 0;
+      self.setState({ phase: "standby", idx: (self.state.idx + 1) % 3 });
+      self.timer = setTimeout(function () {
+        self.beginBuild();
+        self.timer = setTimeout(function () { self.startCall(); }, 4200);
+      }, 1600);
+    }, 3800);
+  }
+  fmt(n) { return Number(n).toLocaleString("en-US"); }
+  startCall() {
+    var self = this;
+    if (this.timer) { clearTimeout(this.timer); }
+    var p = this.prompts()[this.state.idx];
+    this.pending = p; this.mode = "call"; this.callStart = Date.now();
+    if (this.holder !== p.carrier) { this.passTo(p.carrier); }
+    this.callSpot = this.P[p.carrier].slice();
+    this.setState({ phase: "ask", choice: null, started: true });
+    this.timer = setTimeout(function () { self.action(); }, p.win);
+  }
+  playOutcome(p) {
+    var o = p.outcome;
+    this.mode = "outcome";
+    if (o.type === "shot") {
+      this.outcome = { type: "shot", wall: p.wall, spot: p.spot };
+      this.passTo("a1", "cubic-bezier(.15,.8,.3,1)");
+    } else if (o.type === "pass") {
+      this.outcome = { type: "pass" };
+      this.passTo(o.to);
+    } else {
+      this.outcome = { type: "dribble", carrier: p.carrier, presser: p.presser, to: o.to };
+    }
+  }
+  pick(opt) {
+    if (this.state.phase !== "ask") { return; }
+    this.setState({ phase: "locked", choice: opt });
+  }
+  action() {
+    var s = this.state;
+    var p = this.prompts()[s.idx];
+    this.playOutcome(p);
+    if (s.phase === "ask") {
+      this.setState({
+        phase: "missed", correct: false, gained: 0,
+        feed: [ { label: "TOO QUICK · STREAK SAFE", pts: "+0", color: "#CDB8D1" } ]
+      });
+      this.wrapUp();
+      return;
+    }
+    if (s.phase !== "locked") { return; }
+    var correct = s.choice === p.answer;
+    var streak = correct ? s.streak + 1 : 0;
+    var base = correct ? 100 : 10;
+    var bonus = correct && streak >= 3 ? 50 * (streak - 2) : 0;
+    var entries = [];
+    if (bonus) { entries.push({ label: "STREAK x" + streak, pts: "+" + bonus, color: "#00FF85" }); }
+    entries.push({ label: correct ? "CORRECT CALL" : "CALLED IT", pts: "+" + base, color: correct ? "#00FF85" : "#EEDFF0" });
+    this.setState({
+      phase: "reveal", correct: correct, streak: streak, gained: base + bonus, basePts: base, bonusPts: bonus,
+      score: s.score + base + bonus, feed: entries
+    });
+    this.wrapUp();
+  }
+  renderVals() {
+    var self = this;
+    var s = this.state;
+    var p = this.prompts()[s.idx];
+    var phase = s.phase;
+    var defs = [
+      { id: "pass", label: "PASS", hint: "to a teammate" },
+      { id: "shoot", label: "SHOOT", hint: "at goal" },
+      { id: "dribble", label: "DRIBBLE", hint: "run with it" }
+    ];
+    var base = "width: 100%; height: 108px; border-radius: 14px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font-family: inherit; padding: 0; ";
+    var idle = base + "background: #4A0E52; border: 2px solid #5C2A63;";
+    var faded = idle + " opacity: 0.4;";
+    var options = defs.map(function (d) {
+      var isChoice = s.choice === d.id, isAnswer = p.answer === d.id;
+      var style = idle, sub = d.hint, subColor = "#CDB8D1", iconColor = "#F3F6F9";
+      if (phase === "locked") {
+        if (isChoice) { style = base + "background: rgba(4,245,255,0.14); border: 2px solid #04F5FF;"; sub = "LOCKED"; subColor = "#04F5FF"; iconColor = "#04F5FF"; }
+        else { style = faded; }
+      } else if (phase === "reveal" || phase === "missed") {
+        if (isAnswer) { style = base + "background: rgba(0,255,133,0.16); border: 2px solid #00FF85;"; sub = isChoice ? "YOU CALLED IT" : "IT WAS THIS"; subColor = "#00FF85"; iconColor = "#00FF85"; }
+        else if (isChoice) { style = base + "background: #4A0E52; border: 2px solid #04F5FF; opacity: 0.7;"; sub = "YOUR CALL"; subColor = "#04F5FF"; }
+        else { style = faded; }
+      }
+      return {
+        label: d.label, sub: sub, subColor: subColor, iconColor: iconColor, style: style,
+        disabled: phase !== "ask",
+        isPass: d.id === "pass", isShoot: d.id === "shoot", isDribble: d.id === "dribble",
+        pick: function () { self.pick(d.id); }
+      };
+    });
+    var answerLabel = p.answer.toUpperCase();
+    var resultLine = phase === "missed"
+      ? "That was fast. No points lost, your streak is safe."
+      : s.correct
+        ? (s.streak >= 3 ? "On fire! " + s.streak + " in a row." : "Nailed it. Keep the streak going.")
+        : "So close. It was a " + answerLabel + ". +10 just for playing.";
+    var self2 = this;
+    var r = this.roster();
+    var players = [];
+    var holderInfo = null;
+    r.away.concat(r.home).forEach(function (pl) {
+      var xy = self2.P[pl.id];
+      var home = self2.isHome(pl.id), isH = pl.id === self2.holder;
+      if (isH) { holderInfo = { pl: pl, xy: xy }; }
+      players.push({ n: pl.n, l: xy[0] + "%", t: xy[1] + "%", dur: self2.TICK,
+        bg: home ? "#FF8A7A" : "#2F5BFF", ink: home ? "#1F0A07" : "#FFFFFF",
+        edge: isH ? "#00FF85" : (home ? "#3A120D" : "#DCE5FF") });
+    });
+    var hxy = holderInfo ? holderInfo.xy : [50, 50];
+    var hl = {
+      l: hxy[0] + "%", t: hxy[1] + "%",
+      dur: this.passing > 0 ? this.ballDur : this.TICK, ease: this.passing > 0 ? this.ballEase : "linear",
+      tag: holderInfo ? "#" + holderInfo.pl.n + " " + holderInfo.pl.name : ""
+    };
+    var ball = { l: this.ball[0] + "%", t: this.ball[1] + "%", dur: this.ballDur, ease: this.ballEase };
+    var pips = [0,1,2,3,4].map(function (i) { return { color: i < s.streak ? "#00FF85" : "#5C2A63" }; });
+    var srcDefs = [ { id: "tv", label: "TV", delay: "~6 s behind" }, { id: "stream", label: "Streaming", delay: "~30 s behind" }, { id: "stadium", label: "Stadium", delay: "Live" } ];
+    var cur = srcDefs.filter(function (x) { return x.id === s.source; })[0];
+    var sources = srcDefs.map(function (x) {
+      var on = x.id === s.source;
+      return {
+        label: x.label, delay: x.delay, on: on,
+        style: "height: 54px; border-radius: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; font-family: inherit; color: #F3F6F9; " + (on ? "background: rgba(4,245,255,0.14); border: 2px solid #04F5FF;" : "background: #4A0E52; border: 2px solid #4A0E52;"),
+        pick: function () { self.setState({ source: x.id, syncOpen: false }); }
+      };
+    });
+    var syncLabel = s.source === "stadium" ? "Synced · live" : "Synced to " + cur.label + " · " + cur.delay.replace(" behind", "");
+    return {
+      isStandby: phase === "standby", hasCall: phase !== "standby",
+      isAsk: phase === "ask", isLocked: phase === "locked", isReveal: phase === "reveal", isMissed: phase === "missed",
+      isDone: phase === "reveal" || phase === "missed",
+      scoreText: this.fmt(s.score), gained: this.fmt(s.gained), basePts: s.basePts, bonusPts: s.bonusPts,
+      hasBonus: s.bonusPts > 0, streak: s.streak,
+      bumpClass: phase === "reveal" ? "mc-bump" : "",
+      popColor: s.correct ? "#00FF85" : "#FFFFFF",
+      popGlow: s.correct ? "rgba(0,255,133,0.6)" : "rgba(255,255,255,0.35)",
+      popLabel: s.correct ? "CORRECT CALL" : "CALLED IT",
+      ribbon1: s.correct ? "READ THE PLAY" : "TOOK PART",
+      answerLabel: answerLabel,
+      prompt: p, options: options, resultLine: resultLine,
+      players: players, hl: hl, ball: ball,
+      feed: s.feed.map(function (f, i) { return Object.assign({}, f, { delay: (250 + i * 120) + "ms" }); }),
+      feedOn: phase === "reveal" || phase === "missed" || (phase === "standby" && !s.started),
+      pips: pips,
+      streakHint: s.streak >= 3 ? "On fire: +50 bonus per call" : "3 in a row = bonus",
+      syncOpen: s.syncOpen, sources: sources, syncLabel: syncLabel,
+      syncShort: s.source === "stadium" ? "live" : "matched to your " + cur.label,
+      toggleSync: function () { self.setState({ syncOpen: !self.state.syncOpen }); }
+    };
+  }
+}
+</script>
+</body>
+</html>

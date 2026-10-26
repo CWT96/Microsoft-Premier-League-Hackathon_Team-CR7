@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Matchday Call — Score HUD and points system</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,600;0,700;0,800;1,800&amp;family=Inter:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;background:#1A0020}
+a{color:#04F5FF}a:hover{color:#8AFAFF}
+@keyframes hudPop{0%{transform:scale(1.9);opacity:0}5%{transform:scale(.94);opacity:1}8%{transform:scale(1);opacity:1}75%{opacity:1}85%{opacity:0}100%{opacity:0}}
+@keyframes hudRib{0%,6%{transform:translateX(-30px);opacity:0}12%{transform:translateX(0);opacity:1}75%{opacity:1}85%{opacity:0}100%{opacity:0}}
+@keyframes hudRib2{0%,9%{transform:translateX(-30px);opacity:0}15%{transform:translateX(0);opacity:1}75%{opacity:1}85%{opacity:0}100%{opacity:0}}
+@keyframes hudBump{0%,10%{transform:scale(1)}14%{transform:scale(1.25)}24%{transform:scale(1)}100%{transform:scale(1)}}
+.hud-pop{animation:hudPop 3.2s cubic-bezier(.2,.9,.2,1) infinite}
+.hud-rib1{animation:hudRib 3.2s ease-out infinite}
+.hud-rib2{animation:hudRib2 3.2s ease-out infinite}
+.hud-bump{animation:hudBump 3.2s ease-out infinite}
+</style>
+</helmet>
+<div style="width: 1440px; height: 1100px; box-sizing: border-box; padding: 56px; background: #1A0020; color: #F3F6F9; font-family: Inter, system-ui, sans-serif; display: flex; flex-direction: column; gap: 32px">
+
+  <div style="display: flex; align-items: flex-end; justify-content: space-between">
+    <div style="display: flex; flex-direction: column; gap: 6px">
+      <div style="font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-style: italic; font-size: 56px; line-height: 1">SCORE HUD <span style="color: #00FF85">+ POINTS</span></div>
+      <div style="font-size: 16px; color: #CDB8D1">Every action pays out. Bigger, rarer calls get louder feedback.</div>
+    </div>
+    <div style="display: flex; gap: 10px">
+      <div style="padding: 10px 14px; border-radius: 12px; background: #37003C; display: flex; flex-direction: column; gap: 2px"><span style="font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 18px; color: #00FF85">NEVER MINUS</span><span style="font-size: 12px; color: #CDB8D1">Wrong calls still earn +10</span></div>
+      <div style="padding: 10px 14px; border-radius: 12px; background: #37003C; display: flex; flex-direction: column; gap: 2px"><span style="font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 18px; color: #00FF85">FORECAST ≥ 5× A CALL</span><span style="font-size: 12px; color: #CDB8D1">Harder to predict, bigger payout</span></div>
+      <div style="padding: 10px 14px; border-radius: 12px; background: #37003C; display: flex; flex-direction: column; gap: 2px"><span style="font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 18px; color: #00FF85">3 CHOICES, 1 TAP</span><span style="font-size: 12px; color: #CDB8D1">Readable by a first-time viewer</span></div>
+    </div>
+  </div>
+
+  <div style="display: grid; grid-template-columns: 620px minmax(0, 1fr); gap: 32px">
+    <div style="position: relative; height: 400px; border-radius: 20px; overflow: hidden; background: #14492F; background-image: repeating-linear-gradient(90deg, rgba(255,255,255,0.035) 0, rgba(255,255,255,0.035) 60px, rgba(0,0,0,0) 60px, rgba(0,0,0,0) 120px)">
+      <div style="position: absolute; left: 14px; right: 14px; top: 14px; bottom: 14px; border: 2px solid rgba(255,255,255,0.3)"></div>
+      <div style="position: absolute; left: 50%; top: 14px; bottom: 14px; border-left: 2px solid rgba(255,255,255,0.3)"></div>
+      <div style="position: absolute; left: 50%; top: 50%; width: 100px; height: 100px; margin: -50px 0 0 -50px; border: 2px solid rgba(255,255,255,0.3); border-radius: 50%"></div>
+      <div style="position: absolute; left: 0; top: 0; right: 0; bottom: 0; background: rgba(26,0,32,0.5)"></div>
+
+      <div style="position: absolute; right: 22px; top: 18px; display: flex; flex-direction: column; align-items: flex-end">
+        <div class="hud-bump" style="display: flex; align-items: baseline; gap: 4px">
+          <span style="font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-style: italic; font-size: 38px; line-height: 1; color: #00FF85">2,340</span>
+          <span style="font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 14px; color: #CDB8D1">PTS</span>
+        </div>
+      </div>
+      <div style="position: absolute; left: 22px; top: 22px; display: flex; flex-direction: column; gap: 5px">
+        <div style="display: flex; gap: 6px; padding: 3px 8px; border-radius: 6px; background: rgba(26,0,32,0.8); font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 14px"><span style="color: #00FF85">+100</span><span>CORRECT CALL</span></div>
+        <div style="display: flex; gap: 6px; padding: 3px 8px; border-radius: 6px; background: rgba(26,0,32,0.8); font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 14px"><span style="color: #EEDFF0">+10</span><span>CALLED IT</span></div>
+      </div>
+
+      <div style="position: absolute; left: 0; top: 0; right: 0; bottom: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px">
+        <div class="hud-pop" style="display: flex; flex-direction: column; align-items: center; gap: 4px">
+          <div style="font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-style: italic; font-size: 120px; line-height: 0.85; color: #00FF85; text-shadow: 0 0 34px rgba(0,255,133,0.6)">+1,000</div>
+          <div style="font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 30px; letter-spacing: 5px">FORECAST HIT</div>
+        </div>
+        <div class="hud-rib1" style="display: flex; gap: 10px; padding: 6px 14px; border-radius: 8px; background: rgba(26,0,32,0.88); font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 20px; letter-spacing: 1px"><span style="color: #00FF85">+1,000</span><span>NEXT 10 MIN · ARSENAL SHOT FIRST</span></div>
+        <div class="hud-rib2" style="display: flex; gap: 10px; padding: 6px 14px; border-radius: 8px; background: rgba(26,0,32,0.88); font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 20px; letter-spacing: 1px"><span style="color: #C9A2FF">+50</span><span>PLAYER BONUS · SAKA SHOT ON TARGET</span></div>
+      </div>
+      <div style="position: absolute; left: 22px; bottom: 18px; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 14px; letter-spacing: 2px; color: rgba(255,255,255,0.8)">TIER 3 · LOOPING PREVIEW</div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 10px">
+      <div style="font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 20px; letter-spacing: 2px; color: #CDB8D1">FEEDBACK TIERS</div>
+
+      <div style="display: grid; grid-template-columns: 70px 230px minmax(0, 1fr); align-items: center; gap: 16px; padding: 14px 18px; background: #37003C; border-radius: 14px">
+        <span style="font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 26px; color: #CDB8D1">T1</span>
+        <div style="display: flex; gap: 6px; padding: 3px 8px; border-radius: 6px; background: #1A0020; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 15px; justify-self: start"><span style="color: #EEDFF0">+10</span><span>CALLED IT</span></div>
+        <span style="font-size: 13px; color: #CDB8D1">Ribbon in the feed only. Quiet "you're in" for every call.</span>
+      </div>
+      <div style="display: grid; grid-template-columns: 70px 230px minmax(0, 1fr); align-items: center; gap: 16px; padding: 14px 18px; background: #37003C; border-radius: 14px">
+        <span style="font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 26px; color: #04F5FF">T2</span>
+        <div style="display: flex; align-items: baseline; gap: 8px"><span style="font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-style: italic; font-size: 40px; line-height: 1; color: #00FF85">+100</span><span style="font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 15px; letter-spacing: 2px">CORRECT CALL</span></div>
+        <span style="font-size: 13px; color: #CDB8D1">Pop over the pitch + light haptic. Streak ribbon stacks underneath.</span>
+      </div>
+      <div style="display: grid; grid-template-columns: 70px 230px minmax(0, 1fr); align-items: center; gap: 16px; padding: 14px 18px; background: #37003C; border-radius: 14px">
+        <span style="font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 26px; color: #00FF85">T3</span>
+        <div style="display: flex; align-items: baseline; gap: 8px"><span style="font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-style: italic; font-size: 52px; line-height: 1; color: #00FF85; text-shadow: 0 0 18px rgba(0,255,133,0.55)">+1K</span><span style="font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 15px; letter-spacing: 2px">FORECAST HIT</span></div>
+        <span style="font-size: 13px; color: #CDB8D1">Big pop with glow, dimmed pitch, sound + strong haptic. Player bonus too.</span>
+      </div>
+      <div style="display: grid; grid-template-columns: 70px 230px minmax(0, 1fr); align-items: center; gap: 16px; padding: 14px 18px; background: rgba(0,255,133,0.1); border: 1px solid rgba(0,255,133,0.55); border-radius: 14px">
+        <span style="font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 26px; color: #00FF85">T4</span>
+        <div style="display: flex; align-items: baseline; gap: 8px"><span style="font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-style: italic; font-size: 64px; line-height: 1; color: #00FF85; text-shadow: 0 0 22px rgba(0,255,133,0.65)">+3K</span><span style="font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 15px; letter-spacing: 2px">ORACLE</span></div>
+        <span style="font-size: 13px; color: #CDB8D1">Full-screen takeover at full time, then a one-tap "share to room".</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: grid; grid-template-columns: minmax(0, 1fr) 560px; gap: 32px">
+    <div style="display: flex; flex-direction: column; gap: 10px">
+      <div style="font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 20px; letter-spacing: 2px; color: #CDB8D1">POINTS TABLE</div>
+      <div style="background: #37003C; border-radius: 14px; padding: 6px 18px">
+        <sc-for list="{{table}}" as="r" hint-placeholder-count="8">
+          <div style="{{r.rowStyle}}">
+            <span style="flex: 1; font-size: 14px">{{r.moment}}</span>
+            <span style="width: 70px; font-size: 12px; color: #CDB8D1">{{r.mode}}</span>
+            <span style="width: 40px; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 16px; color: {{r.tierColor}}">{{r.tier}}</span>
+            <span style="width: 170px; text-align: right; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-style: italic; font-size: 22px; color: #00FF85">{{r.pts}}</span>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 10px">
+      <div style="font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 20px; letter-spacing: 2px; color: #CDB8D1">MOTION · ONE SCORE EVENT</div>
+      <div style="background: #37003C; border-radius: 14px; padding: 18px; display: flex; flex-direction: column; gap: 10px">
+        <sc-for list="{{motion}}" as="m" hint-placeholder-count="6">
+          <div style="display: flex; align-items: center; gap: 12px">
+            <span style="width: 150px; font-size: 13px; font-weight: 600">{{m.label}}</span>
+            <div style="position: relative; flex: 1; height: 18px; border-radius: 4px; background: #1A0020">
+              <div style="position: absolute; top: 0; bottom: 0; left: {{m.left}}; width: {{m.width}}; border-radius: 4px; background: {{m.color}}"></div>
+            </div>
+            <span style="width: 74px; text-align: right; font-size: 12px; color: #CDB8D1">{{m.ms}}</span>
+          </div>
+        </sc-for>
+        <div style="display: flex; justify-content: space-between; padding-left: 162px; padding-right: 86px; font-size: 11px; color: #CDB8D1"><span>0</span><span>700 ms</span><span>1,400 ms</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1100}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var tiers = { T1: "#CDB8D1", T2: "#04F5FF", T3: "#00FF85", T4: "#00FF85" };
+    var rows = [
+      ["Make any real-time call", "Real time", "T1", "+10"],
+      ["Real-time call is right", "Real time", "T2", "+100"],
+      ["Streak, 3+ right in a row", "Real time", "T2", "+50 per step"],
+      ["Next 5 min forecast hit", "Forecast", "T3", "+500"],
+      ["Next 10 min forecast hit", "Forecast", "T3", "+1,000"],
+      ["Next 15 min forecast hit", "Forecast", "T3", "+1,500"],
+      ["Full-time result right (+ exact score)", "Forecast", "T4", "+3,000 (+2,000)"],
+      ["Players you backed, scored by position: GK saves & clean sheets · DEF tackles & clean sheets · MID assists & key passes · FWD goals & shots", "Bonus", "T3", "Auto at full time"]
+    ];
+    var table = rows.map(function (r, i) {
+      return {
+        moment: r[0], mode: r[1], tier: r[2], pts: r[3], tierColor: tiers[r[2]],
+        rowStyle: "display: flex; align-items: center; gap: 12px; height: 46px;" + (i < rows.length - 1 ? " border-bottom: 1px solid #5C2A63;" : "")
+      };
+    });
+    var span = 1400;
+    function seg(label, start, dur, color, ms) {
+      return { label: label, left: (start / span * 100) + "%", width: (dur / span * 100) + "%", color: color, ms: ms };
+    }
+    var motion = [
+      seg("Pop in · scale 1.9→1", 0, 120, "#00FF85", "120 ms"),
+      seg("Settle overshoot", 120, 100, "#00B85F", "100 ms"),
+      seg("Ribbons slide in", 180, 300, "#04F5FF", "80 ms stagger"),
+      seg("Total rolls up + bump", 200, 400, "#C9A2FF", "400 ms"),
+      seg("Hold", 220, 900, "#5C2A63", "900 ms"),
+      seg("Fade out", 1120, 200, "#CDB8D1", "200 ms")
+    ];
+    return { table: table, motion: motion };
+  }
+}
+</script>
+</body>
+</html>
