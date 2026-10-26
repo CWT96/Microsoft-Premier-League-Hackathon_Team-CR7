@@ -111,3 +111,12 @@ def _templates_by_situation(situation: str) -> set[str]:
 def test_open_play_never_asks_a_next_pass_question_but_a_dead_ball_can() -> None:
     assert not (_templates_by_situation("calm_play") & NEXT_PASS)
     assert _templates_by_situation("throw_in") & NEXT_PASS
+
+
+def test_watch_counts_from_the_card_opening_not_the_lock() -> None:
+    gen = _gen()
+    _, q = _first_filled(gen, None)
+    res = Resolver(gen)
+    res.watch(q, q.lock_at, 1)
+    if gen.bank[q.template_id].counts_from == "lock":
+        assert res._open[q.qid].window.start_t == q.open_at < q.lock_at

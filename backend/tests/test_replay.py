@@ -168,7 +168,8 @@ def test_calm_moments_reach_the_user_and_attack_locks_the_open_card():
     answer_stack(h)
     h.play(answer=False)
     seq = state_t_at_each_message(h)
-    opens = [(d, t) for ty, d, t in seq if ty == "question.open" and d["category"] == "instant"]
+    # calm-play moments, whatever kind the bank drew for them (instant / window / player)
+    opens = [(d, t) for ty, d, t in seq if ty == "question.open" and d["situation"] == "calm_play"]
     assert len(opens) >= 3
     locks = [(d, t) for ty, d, t in seq if ty == "question.locked"]
     assert any(t == ATTACK_START for _, t in locks)  # early lock at attack start
@@ -674,3 +675,33 @@ def test_answers_carry_delivery_order_per_user():
     for uid in ("u0", "u1"):
         seqs = [a.seq for a in h.room._answers(h.room.members[uid])]
         assert sorted(seqs) == list(range(len(seqs))) and len(seqs) > 3
+
+
+def test_play_settling_a_card_early_scores_who_answered_and_skips_who_did_not():
+    """A answers, then play settles the question while the card is still up; B had not."""
+    from backend.core.types import Outcome
+    h = started(Harness(humans=2))
+    for uid in h.ids:  # clear the kickoff stack for both
+        for _ in range(4):
+            card = h.room.members[uid].open
+            if card is not None:
+                h.room.answer(uid, card.question.qid, card.question.options[0].id)
+
+    def shared_card_open() -> bool:
+        cards = [h.room.members[u].open for u in h.ids]
+        return all(c is not None and not c.locked for c in cards) and \
+            cards[0].question.qid == cards[1].question.qid
+    h.play(until=shared_card_open, answer=False)
+    q = h.room.members["u0"].open.question
+    pick = q.options[0].id
+    assert h.room.answer("u0", q.qid, pick)
+    h.room._handle_outcomes([Outcome(q.qid, "resolved", pick, (), h.room.state.t)])
+
+    assert {"qid": q.qid} in h.msgs("question.locked", "u1")
+    a = next(r for r in h.msgs("question.result", "u0") if r["qid"] == q.qid)
+    b = next(r for r in h.msgs("question.result", "u1") if r["qid"] == q.qid)
+    assert a["you"]["answered"] and a["you"]["correct"] is True
+    assert not b["you"]["answered"] and b["you"]["correct"] is None
+    assert h.room.members["u1"].open is None  # free for the next card at once
+    assert h.room.members["u1"].pacer._unanswered == 0  # a skip is not "ignored"
+    assert not h.room.answer("u1", q.qid, pick)  # too late now

@@ -216,6 +216,7 @@ class Room:
         self.deadlines: dict[str, float] = {}  # real-time lock of scheduled moments
         self.questions: dict[str, Question] = {}
         self.moment_qids: dict[str, list[str]] = {}
+        self.moment_of: dict[str, Moment] = {}
         self.probs: dict[str, dict[str, float]] = {}
         self.moment_cache: dict[tuple[str, str | None], Question | None] = {}
         self.watched: set[str] = set()
@@ -546,7 +547,10 @@ class Room:
             if q is not None and q.qid not in self.questions:
                 self.questions[q.qid] = q
                 self.moment_qids.setdefault(moment.moment_id, []).append(q.qid)
+                self.moment_of[q.qid] = moment
                 self.probs[q.qid] = self._shown_probs(q)
+                if q.qid in self.generator.candidates:  # bank questions count from the opening
+                    self._watch(q, q.open_at, moment.half)
         return self.moment_cache[key]
 
     def _shown_probs(self, q: Question) -> dict[str, float]:
@@ -685,6 +689,11 @@ class Room:
             q = self.questions.get(o.qid)
             if q is None:
                 continue
+            moment = self.moment_of.get(o.qid)
+            if moment is not None and moment.moment_id not in self.locked_moment_ids:
+                # play settled it while the card was up: lock now; whoever had not answered
+                # is skipped (no score) and the pacer hands them the next open card
+                self._lock_moment(moment, self.state.t, self.state.half, early=True)
             self.outcomes[o.qid] = o
             explanation = explainer.explain(o, q, self.names, self.match_id)
             self._send_results(q, o, explanation)

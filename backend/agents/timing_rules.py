@@ -63,7 +63,7 @@ SILENT_COST = 0.70  # at or above: silent, and stay silent until CANDIDATE_COST
 MIN_SPACING_S = 4.0
 AFTER_ATTACK_S = 8.0
 HALF_END_GUARD_S = 15.0
-CARD_WINDOW_S = 8.0  # open_at -> lock_at for instants
+CARD_WINDOW_S = 6.0  # open_at -> lock_at for instants (the bank's serve lag)
 STACK_WINDOW_S = 60.0  # kickoff and half-time stacks
 WATER_BREAK_WINDOW_S = 30.0
 HOLD_DELAY_S = 1.0
@@ -117,6 +117,6 @@ TONES = {
 #
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-MIN_LOCK_MARGIN_S = 5.0  # never deliver a moment with less than this left
+MIN_LOCK_MARGIN_S = 3.0  # never deliver a moment with less than this left (time to tap)
 MAX_UNANSWERED_IN_ROW = 2
 NUDGE_TEXT = "Still with us? Tap for the next one."

@@ -5,8 +5,9 @@ Inputs:  the question's bank Candidate (from ``BankGenerator``), events per seco
 Outputs: ``Outcome`` per qid, returned once when it settles
 
 Workflow:
-  - ``watch`` looks up the Candidate behind a qid. An early lock (attack, restart taken)
-    moves a lock-counted window's start back to the actual lock.
+  - ``watch`` looks up the Candidate behind a qid. A lock-counted window starts when the card
+    OPENS: an event while the card is up decides the question (the app then skips users who
+    had not answered yet), instead of being ignored until the lock.
   - ``step`` appends the second's events and runs ``bank.settle.settle_candidate`` for every
     open question; after full_end every question is closed.
 
@@ -37,7 +38,9 @@ class Resolver:
         self._seen: set[str] = set()  # every event id delivered
 
     def watch(self, question: Question, lock_t: float, lock_half: int | None = None) -> None:
-        """Start settling ``question``.
+        """Start settling ``question``; events after ``question.open_at`` count.
+
+        ``lock_t`` / ``lock_half`` are accepted for the app's call shape and not used.
 
         Raises:
             ValueError: the qid did not come from the bank generator.
@@ -46,8 +49,8 @@ class Resolver:
         if cand is None:
             raise ValueError(f"no bank candidate behind {question.qid}")
         template = self._gen.bank[cand.template_id]
-        if template.counts_from == "lock" and lock_t < cand.window.start_t:
-            cand = replace(cand, window=replace(cand.window, start_t=lock_t))
+        if template.counts_from == "lock":
+            cand = replace(cand, window=replace(cand.window, start_t=question.open_at))
         self._open[question.qid] = cand
 
     def _since(self, cand: Candidate) -> list[dict]:
