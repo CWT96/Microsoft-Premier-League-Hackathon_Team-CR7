@@ -2,7 +2,7 @@
 
 **Owner:** `CWT96`. **Tier:** design reference for P0–P2 screens.
 
-This is the UX prototype for the phone second screen, built in a Claude design canvas: six phone screens (390×844) plus one spec board for the score HUD. It shows the flow, the copy, the motion and the points model. It is a design spec, not the production frontend. The real app is still built against `../../contracts/`.
+This is the UX prototype for the phone second screen, built in a Claude design canvas: seven phone screens (390×844) plus one spec board for the score HUD. It shows the flow, the copy, the motion and the points model. It is a design spec, not the production frontend. The real app is still built against `../../contracts/`.
 
 ## What's in here
 
@@ -12,6 +12,7 @@ This is the UX prototype for the phone second screen, built in a Claude design c
 | `screens/Pick.dc.html` | 02 Pick a team (live or upcoming match), then back up to 2 players from that team's matchday squad |
 | `screens/Live.dc.html` | 03 Live, real-time calls: moving 2D pitch, AI call card (pass / shoot / dribble), points pop-up |
 | `screens/Forecast.dc.html` | 04 Live, forecasts: next 5, 10 or 15 minutes, full-time result with a linked exact score |
+| `screens/HalfTime.dc.html` | 04b Half time: paused pitch, second-half countdown, first-half points, and a bottom sheet asking to save progress by email |
 | `screens/Result.dc.html` | 05 Full time: points count up, badges, room leaderboard, "Save my points" |
 | `screens/Signup.dc.html` | 06 Email-only "semi sign-up", then a +500 welcome bonus |
 | `screens/HUD.dc.html` | Score HUD spec: feedback tiers, points table, motion timing for one score event |
@@ -37,10 +38,13 @@ The files need the design canvas runtime (`support.js`, not included), so they w
      - **There is no countdown.** The call locks the moment the ball moves. A slow user sees "Too quick!", loses nothing and keeps the streak.
      - **Calls run themselves.** They open and close as the match goes on, and there is no "next" button.
    - **Forecast:** windows for the next 5, 10 and 15 minutes, plus a full-time result. The result and the exact score are linked: change one and the other updates. The exact score can't be lower than the live score.
-4. **Full time.**
+4. **Half time.** A bottom sheet slides up: "Great first half. Save your progress."
+   - It shows the points so far, the user's place in the room ("Mia and Dan already saved theirs") and three perks (keep points if you leave, season leaderboard, +500 welcome bonus).
+   - Email only. Saving adds +500. "Maybe later" closes the sheet and leaves a small "Save your points" button that reopens it.
+5. **Full time.**
    - **Count-up:** "Count my points" starts it. Rows go real-time, then forecast, then player bonus. Each row counts up over 2.8 s with the same slow-down curve, and every bar fills to 100%.
    - **After the count:** the rank stamp, badges and room leaderboard come in one at a time, about 3.5 s in total.
-5. **Save points.** Email only, no password (we send a sign-in link). The screen offers the season leaderboard and partner rewards, then gives a +500 welcome bonus.
+6. **Save points.** Email only, no password (we send a sign-in link). The screen offers the season leaderboard and partner rewards, then gives a +500 welcome bonus.
 
 ## Points (as drawn in the prototype)
 

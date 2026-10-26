@@ -11,11 +11,12 @@
     "Forecast.dc.html": {"x": 1410, "y": 0, "w": 390, "h": 844, "title": "04 · Live — Forecast", "is_interactive": true},
     "Result.dc.html": {"x": 1880, "y": 0, "w": 390, "h": 844, "title": "05 · Full-time results", "is_interactive": true},
     "Signup.dc.html": {"x": 2350, "y": 0, "w": 390, "h": 844, "title": "06 · Save points (semi sign-up)", "is_interactive": true},
-    "HUD.dc.html": {"x": 0, "y": 1264, "w": 1440, "h": 1100, "title": "Score HUD + points system"}
+    "HUD.dc.html": {"x": 0, "y": 1264, "w": 1440, "h": 1100, "title": "Score HUD + points system"},
+    "HalfTime.dc.html": {"x": 2820, "y": 0, "w": 390, "h": 844, "title": "04b · Half-time save prompt", "is_interactive": true}
   },
-  "order": ["Main.dc.html", "Pick.dc.html", "Live.dc.html", "Forecast.dc.html", "Result.dc.html", "Signup.dc.html", "HUD.dc.html"],
+  "order": ["Main.dc.html", "Pick.dc.html", "Live.dc.html", "Forecast.dc.html", "Result.dc.html", "Signup.dc.html", "HUD.dc.html", "HalfTime.dc.html"],
   "notes": {
-    "flow": {"x": 0, "y": -300, "text": "Matchday Call — demo flow", "kind": "title1", "maxW": 2740},
+    "flow": {"x": 0, "y": -300, "text": "Matchday Call — demo flow", "kind": "title1", "maxW": 3210},
     "hud": {"x": 0, "y": 1000, "text": "Score HUD + points system", "kind": "title1", "maxW": 1440}
   },
   "designSystems": []
