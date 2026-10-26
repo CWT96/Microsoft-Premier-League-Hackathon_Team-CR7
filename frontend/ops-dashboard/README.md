@@ -20,16 +20,18 @@ URL options:
 |---|---|
 | `?autoplay=1` | Start the match replay on load |
 | `&seconds=16` | Replay length in seconds (it also pauses briefly at goals, half time and full time) |
-| `&demo=0` | Hide the "DEMO DATA" tag |
+| `&demo=0` | Hide the "Simulated data" tag |
 
 ## What is on the page
 
-- **Headline:** total sign-ups from the match, share of players who signed up, share who were new to a Premier League account.
-- **Snapshot:** QR scans, players, playing right now, calls made, sign-ups. These follow the replay playhead.
-- **Match timeline:** players online, calls per minute and total sign-ups, with goals, half time and full time marked. **Replay match** animates it; the slider scrubs to any minute.
-- **Funnel:** scanned → started → made a call → made a forecast → stayed to full time → saved points with an email.
-- **Channels:** sign-up rate by where the QR code was scanned (friend room invites, partner pubs, TV broadcast, stadium screen).
-- **Takeaways:** call lift after a goal, share of sign-ups in the 10 minutes after full time, room-invite conversion vs walk-up scans.
+A light, report-style layout: the audience is a club or league marketing team, so clarity beats show. Premier League purple is kept for the top bar and the main data line; green only marks sign-ups (the goal metric); pink only marks goals.
+
+- **Key numbers:** QR scans, players, peak players online, calls made, sign-ups (with conversion and share new to a Premier League account). They follow the replay.
+- **Engagement during the match:** players online or calls per minute (toggle), with goals, half time and full time marked. Below it, on the same time axis, **sign-ups per minute**: near zero during play, a spike after full time.
+- **Key findings:** four one-line takeaways computed from the data.
+- **Funnel table:** scanned → started → made a call → made a forecast → still playing at full time → signed up, with share of scans and step conversion.
+- **Channels table:** scans, sign-ups and sign-up rate per QR channel, sorted by rate, with a total row.
+- **Replay match:** animates the match minute by minute (pauses briefly at goals, half time and full time) for the demo video.
 
 ## Data (simulated)
 
