@@ -66,7 +66,7 @@ Scan QR / open link ─► pick match ─► pick team ─► pick favourite pla
 
 ### [0] Match data: teammate's simulated dataset + ingest adapter
 
-**Status: dataset pending.** A teammate will upload a simulated match dataset to `data/source/`. Upload rules and the list of required fields are in `data/README.md`. Team names, player names and the `match_id` in this document are placeholders until it lands.
+**Status: 3 synthetic matches in Hudl/StatsBomb format** (`data/README.md`). `backend/ingest/statsbomb.py` maps them to contract events: restarts are awarded at the second the ball went dead, coordinates are rescaled to 105×68, and the second half starts at 2700 s. The dataset has no tracking and no water breaks.
 
 There are two kinds of simulated data, and they never mix:
 - **Match data** (events, rosters) comes only from the uploaded dataset.

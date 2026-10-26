@@ -103,7 +103,8 @@ class DefaultSource:
         self._lock = threading.Lock()
 
     def match_ids(self) -> list[str]:
-        return [DEFAULT_MATCH_ID]
+        from backend.ingest.loader import list_match_ids
+        return list_match_ids()
 
     def get(self, match_id: str) -> MatchBundle:
         if match_id not in self.match_ids():

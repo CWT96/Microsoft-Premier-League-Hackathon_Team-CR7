@@ -1,13 +1,13 @@
 """test_e2e.py — the real dataset through /ws at max speed, lobby to score.final.
 
 Last Modified: 2026-10-24 23:59, first version
-Inputs:  data/source/sim-placeholder (via backend.ingest), backend.detect, backend.model
+Inputs:  data/source/ demo match (via backend.ingest), backend.detect, backend.model
 Outputs: data/generated/e2e_log.jsonl (every server message)
 
 Workflow:
   - a scripted client joins, answers every card, and resumes each pause after a few repeated
     states so the stacks and break cards are seen
-  - assertions target behaviour (stacks, calm cards, water-break card, full time, validity),
+  - assertions target behaviour (stacks, calm cards, full time, validity),
     never exact counts, because the dataset can be regenerated
 
 CAUTION: skipped when ingest, detect or model cannot be imported or the dataset is missing.
@@ -112,10 +112,9 @@ def test_kickoff_stack_comes_before_the_first_live_second(log):
     assert log[0]["type"] == "session"
 
 
-def test_calm_play_water_break_and_half_time_cards(log):
+def test_calm_play_and_half_time_cards(log):
     qs = opens(log)
     assert any(q["situation"] == "calm_play" and q["category"] == "instant" for q in qs)
-    assert any(q["situation"] == "water_break" for q in qs)
     assert any(q["situation"] == "half_time" for q in qs)
 
 
@@ -144,10 +143,9 @@ def test_full_time_score_and_boards(log):
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 SKIP_LEAD_MAX_S = 6  # landing is 3 s before the stop; allow a little slack for the tick
-# (half, earliest t, latest t) of each landing: water break, player slot, half time,
-# water break, player slot, full time. Windows are wide so a regenerated dataset still fits.
-EXPECTED_STOPS = ((1, 1200, 1500), (1, 2380, 2500), (1, 2600, 3000), (2, 3900, 4150),
-                  (2, 4190, 4400), (2, 5300, 6000))
+# (half, earliest t, latest t) of each landing: player slot, half time, player slot, full time.
+# The dataset has no water breaks. Windows are wide so a regenerated dataset still fits.
+EXPECTED_STOPS = ((1, 2380, 2500), (1, 2600, 3000), (2, 4190, 4400), (2, 5300, 6000))
 
 
 def test_successive_skips_visit_scheduled_stops_in_order():
