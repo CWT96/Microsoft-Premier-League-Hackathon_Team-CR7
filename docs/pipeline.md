@@ -215,6 +215,10 @@ There is **no per-half cap and no 45 s cooldown**. When a rule blocks a candidat
 
 The stacked cards appear together and the user swipes through them. Each locks after **60 real seconds**, or earlier when the room host presses resume or skip. A water-break card locks when the water-break pause ends (30 real seconds or host resume).
 
+**What is asked comes from the question bank.** Every moment, scheduled or calm-play, gets its content from `backend/bank/`. In a calm-play (dull) slot the kind is drawn at random, one third each: instant, window or player. See `backend/bank/`.
+
+**Kickoff and half-time stacks.** The pre-match lobby and the half-time pause (`break` mode) each show a stack: 2 shared window (forecast) questions, which have different templates and are the same for everyone, plus 1 favourite-player question per user. If any user has no valid player question, nobody gets the player card, so everyone still sees the same number of questions. The stack locks after 60 real seconds, or when the host sends resume or skip. The questions count from the restart (the first whistle, or the start of the second half), so a timed question reads "the first 10 minutes" at kickoff and "the first 10 minutes of the second half" at half time. Stack questions do not count toward the limit of 2 open window questions, and a player who has been sent off is never asked about. All other questions come through dull slots during play. See `backend/bank/stack.py`.
+
 **Water breaks.** In the placeholder match they fall at about 22:00 and 67:00 and last 90 match seconds. The detector is in `break` mode with `break_kind: "water_break"`. The replay pauses at the start, like half time, until the host resumes or 30 real seconds pass. The match clock keeps running during the break, as in real football.
 
 **Per-user pacer (in the app).** Timing opens moments for the match. Each user's pacer decides which moment that user sees.
