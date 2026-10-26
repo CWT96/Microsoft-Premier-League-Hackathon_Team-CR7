@@ -19,7 +19,7 @@ backend/             Python 3.11 + FastAPI                       stephenwzkong, 
   detect/            [1] dull-moment + attack-end detector
   bank/              question bank: templates, guards, slot selection
   model/             [3] probability model (top-2, hint, fair lines)
-  resolve/           [4] resolver (one rule per catalog template)
+  resolve/           [4] resolver: bank primitives + watcher (counts from the card opening)
   scoring/           [6] scoring formula (pure functions)
   agents/            [2] question generator, [2b] timing, [5] explainer, [6b] scoring summary, llm.py client
     prompts/         prompt files, one per agent
@@ -49,7 +49,7 @@ Suggested backend split (the two owners may swap): **core** = `ingest/ detect/ m
 - Examples in `contracts/README.md` must validate. Run the snippet at the bottom of that file after any edit.
 
 ### Inside the backend (target signatures, see `backend/README.md`)
-`load_match(match_id)` → `Detector.step(half, t, new_events, tracking_frame)` → `TimingAgent.step(state)` → per-user pacer → `question_generator.propose(state, moment, user_player_id)` (calls `model.option_probs`, `model.fair_line`) → `resolve(question, events)` → `explainer.explain(result, facts)` → `scoring.final_score(...)` → `scoring_summary.summarize(...)`.
+`load_match(match_id)` → `Detector.step(half, t, new_events, tracking_frame)` → `TimingAgent.step(state)` → per-user pacer → `BankGenerator.propose(state, moment, user_player_id)` (bank `select_for_slot` / `select_stack`; open play excludes `quiet.unsafe_in_open_play()`) → `Resolver.step(...)` (bank `settle_candidate`) → `explainer.explain(result, facts)` → `scoring.final_score(...)` → `scoring_summary.summarize(...)`.
 
 ### Invariants (do not break)
 - **Code decides, LLM phrases.** The resolver and scoring never call an LLM. Agents never change a result or a number.

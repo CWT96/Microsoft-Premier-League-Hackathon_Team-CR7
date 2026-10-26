@@ -15,11 +15,13 @@ Suggested split (swap freely, but write down who owns what in the PR description
 |---|---|---|
 | `ingest/` | [0] Match data adapter: reads the Hudl/StatsBomb dataset in `../data/source/` (`ingest/statsbomb.py`) | `load_match(match_id: str) -> Match` (`.events`, `.roster`, `.tracking` or None) |
 | `detect/` | [1] Dull-moment + attack-end detector | `Detector.step(half: int, t: float, new_events: list[MatchEvent], tracking_frame: TrackingFrame \| None) -> DetectorState` |
-| `model/` | [3] Probability model | `option_probs(template_id, state, params) -> dict[str, float]`; `fair_line(template_id, player_id, state) -> params`. Player templates read `params["player_id"]` (copy it from `Question.player_id`; the resolver reads that field). Warm `get_model()` at app startup. |
-| `agents/question_generator.py` | [2] Question generator agent (Stephen) | `propose(state: DetectorState, moment: Moment, user_player_id: str \| None) -> Question \| None` (template + params + text, top-2 options). Until it exists the app uses `agents/question_generator_stub.py`. |
+| `model/` | [3] Probability model (Stephen): Poisson pricing + position priors used by the bank | `poisson.PRICERS[...]`, `tune_player(...)`, `count_already(...)` |
+| `bank/` | Question bank (Stephen): 28 templates, guards, slot and stack selection, settle | `select_for_slot(state, open_at, users, bank, exclude=...)`, `select_stack(...)`, `settle_candidate(...)` |
+| `agents/question_generator.py` | [2] Adapter: timing moments → bank questions, one decision per moment for every roster player | `BankGenerator(match).propose(state, moment, user_player_id) -> Question \| None`; `.probs(qid)` |
+| `agents/quiet.py` | Templates the match settles before a person can answer in open play (measured on `data/source/`) | `unsafe_in_open_play() -> frozenset[str]` |
 | `agents/timing.py` | [2b] Timing agent: when and why, never what | `TimingAgent.step(state: DetectorState) -> TimingOutput` (`.moments`, `.decisions`) |
 | `app/pacer.py` | Per-user pace through the shared moments | `Pacer.next_card(t, open_moments) -> Moment \| None` |
-| `resolve/` | [4] Resolver | `resolve(question, events_after_lock) -> QuestionResult \| None` |
+| `resolve/` | [4] Resolver: bank primitives (`primitives.py`, Stephen) + `watcher.Resolver` (counts from the card opening) | `Resolver(generator).watch(question, ...)`, `.step(half, t, new_events) -> list[Outcome]` |
 | `agents/explainer.py` | [5] Explainer agent + number guard | `explain(result, facts) -> str` |
 | `scoring/` | [6] Scoring formula | `final_score(user_answers, issued) -> FinalScore` |
 | `agents/scoring_summary.py` | [6b] Scoring agent (LLM summary only) | `summarize(final_score) -> str` |

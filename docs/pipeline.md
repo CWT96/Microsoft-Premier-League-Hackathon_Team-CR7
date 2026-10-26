@@ -200,7 +200,7 @@ There is **no per-half cap and no 45 s cooldown**. When a rule blocks a candidat
 - **Moment** (to the generator): `{moment_id, kind, category, open_at, lock_at, lock_rule, situation, situation_detail, cost, tone, half}`.
   - `kind` is `instant`, `kickoff_stack`, `ht_stack`, `water_break` or `player_instant`.
   - `situation` describes the match, not a question: `calm_play`, `stalled_near_box`, `throw_in`, `goal_kick`, `set_piece_wait`, `referee_decision`, `substitution`, `injury`, `water_break`, `after_goal`, `kickoff`, `half_time`. `situation_detail` adds specifics such as `{"restart": "corner", "team": "NBR"}`.
-  - `lock_rule` is `fixed` (8 s) or `on_restart`.
+  - `lock_rule` is `fixed` (6 s) or `on_restart`.
   - The generator may overwrite or drop the tone.
 - **TimingDecision**, published as `timing.decision` for the director view (the demo page that shows why a question popped up at that second). It carries the action (`open`, `hold`, `blocked`, `scheduled`, `silent`, `calm`), the source, a reason, the rule that blocked it, and the inputs. `silent` and `calm` are sent once on each transition.
 
@@ -222,8 +222,9 @@ The stacked cards appear together and the user swipes through them. Each locks a
 **Water breaks.** In the placeholder match they fall at about 22:00 and 67:00 and last 90 match seconds. The detector is in `break` mode with `break_kind: "water_break"`. The replay pauses at the start, like half time, until the host resumes or 30 real seconds pass. The match clock keeps running during the break, as in real football.
 
 **Per-user pacer (in the app).** Timing opens moments for the match. Each user's pacer decides which moment that user sees.
-- **Pick-up:** a free user (no open card, last result shown) gets the newest open moment with at least 5 s left before its lock.
-- **Answer window:** a card stays up to `lock_at`, 8 s after the moment opens (for `fixed` moments; `on_restart` moments lock when the set piece is taken). At lock, an unanswered card is quietly replaced by the next open moment. It never blocks the next one.
+- **Pick-up:** a free user (no open card, last result shown) gets the newest open moment with at least 3 s left before its lock.
+- **Answer window:** a card stays up to `lock_at`, 6 s after the moment opens (for `fixed` moments; `on_restart` moments lock when the set piece is taken). At lock, an unanswered card is quietly replaced by the next open moment. It never blocks the next one.
+- **Play can be faster than the card.** Events count from the moment the card opens. If play settles the question while the card is still up, the moment locks at once: users who answered are scored, users who had not are skipped (no score, not counted as ignored) and get the next open card. To keep this rare, open play never asks the templates the match usually settles within the card time (`backend/agents/quiet.py`, measured on `data/source/`: on the current data the three `next_pass_*` templates, settled within 6 s 88% of the time). Dead balls (throw-in, free kick, goal kick, corner, stoppage) allow every template: nobody touches the ball for 9–25 s.
 - **Nudge, not churn:** after **2 cards in a row** lock unanswered, the pacer stops and shows one gentle prompt ("Still with us? Tap for the next one"). The feed restarts on the next tap.
 - **Fast users get more.** A user who answers in 2 s picks up the next moment at once.
 - **Join any time.** A user who answered nothing in the first half picks up the very next moment like anyone else.
@@ -231,7 +232,7 @@ The stacked cards appear together and the user swipes through them. Each locks a
 
 **Replay speed and skip.**
 - Each room, including a solo player's private room, runs its **own replay instance**. Only the room creator (the host) can send `control`.
-- The replay runs at 1× whenever cost ≤ 0.45, so "8 seconds to answer" is 8 real seconds. Otherwise it runs at the host's chosen speed (default 15×). A multi-user room runs at 1× while any member has an open card.
+- The replay runs at 1× whenever cost ≤ 0.45, so "6 seconds to answer" is 6 real seconds. Otherwise it runs at the host's chosen speed (default 15×). A multi-user room runs at 1× while any member has an open card.
 - **Time units:** `open_at`, `lock_at` and `resolve_by` are match seconds. Answer windows are real time.
 - **Skip has one action, `next`:** jump to 3 s before the next scheduled moment (player slot, water break, half time, full time). It never jumps past one, and calm play (about 89 % of the placeholder match) resumes within seconds after every jump, so the feed is always seen. Skipped events still reach the resolver. Unanswered cards cost nothing, so skipping never hurts the score.
 
@@ -281,7 +282,7 @@ Template parameters go in `question.params` and use the names shown in braces: `
 
 **Player templates never void.** Both always resolve yes or no. This keeps favourite-player questions equally fair for every user. A favourite player who is substituted off counts as "no" for the remaining window, so a good `fair_line` avoids late slots for likely substitutes.
 
-The catalog is extended by adding a row here, a resolver rule in `backend/resolve/` and a probability function in `backend/model/`, in the same PR.
+Source of truth for templates, rules and pricing is `backend/bank/` (see `docs/superpowers/specs/2026-10-25-question-bank-design.md`).
 
 ### [3] Probability model (Python, not an LLM)
 
@@ -293,11 +294,11 @@ The catalog is extended by adding a row here, a resolver rule in `backend/resolv
      - **Forecast:** `fair_line` picks the threshold that puts P(yes) closest to 0.5 for *that* player, for example, over a full 45-minute half: GK saves ≥2 (P=0.44), CB clearances ≥2 (P=0.59), CM completed passes ≥23 (P=0.49). A striker's shots have no line inside the band over a full half (1+ is 0.71, 2+ is 0.36), so a different player question is picked instead.
      - **Instant:** `player_touch_window` runs at fixed slots, with a window tuned so P(touch)≈0.5, for example GK 2 min, CB 60s, ST 90s.
      - **Guardrail:** a player question is issued only if its tuned P(yes) lies in [0.4, 0.6]. Otherwise it falls back to `player_touch_window`, which can always be tuned.
-- **Lock:** answers close at `lock_at` (8 seconds after the question appears). Only events after `lock_at` count, and answers that reach the server late are rejected. *Future work:* offset each user's stream delay so the game stays fair and resistant to cheating.
+- **Lock:** answers close at `lock_at` (6 seconds after the question appears, the bank's serve lag). Events count from the card opening (see [2b] "Play can be faster than the card"), and answers that reach the server late are rejected. *Future work:* offset each user's stream delay so the game stays fair and resistant to cheating.
 
 ### [4] Resolver (pure code)
 
-- Watches the event bus for the first event that qualifies after `lock_at`, or waits until HT or FT for forecast questions.
+- Watches the event bus from the card opening with the bank's rule (`bank.settle_candidate`), or waits until HT or FT for forecast questions.
 - Applies the catalog rule and emits a result in the shape of `contracts/result.schema.json`, with the IDs of the events that prove it:
 
   ```json
