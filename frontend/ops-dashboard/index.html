@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Matchday Call — Partner dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,600;0,700;0,800;1,800&family=Inter:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="page">
+
+  <header class="topbar">
+    <div class="row gap14 wrap">
+      <div class="logo">MATCHDAY <span class="green">CALL</span></div>
+      <div class="pill">PARTNER CONSOLE</div>
+    </div>
+    <div class="row gap10 wrap">
+      <div class="match-chip">
+        <span class="crest"><img src="assets/arsenal.svg" alt="Arsenal"></span>
+        <span class="match-score">ARS 2 – 1 CHE</span>
+        <span class="crest"><img src="assets/chelsea.svg" alt="Chelsea"></span>
+        <span class="muted small">Matchweek 9 · Full time</span>
+      </div>
+      <div class="demo-tag" id="demo-tag">DEMO DATA</div>
+    </div>
+  </header>
+
+  <section class="hero">
+    <div class="hero-main">
+      <div class="eyebrow">MATCH REPORT · NEW FAN ACQUISITION</div>
+      <h1><span class="green" id="final-signups">—</span> new sign-ups from one match.</h1>
+      <p>Fans scanned a QR code at the venue, played along with no account, and left an email at full time to keep their points.</p>
+    </div>
+    <div class="hero-side">
+      <div class="card-sm">
+        <span class="big green" id="final-conv">—</span>
+        <span class="muted">of everyone who played saved their points</span>
+      </div>
+      <div class="card-sm">
+        <span class="big cyan" id="new-share">—</span>
+        <span class="muted">had never made a Premier League account before</span>
+      </div>
+    </div>
+  </section>
+
+  <section aria-label="Match snapshot" class="stack10">
+    <div class="row gap10">
+      <span class="label18">SNAPSHOT AT</span>
+      <span class="clock" id="clock">—</span>
+    </div>
+    <div class="kpis">
+      <div class="kpi">
+        <span class="kpi-label">QR SCANS</span>
+        <span class="kpi-value" id="k-scans">—</span>
+        <span class="kpi-sub">Venues, stadium screen, TV, invites</span>
+      </div>
+      <div class="kpi">
+        <span class="kpi-label">PLAYERS</span>
+        <span class="kpi-value" id="k-players">—</span>
+        <span class="kpi-sub"><span id="k-playrate">—</span> of scans started a game</span>
+      </div>
+      <div class="kpi">
+        <span class="kpi-label cyan"><span class="live-dot"></span>PLAYING RIGHT NOW</span>
+        <span class="kpi-value cyan" id="k-live">—</span>
+        <span class="kpi-sub">Peak so far <span id="k-peak">—</span> at <span id="k-peakclock">—</span></span>
+      </div>
+      <div class="kpi">
+        <span class="kpi-label lilac">CALLS MADE</span>
+        <span class="kpi-value lilac" id="k-calls">—</span>
+        <span class="kpi-sub"><span id="k-perplayer">—</span> taps per player</span>
+      </div>
+      <div class="kpi kpi-hero">
+        <span class="kpi-label green">SIGN-UPS</span>
+        <span class="kpi-value green" id="k-signups">—</span>
+        <span class="kpi-sub"><span id="k-conv">—</span> of players left an email</span>
+      </div>
+    </div>
+  </section>
+
+  <section aria-label="Match timeline" class="panel">
+    <div class="panel-head">
+      <div class="stack6">
+        <h2>MATCH TIMELINE</h2>
+        <div class="legend">
+          <span><i class="sw sw-live"></i>Playing right now</span>
+          <span><i class="sw sw-calls"></i>Calls per minute</span>
+          <span><i class="sw sw-su"></i>Total sign-ups (right axis)</span>
+        </div>
+      </div>
+      <div class="row gap10 wrap">
+        <div class="moment" id="moment"><span id="moment-tag"></span><span id="moment-text"></span></div>
+        <button class="play" id="play" type="button">
+          <svg id="icon-play" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4.5v15l13-7.5z"></path></svg>
+          <svg id="icon-pause" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" style="display: none"><rect x="6" y="5" width="4" height="14" rx="1"></rect><rect x="14" y="5" width="4" height="14" rx="1"></rect></svg>
+          <span id="play-label">REPLAY MATCH</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="chart-scroll">
+      <div class="chart-inner">
+        <svg id="chart" viewBox="0 0 1200 352" width="100%" role="img" aria-label="Players, calls per minute and total sign-ups across the match, with goals, half-time and full time marked"></svg>
+      </div>
+    </div>
+
+    <div class="scrub-row">
+      <label for="scrub" class="label14">MATCH CLOCK</label>
+      <input id="scrub" type="range" min="0" step="1" value="0">
+      <div class="readout">
+        <span><b class="cyan" id="r-live">—</b> playing</span>
+        <span><b class="lilac" id="r-calls">—</b> calls/min</span>
+        <span><b class="green" id="r-su">—</b> signed up</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="cols">
+    <div class="panel">
+      <div class="stack4">
+        <h2 class="h26">FROM SCAN TO SIGN-UP</h2>
+        <span class="muted small">Every step, and how many made it to the next</span>
+      </div>
+      <div class="stack12" id="funnel"></div>
+    </div>
+    <div class="panel">
+      <div class="stack4">
+        <h2 class="h26">WHERE NEW FANS CAME FROM</h2>
+        <span class="muted small">Sign-up rate by the QR code they scanned</span>
+      </div>
+      <div id="channels"></div>
+    </div>
+    <div class="panel">
+      <div class="stack4">
+        <h2 class="h26">WHAT THE MATCH TOLD US</h2>
+        <span class="muted small">Moments that move people</span>
+      </div>
+      <div class="stack12">
+        <div class="insight"><span class="insight-num pink" id="i-goal">—</span><span>Calls per minute right after a goal, compared with the 3 minutes before</span></div>
+        <div class="insight"><span class="insight-num green" id="i-post">—</span><span>of sign-ups landed in the 10 minutes after the final whistle</span></div>
+        <div class="insight"><span class="insight-num cyan" id="i-room">—</span><span>Friends invited into a room sign up at this rate vs. walk-up scans</span></div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <span class="row gap6">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 3v6c0 4.5-3.4 8.3-8 9-4.6-.7-8-4.5-8-9V6z"></path></svg>
+      Points only. No money, no betting. Emails collected with consent.
+    </span>
+    <span>Matchday Call · Partner console</span>
+  </footer>
+</div>
+<script src="data/data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
