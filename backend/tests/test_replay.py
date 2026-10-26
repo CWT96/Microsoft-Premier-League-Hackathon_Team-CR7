@@ -705,3 +705,20 @@ def test_play_settling_a_card_early_scores_who_answered_and_skips_who_did_not():
     assert h.room.members["u1"].open is None  # free for the next card at once
     assert h.room.members["u1"].pacer._unanswered == 0  # a skip is not "ignored"
     assert not h.room.answer("u1", q.qid, pick)  # too late now
+
+
+def test_one_users_player_card_settling_early_leaves_the_others_open():
+    from backend.core.types import Outcome
+    h = started(Harness(humans=2))
+    for _ in range(4):  # answer only the two forecast stack cards; keep the player cards open
+        for uid in h.ids:
+            card = h.room.members[uid].open
+            if card is not None and card.question.category != "player":
+                h.room.answer(uid, card.question.qid, card.question.options[0].id)
+    c0, c1 = (h.room.members[u].open for u in h.ids)
+    assert c0 and c1 and c0.question.category == c1.question.category == "player"
+    assert c0.question.qid != c1.question.qid
+    h.room._handle_outcomes([Outcome(c0.question.qid, "resolved", "yes", (), 0.0)])
+    assert h.room.members["u0"].open is None
+    assert h.room.members["u1"].open is c1 and not c1.locked
+    assert h.room.answer("u1", c1.question.qid, c1.question.options[0].id)

@@ -81,14 +81,18 @@ class BankGenerator:
     # bank state
     # .........................................................................
 
-    def state(self, ds: DetectorState) -> MatchState:
-        """Bank ``MatchState`` at the detector's second (events up to and including it)."""
-        upto = bisect.bisect_right(self._keys, (ds.half, ds.t))
+    def state(self, ds: DetectorState, at: tuple[int, float] | None = None) -> MatchState:
+        """Bank ``MatchState`` at the detector's second, or at ``at`` = (half, t) if given.
+
+        Events up to and including that second; score and possession are the detector's.
+        """
+        half, t = at if at is not None else (ds.half, ds.t)
+        upto = bisect.bisect_right(self._keys, (half, t))
         r = self.match.roster
         open_windows = sum(1 for c in self.candidates.values() if c.kind == "window"
                            and c.template_id in self.open_template_ids)
         return MatchState(
-            match_id=self.match.match_id, t=ds.t, half=ds.half, home=r.home, away=r.away,
+            match_id=self.match.match_id, t=t, half=half, home=r.home, away=r.away,
             team_names=self.team_names, score={r.home: ds.score_home, r.away: ds.score_away},
             possession_team=ds.possession_team, events=self.events[:upto],
             open_template_ids=list(self.open_template_ids),
@@ -104,7 +108,10 @@ class BankGenerator:
     # .........................................................................
 
     def _decide(self, moment: Moment, ds: DetectorState, player_id: str | None):
-        st = self.state(ds)
+        # Live moments are decided as of their opening second, whoever picks them up first;
+        # stacks are rebuilt at the restart by select_stack.
+        st = self.state(ds) if moment.kind in STACK_PHASE else self.state(
+            ds, (moment.half, moment.open_at))
         if moment.kind in STACK_PHASE:
             key = moment.kind
             if key not in self.stacks:
@@ -158,7 +165,8 @@ class BankGenerator:
             return None
         chosen = d[1]
         if player_id not in chosen:  # joined later, or a scheduled player moment
-            found = _player_candidates(self.state(ds), self.bank, moment.open_at,
+            found = _player_candidates(self.state(ds, (moment.half, moment.open_at)), self.bank,
+                                       moment.open_at,
                                        self.players[player_id], exclude=self._exclude(moment))
             chosen[player_id] = slot_rng(self.match.match_id, moment.open_at).choice(found) \
                 if found else None

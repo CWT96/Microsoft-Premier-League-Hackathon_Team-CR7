@@ -549,8 +549,8 @@ class Room:
                 self.moment_qids.setdefault(moment.moment_id, []).append(q.qid)
                 self.moment_of[q.qid] = moment
                 self.probs[q.qid] = self._shown_probs(q)
-                if q.qid in self.generator.candidates:  # bank questions count from the opening
-                    self._watch(q, q.open_at, moment.half)
+                if q.qid in self.generator.candidates and moment.kind in TIMED_KINDS:
+                    self._watch(q, q.open_at, moment.half, from_open=True)  # live: from opening
         return self.moment_cache[key]
 
     def _shown_probs(self, q: Question) -> dict[str, float]:
@@ -643,20 +643,28 @@ class Room:
             if now >= self.deadlines.get(m.moment_id, math.inf):
                 self._lock_moment(m, self.state.t, self.state.half, early=True)
 
-    def _lock_moment(self, moment: Moment, lock_t: float, lock_half: int, early: bool) -> None:
-        """Lock a moment for everybody: hide open cards, hand the questions to the resolver."""
-        if moment in self.open_moments:
-            self.open_moments.remove(moment)
+    def _lock_moment(self, moment: Moment, lock_t: float, lock_half: int, early: bool,
+                     qids: Sequence[str] | None = None) -> None:
+        """Lock a moment for everybody: hide open cards, hand the questions to the resolver.
+
+        ``qids``: lock only these cards (one user's settled player question); the moment stays
+        open for everyone else.
+        """
         mid = moment.moment_id
-        self.locked_moment_ids.add(mid)
+        if qids is None:
+            if moment in self.open_moments:
+                self.open_moments.remove(moment)
+            self.locked_moment_ids.add(mid)
         if moment.kind == "kickoff_stack":  # answered before kickoff, whenever the card locks
             lock_t, lock_half = moment.open_at, moment.half
-        for qid in self.moment_qids.get(mid, []):
+        for qid in qids if qids is not None else self.moment_qids.get(mid, []):
             holders = [m for m in self.members.values() if qid in m.cards]
             if not holders:
                 continue
             for m in holders:
                 card = m.cards[qid]
+                if card.locked:
+                    continue  # locked earlier on its own (per-user early settle)
                 card.locked = True
                 if m.bot is None:
                     m.emit("question.locked", {"qid": qid})
@@ -664,18 +672,18 @@ class Room:
                     if card.option is not None:
                         m.pacer.on_answer(mid, self.state.t)
                     elif early or moment.kind not in TIMED_KINDS:
-                        m.pacer.lock_now([mid])
+                        m.pacer.lock_now([mid])  # skipped: not counted as ignored
                     else:
                         m.pacer.on_lock(mid, answered=False)
                     m.open = None
             self._watch(self.questions[qid], lock_t, lock_half)
 
-    def _watch(self, q: Question, lock_t: float, lock_half: int) -> None:
+    def _watch(self, q: Question, lock_t: float, lock_half: int, from_open: bool = False) -> None:
         if q.qid in self.watched:
             return
         self.watched.add(q.qid)
         try:
-            self.resolver.watch(q, lock_t, lock_half)
+            self.resolver.watch(q, lock_t, lock_half, from_open=from_open)
         except ValueError as exc:
             logger.warning("resolver cannot watch %s (%r); settling as void", q.qid, exc)
             self._handle_outcomes([Outcome(q.qid, "void", None, (), lock_t, {})])
@@ -692,8 +700,11 @@ class Room:
             moment = self.moment_of.get(o.qid)
             if moment is not None and moment.moment_id not in self.locked_moment_ids:
                 # play settled it while the card was up: lock now; whoever had not answered
-                # is skipped (no score) and the pacer hands them the next open card
-                self._lock_moment(moment, self.state.t, self.state.half, early=True)
+                # is skipped (no score) and the pacer hands them the next open card. A
+                # per-user (player) moment locks only the cards of this qid.
+                per_user = self.generator.is_per_user(moment.moment_id)
+                self._lock_moment(moment, self.state.t, self.state.half, early=True,
+                                  qids=[o.qid] if per_user else None)
             self.outcomes[o.qid] = o
             explanation = explainer.explain(o, q, self.names, self.match_id)
             self._send_results(q, o, explanation)
@@ -837,8 +848,10 @@ def build_bundle(match_id: str = DEFAULT_MATCH_ID) -> MatchBundle:
         ImportError: if ingest or detect are not importable.
         FileNotFoundError: if the match does not exist.
     """
+    from backend.agents.quiet import unsafe_in_open_play
     from backend.detect.detector import Detector
     from backend.ingest import load_match
     match = load_match(match_id)
     states = list(Detector(match.roster, match.roster.home, match.roster.away).run(match))
+    unsafe_in_open_play()  # measure once here (~13 s), not inside the first room tick
     return MatchBundle(match, states, None, typical_cards_for(match_id))

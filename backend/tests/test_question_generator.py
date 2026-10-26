@@ -117,6 +117,30 @@ def test_watch_counts_from_the_card_opening_not_the_lock() -> None:
     gen = _gen()
     _, q = _first_filled(gen, None)
     res = Resolver(gen)
-    res.watch(q, q.lock_at, 1)
+    res.watch(q, q.lock_at, 1, from_open=True)
     if gen.bank[q.template_id].counts_from == "lock":
         assert res._open[q.qid].window.start_t == q.open_at < q.lock_at
+
+
+def test_half_time_stack_cards_keep_counting_from_the_second_half_restart() -> None:
+    m, states = _match_and_states()
+    gen = _gen()
+    ht = next(s for s in states if s.break_kind == "half_time")
+    pid = next(p.player_id for p in m.roster.players if p.position == "MF" and p.starter)
+    q = gen.propose(ht, Moment("h0", "ht_stack", "player", ht.t, ht.t, "fixed", "half_time",
+                               0.0, 2), pid)
+    assert q is not None
+    res = Resolver(gen)
+    res.watch(q, q.lock_at, 2)  # stacks are watched at lock, without from_open
+    assert res._open[q.qid].window.start_t == gen.candidates[q.qid].window.start_t == 2700.0
+
+
+def test_from_open_keeps_the_window_length() -> None:
+    gen = _gen()
+    _, q = _first_filled(gen, None)
+    w = gen.candidates[q.qid].window
+    res = Resolver(gen)
+    res.watch(q, q.lock_at, 1, from_open=True)
+    nw = res._open[q.qid].window
+    if gen.bank[q.template_id].counts_from == "lock" and w.end_t is not None:
+        assert nw.start_t == q.open_at and nw.end_t - nw.start_t == w.end_t - w.start_t

@@ -5,9 +5,10 @@ Inputs:  the question's bank Candidate (from ``BankGenerator``), events per seco
 Outputs: ``Outcome`` per qid, returned once when it settles
 
 Workflow:
-  - ``watch`` looks up the Candidate behind a qid. A lock-counted window starts when the card
-    OPENS: an event while the card is up decides the question (the app then skips users who
-    had not answered yet), instead of being ignored until the lock.
+  - ``watch`` looks up the Candidate behind a qid. With ``from_open`` (live cards), a
+    lock-counted window is moved back to the card's opening, keeping its length: an event while
+    the card is up decides the question (the app then skips users who had not answered yet).
+    Stack and water-break cards keep the bank's window (stacks count from the restart).
   - ``step`` appends the second's events and runs ``bank.settle.settle_candidate`` for every
     open question; after full_end every question is closed.
 
@@ -37,10 +38,12 @@ class Resolver:
         self._ended = False
         self._seen: set[str] = set()  # every event id delivered
 
-    def watch(self, question: Question, lock_t: float, lock_half: int | None = None) -> None:
-        """Start settling ``question``; events after ``question.open_at`` count.
+    def watch(self, question: Question, lock_t: float, lock_half: int | None = None,
+              from_open: bool = False) -> None:
+        """Start settling ``question``.
 
         ``lock_t`` / ``lock_half`` are accepted for the app's call shape and not used.
+        ``from_open``: count from ``question.open_at`` instead of the bank's lock.
 
         Raises:
             ValueError: the qid did not come from the bank generator.
@@ -49,8 +52,11 @@ class Resolver:
         if cand is None:
             raise ValueError(f"no bank candidate behind {question.qid}")
         template = self._gen.bank[cand.template_id]
-        if template.counts_from == "lock":
-            cand = replace(cand, window=replace(cand.window, start_t=question.open_at))
+        w = cand.window
+        shift = w.start_t - question.open_at
+        if from_open and template.counts_from == "lock" and shift > 0:
+            end = None if w.end_t is None else w.end_t - shift  # same length as the text says
+            cand = replace(cand, window=replace(w, start_t=question.open_at, end_t=end))
         self._open[question.qid] = cand
 
     def _since(self, cand: Candidate) -> list[dict]:
