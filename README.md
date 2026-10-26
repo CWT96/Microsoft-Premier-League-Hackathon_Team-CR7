@@ -16,12 +16,12 @@ The non-fan scans a QR code on the table, picks a team and a favourite player, a
 
 | Match moment | What the phone does |
 |---|---|
-| Dull stretch | Pops a quick **two-option question** ("Next pass: forward or back?"). 6 seconds to answer, optional AI hint. |
+| Dull stretch | Pops a quick **two-option question** ("Next pass: forward or back?"). 8 seconds to answer, optional AI hint. |
 | Attack | Goes quiet so everyone watches the TV. When the attack ends, shows a **catch-up card**: a 2D replay plus one plain sentence. |
 | Kickoff / half time | **Forecast** questions (short windows such as the first 10 minutes, or the whole match), plus a question about *your* player |
 | Full time | **Score card** (0–1000) → email sign-up → **membership card** with a QR code for partner-store rewards |
 
-Everyone in the room answers the same question at the same moment, so they see how their friends voted. That is where the conversation starts.
+Questions come from one shared stream of moments, and each person plays at their own pace. Friends who answer the same moment see how each other voted. That is where the conversation starts.
 
 ## How it works
 
@@ -41,13 +41,14 @@ Match dataset ─► Detector (code) ─► Timing agent ─► Question generat
 
 ### Scoring
 
-The same formula applies to everyone, with no handicaps:
+The same formula applies to everyone, with no handicaps. Everything you do adds points; nothing is taken away.
 
 ```
-per question  = category budget / questions in that category   (instant 400, forecast 300, player 300)
-correct answer earns  per question × hint (1.0, or 0.5 if you peeked) × streak (1.0 → 1.2 → 1.5)
-final score   = 1000 × earned / perfect-run total
+each answered card    +10 for taking part, +20 × streak (1.0 → 1.2 → 1.5) × hint (0.5 if you peeked) if correct
+final score           600 × how well you answered + 400 × √(how much you played), on a 0–1000 scale
 ```
+
+Tiers are Rookie, Rising Star and Super Fan, and every tier gets the membership card. The score card also shows a fun six-axis radar.
 
 During the match you only see ✓ and coins. The number appears at full time.
 

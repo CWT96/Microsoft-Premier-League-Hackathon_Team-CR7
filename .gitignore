@@ -22,3 +22,6 @@ data/generated/
 # Personal logs (not part of the team repo)
 quality_reports/
 SESSION_REPORT.md
+
+# Brainstorm mock-ups (local only)
+.superpowers/

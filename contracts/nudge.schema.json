@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "nudge.schema.json",
+  "title": "Nudge",
+  "description": "Payload of nudge: sent to one user when their feed pauses after 2 unanswered cards. Any answer or a `feed.resume` message restarts the feed.",
+  "type": "object",
+  "required": [
+    "text"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "text": {
+      "type": "string",
+      "maxLength": 80
+    }
+  }
+}
