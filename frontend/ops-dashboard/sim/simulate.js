@@ -19,10 +19,10 @@ var goals = [{ i: 18, team: "ARS", clock: "18'" }, { i: 57, team: "CHE", clock: 
 function afterGoal(i) { var s = 0; goals.forEach(function (g) { if (i >= g.i && i < g.i + 8) s += Math.exp(-(i - g.i) / 2.5); }); return s; }
 
 var channels = {
-  room:    { name: "Friend room invites",   start: 0.82, ftSign: 0.50, newPL: 0.80 },
-  pub:     { name: "Partner pubs and bars", start: 0.63, ftSign: 0.38, newPL: 0.79 },
-  tv:      { name: "TV broadcast QR",       start: 0.55, ftSign: 0.36, newPL: 0.83 },
-  stadium: { name: "Stadium big screen",    start: 0.50, ftSign: 0.27, newPL: 0.46 }
+  room:    { name: "Friend room invites",   start: 0.82, htSign: 0.26, ftSign: 0.50, newPL: 0.80 },
+  pub:     { name: "Partner pubs and bars", start: 0.63, htSign: 0.17, ftSign: 0.38, newPL: 0.79 },
+  tv:      { name: "TV broadcast QR",       start: 0.55, htSign: 0.16, ftSign: 0.36, newPL: 0.83 },
+  stadium: { name: "Stadium big screen",    start: 0.50, htSign: 0.12, ftSign: 0.27, newPL: 0.46 }
 };
 // expected scans per timeline index, by channel (QR shown at specific moments)
 function scanRate(ch, i) {
@@ -37,7 +37,7 @@ function scanRate(ch, i) {
 
 var users = [], id = 0;
 function makeUser(ch, i) {
-  var u = { id: ++id, channel: ch, scan: i, started: false, start: null, end: null, calls: 0, forecasts: 0, forecastHits: 0, sawFT: false, signup: null, signupTrigger: "", newToPL: rnd() < channels[ch].newPL };
+  var u = { id: ++id, channel: ch, scan: i, started: false, start: null, end: null, calls: 0, forecasts: 0, forecastHits: 0, sawHT: false, htDeclined: false, sawFT: false, signup: null, signupTrigger: "", newToPL: rnd() < channels[ch].newPL };
   users.push(u); return u;
 }
 for (i = 0; i < N; i++) ["pub", "stadium", "tv"].forEach(function (ch) { var n = pois(scanRate(ch, i)); for (var k = 0; k < n; k++) makeUser(ch, i); });
@@ -50,6 +50,16 @@ function play(u) {
   var hostsRoom = u.channel !== "room" && rnd() < 0.16;
   for (var j = u.start; j <= FT; j++) {
     var t = T[j];
+    // half-time save window (design 04b): a sheet opens for everyone who played some of the first half,
+    // before anyone leaves at the break. Room members see friends who already saved.
+    if (j === HT0 && u.start <= HT0 - 3) {
+      u.sawHT = true;
+      var ph = c.htSign + 0.04 * Math.min(u.forecastHits, 3) + (u.calls > 20 ? 0.04 : 0);
+      if (rnd() < ph) { var r = rnd(); u.signup = HT0 + (r < 0.6 ? 0 : r < 0.85 ? 1 : 2); u.signupTrigger = "half-time"; }
+      else u.htDeclined = true;
+    }
+    // "Maybe later" leaves a chip; a few tap it during the second half
+    if (u.htDeclined && u.signup === null && t.phase === "2H" && rnd() < 0.0012) { u.signup = j; u.signupTrigger = "half-time-chip"; }
     // leaving
     var hz = 0.012;
     if (t.phase === "HT" && j === HT0) hz = 0.13;
@@ -58,8 +68,6 @@ function play(u) {
     if (afterGoal(j) > 0.5) hz *= 0.5;
     if (j > u.start && rnd() < hz) {
       u.end = j;
-      // exit prompt "save points before you go" (only if they had points)
-      if (u.calls >= 3 && rnd() < 0.07) { u.signup = j; u.signupTrigger = "exit-save"; }
       break;
     }
     // calls
@@ -73,7 +81,7 @@ function play(u) {
   if (u.end === null) {
     u.end = N - 1; u.sawFT = true;
     var p = c.ftSign + 0.04 * Math.min(u.forecastHits, 3) + (u.calls > 40 ? 0.05 : 0);
-    if (rnd() < p) {
+    if (u.signup === null && rnd() < p) {
       var delay = 1 + Math.floor(-Math.log(1 - rnd()) * 2.6); // results animation, then save screen
       u.signup = Math.min(FT + delay, N - 1); u.signupTrigger = "full-time";
     }
@@ -104,8 +112,13 @@ var funnel = {
   started: started.length,
   called: started.filter(function (u) { return u.calls > 0; }).length,
   forecast: started.filter(function (u) { return u.forecasts > 0; }).length,
+  sawHT: started.filter(function (u) { return u.sawHT; }).length,
   sawFT: started.filter(function (u) { return u.sawFT; }).length,
-  signedUp: users.filter(function (u) { return u.signup !== null; }).length
+  sawPrompt: started.filter(function (u) { return u.sawHT || u.sawFT; }).length,
+  signedUp: users.filter(function (u) { return u.signup !== null; }).length,
+  htSignups: users.filter(function (u) { return u.signupTrigger === "half-time" || u.signupTrigger === "half-time-chip"; }).length,
+  ftSignups: users.filter(function (u) { return u.signupTrigger === "full-time"; }).length,
+  htSignedLeftEarly: users.filter(function (u) { return (u.signupTrigger === "half-time" || u.signupTrigger === "half-time-chip") && !u.sawFT; }).length
 };
 var byCh = {}; Object.keys(channels).forEach(function (k) { byCh[k] = { name: channels[k].name, scans: 0, signups: 0 }; });
 users.forEach(function (u) { byCh[u.channel].scans++; if (u.signup !== null) byCh[u.channel].signups++; });
@@ -125,14 +138,15 @@ fs.writeFileSync(path.join(OUT, "data.js"),
 var csv = ["minute_index,match_clock,phase,qr_scans,games_started,players_online,calls,signups"];
 per.forEach(function (p) { csv.push([p.idx, p.clock, p.phase, p.scans, p.started, p.live, p.calls, p.signups].join(",")); });
 fs.writeFileSync(path.join(OUT, "matchday_call_minute_by_minute.csv"), csv.join("\n") + "\n");
-var uc = ["user_id,channel,scan_clock,started_game,start_clock,left_clock,calls,forecasts,forecast_hits,stayed_to_full_time,signed_up,signup_clock,signup_trigger,new_to_pl_account"];
-users.forEach(function (u) { uc.push([u.id, u.channel, T[u.scan].clock, u.started, u.started ? T[u.start].clock : "", u.started ? T[Math.min(u.end, N - 1)].clock : "", u.calls, u.forecasts, u.forecastHits, u.sawFT, u.signup !== null, u.signup !== null ? T[u.signup].clock : "", u.signupTrigger, u.newToPL].join(",")); });
+var uc = ["user_id,channel,scan_clock,started_game,start_clock,left_clock,calls,forecasts,forecast_hits,saw_halftime_prompt,stayed_to_full_time,signed_up,signup_clock,signup_trigger,new_to_pl_account"];
+users.forEach(function (u) { uc.push([u.id, u.channel, T[u.scan].clock, u.started, u.started ? T[u.start].clock : "", u.started ? T[Math.min(u.end, N - 1)].clock : "", u.calls, u.forecasts, u.forecastHits, u.sawHT, u.sawFT, u.signup !== null, u.signup !== null ? T[u.signup].clock : "", u.signupTrigger, u.newToPL].join(",")); });
 fs.writeFileSync(path.join(OUT, "matchday_call_users.csv"), uc.join("\n") + "\n");
 
 // report
 var mx = 0, mi = 0; per.forEach(function (p) { if (p.live > mx) { mx = p.live; mi = p.idx; } });
 var cum = 0, suFT = 0, su10 = 0; per.forEach(function (p) { cum += p.signups; if (p.idx === FT) suFT = cum; if (p.idx === FT + 10) su10 = cum; });
 console.log("funnel", JSON.stringify(funnel));
+console.log("signups by HT idx", per[46].signups, per[47].signups, per[48].signups, "max/min", Math.max.apply(null, per.map(function (p) { return p.signups; })));
 console.log("live@23", per[23].live, "peak", mx, "at", T[mi].clock, "maxCalls", Math.max.apply(null, per.map(function (p) { return p.calls; })), "totalCalls", per.reduce(function (a, p) { return a + p.calls; }, 0));
 console.log("signups before FT", suFT, "within FT+10", su10 - suFT, "share", ((su10 - suFT) / cum).toFixed(3));
 console.log("channels", JSON.stringify(byCh)); console.log("newShare", newShare.toFixed(3), "triggers", JSON.stringify(trig));

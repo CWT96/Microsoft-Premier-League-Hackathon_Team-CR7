@@ -27,15 +27,15 @@ URL options:
 A light, report-style layout: the audience is a club or league marketing team, so clarity beats show. Premier League purple is kept for the top bar and the main data line; green only marks sign-ups (the goal metric); pink only marks goals.
 
 - **Key numbers:** QR scans, players, peak players online, calls made, sign-ups (with conversion and share new to a Premier League account). They follow the replay.
-- **Engagement during the match:** players online or calls per minute (toggle), with goals, half time and full time marked. Below it, on the same time axis, **sign-ups per minute**: near zero during play, a spike after full time.
-- **Key findings:** four one-line takeaways computed from the data.
-- **Funnel table:** scanned → started → made a call → made a forecast → still playing at full time → signed up, with share of scans and step conversion.
+- **Engagement during the match:** players online or calls per minute (toggle), with goals, half time and full time marked. Below it, on the same time axis, **sign-ups per minute**: near zero during play, a peak in the half-time save window, and a bigger spike after full time.
+- **Key findings:** four one-line takeaways computed from the data, including how many half-time sign-ups left before full time.
+- **Funnel table:** scanned → started → made a call → made a forecast → saw a sign-up prompt (half-time or full-time) → signed up, with share of scans and step conversion.
 - **Channels table:** scans, sign-ups and sign-up rate per QR channel, sorted by rate, with a total row.
 - **Replay match:** animates the match minute by minute (pauses briefly at goals, half time and full time) for the demo video.
 
 ## Data (simulated)
 
-All numbers are **simulated user behaviour**, not real data. `sim/simulate.js` is a seeded per-user model: each simulated person has a scan time and channel, may start a game, makes calls and forecasts, may leave early, and may sign up. Sign-ups come almost entirely from the full-time "save your points" screen; a small number come from an assumed "save before you leave" prompt.
+All numbers are **simulated user behaviour**, not real data. `sim/simulate.js` is a seeded per-user model: each simulated person has a scan time and channel, may start a game, makes calls and forecasts, may leave early, and may sign up. Sign-ups come from two moments in the phone flow: the **half-time save window** (a sheet opens at the break for everyone who played some of the first half; "Maybe later" leaves a chip that a few people tap during the second half) and the **full-time "save your points" screen**. Anyone who saved at half-time is not counted again at full time.
 
 ```bash
 node frontend/ops-dashboard/sim/simulate.js

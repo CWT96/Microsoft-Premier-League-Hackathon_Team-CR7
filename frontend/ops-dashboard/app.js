@@ -25,7 +25,6 @@
   var avgLift = goals.reduce(function (x, g) {
     return x + s.calls[g.i] / ((s.calls[g.i - 3] + s.calls[g.i - 2] + s.calls[g.i - 1]) / 3) / goals.length;
   }, 0);
-  var postShare = (cum.su[FT + 10] - cum.su[FT]) / cum.su[N - 1];
 
   function fmt(n) { return Math.round(n).toLocaleString("en-US"); }
   function pct(x, y, dp) { return y > 0 ? (x / y * 100).toFixed(dp == null ? 1 : dp) + "%" : "—"; }
@@ -42,13 +41,14 @@
   // ---- static: findings, funnel, channels
   var F = SIM.funnel;
   setText("new-share", Math.round(SIM.newShare * 100) + "%");
-  setText("i-post", Math.round(postShare * 100) + "%");
+  setText("i-ht", pct(F.htSignups, F.signedUp, 0));
+  setText("i-ht-left", fmt(F.htSignedLeftEarly));
+  setText("i-post", pct(F.ftSignups, F.signedUp, 0));
   setText("i-goal", "×" + avgLift.toFixed(1));
-  setText("i-stay", pct(F.sawFT, F.started, 0));
 
   var steps = [
     ["Scanned the QR code", F.scanned], ["Started a game", F.started], ["Made at least one call", F.called],
-    ["Made a forecast", F.forecast], ["Still playing at full time", F.sawFT], ["Signed up with email", F.signedUp]
+    ["Made a forecast", F.forecast], ["Saw a sign-up prompt", F.sawPrompt], ["Signed up with email", F.signedUp]
   ];
   var fBody = $("funnel").tBodies[0];
   steps.forEach(function (st, j) {
@@ -121,6 +121,8 @@
   [[144, "0"], [80, "500"], [16, "1,000"]].forEach(function (t) { add(B, "text", { x: 40, y: t[0] }, "text-anchor: end", t[1]); });
   goals.forEach(function (g) { add(B, "line", { x1: xAt(g.i), x2: xAt(g.i), y1: BT, y2: BB }, "stroke: #F6B8CE; stroke-width: 1"); });
   add(B, "line", { x1: bnd(FT + 1), x2: bnd(FT + 1), y1: BT, y2: BB }, "stroke: #37003C; stroke-width: 1");
+  add(B, "text", { x: bnd(49) + 6, y: 28 }, "font-weight: 600; fill: #006B3D", "Half-time window");
+  add(B, "text", { x: bnd(FT + 1) + 6, y: 28 }, "font-weight: 600; fill: #006B3D", "Full-time screen");
   var bFut = add(B, "path", {}, "fill: #D7F0E3");
   var bPast = add(B, "path", {}, "fill: #00A85A");
   var bPlay = add(B, "line", { y1: BT, y2: BB }, "stroke: #1F0A24; stroke-width: 1; stroke-dasharray: 3 3");
@@ -169,7 +171,7 @@
     setText("k-calls", fmt(cum.calls[idx])); setText("k-perplayer", players > 0 ? (cum.calls[idx] / players).toFixed(1) : "0");
     setText("k-signups", fmt(su)); setText("k-conv", pct(su, players));
     setText("readout", "At " + T[idx].clock + ": " + fmt(s.live[idx]) + " players online · " + fmt(s.calls[idx]) + " calls per minute");
-    setText("wave-note", fmt(Math.min(su, cum.su[FT])) + " before full time · " + fmt(Math.max(0, su - cum.su[FT])) + " after");
+    setText("wave-note", fmt(cum.su[Math.min(idx, 48)] - cum.su[45]) + " at half-time · " + fmt(Math.max(0, su - cum.su[FT])) + " after full time");
 
     $("seg-players").setAttribute("aria-pressed", metric === "players");
     $("seg-calls").setAttribute("aria-pressed", metric === "calls");
