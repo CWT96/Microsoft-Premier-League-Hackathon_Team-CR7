@@ -18,6 +18,7 @@ import pytest
 from backend.agents import timing_rules as TR
 from backend.core.types import MatchEvent
 from backend.tests.contract_utils import validate
+from backend.tests.fixtures.questions import fake_propose
 from backend.tests.fixtures.replay_fixtures import (
     ATTACK_START, HT_T, N, WATER_T, Harness, tiny_states)
 from backend.tests.fixtures.timing_scenarios import run, st
@@ -278,7 +279,7 @@ def play_to_pause(h: Harness, kind_t: int) -> None:
 
 
 def test_water_break_pauses_with_a_card_and_times_out_after_30_s():
-    h = Harness()
+    h = Harness(propose=fake_propose)  # pause mechanics; the tiny match has no events
     play_to_pause(h, WATER_T)
     assert h.room.pause.kind == "water_break" and h.room.state.t == WATER_T
     seen_before = len(h.msgs("match.state"))
@@ -297,7 +298,7 @@ def test_water_break_pauses_with_a_card_and_times_out_after_30_s():
 
 
 def test_water_break_card_reaches_a_user_and_resume_locks_it():
-    h = Harness()
+    h = Harness(propose=fake_propose)  # pause mechanics; the tiny match has no events
     play_to_pause(h, WATER_T)
     # play_to_pause answers cards, so a break card was answered or is still open
     opens = [q for q in h.msgs("question.open") if q["lock_at"] - q["open_at"] == 30]
@@ -428,7 +429,7 @@ def test_player_moments_differ_per_user():
 
 
 def test_moment_without_question_is_skipped_for_everyone():
-    from backend.agents.question_generator_stub import propose as stub
+    from backend.tests.fixtures.questions import fake_propose as stub
 
     def picky(state, moment, user_player_id, roster=None):
         return None if moment.kind == "instant" else stub(state, moment, user_player_id,
@@ -575,7 +576,7 @@ def test_host_leaving_promotes_the_first_remaining_human():
 
 
 def test_propose_is_only_called_for_moments_a_human_picked_up():
-    from backend.agents.question_generator_stub import propose as stub
+    from backend.tests.fixtures.questions import fake_propose as stub
     asked: list[str] = []
 
     def spy(state, moment, user_player_id, roster=None):

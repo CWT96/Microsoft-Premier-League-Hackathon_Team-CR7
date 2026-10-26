@@ -33,7 +33,7 @@ from typing import Any, Awaitable, Callable, Mapping, Sequence
 
 from backend.agents import catchup, explainer, scoring_summary
 from backend.agents import timing_rules as TR
-from backend.agents.generator import get_propose
+from backend.agents.question_generator import BankGenerator
 from backend.agents.timing import RulePolicy, TimingAgent
 from backend.app.models import FinalScore, Question, QuestionResult, dump
 from backend.app.pacer import Pacer
@@ -100,29 +100,13 @@ def typical_cards_for(match_id: str) -> int:
         return TYPICAL_CARDS_FALLBACK
 
 
-class DefaultModel:
-    """Thin adapter over ``backend.model`` (imported lazily; fitted once per match)."""
-
-    def __init__(self, match_id: str) -> None:
-        self.match_id = match_id
-
-    def option_probs(self, template_id: str, state: DetectorState,
-                     params: dict[str, Any]) -> dict[str, float]:
-        from backend.model import get_model, option_probs
-        return option_probs(template_id, state, params, model=get_model(self.match_id))
-
-    def hint(self, probs_shown: Mapping[str, float]) -> tuple[str, float]:
-        from backend.model import hint
-        return hint(probs_shown)
-
-
 @dataclass
 class MatchBundle:
     """Everything a room needs about one match; shared read-only between rooms."""
 
     match: Match
     states: Sequence[DetectorState]  # lobby, every second of both halves, full_time
-    model: Any
+    model: Any = None  # unused; probabilities come from the bank candidate behind each qid
     n_typical: int = TYPICAL_CARDS_FALLBACK
 
 
@@ -218,9 +202,10 @@ class Room:
         self.empty_since: float | None = now()  # set while no human is present
         self.speed = speed if speed is not None else default_speed()
         self.on_final = on_final
-        self._propose = propose or get_propose()
+        self.generator = BankGenerator(self.match)
+        self._propose = propose or self.generator.propose
         self.timing = TimingAgent(self._make_policy(), self.match_id, self.roster)
-        self.resolver = Resolver(self.roster)
+        self.resolver = Resolver(self.generator)
         self.members: dict[str, Member] = {}
         self.names: dict[str, str] = {p.player_id: p.name for p in self.roster.players}
         self.names[self.roster.home] = self.roster.home_name
@@ -355,7 +340,7 @@ class Room:
             return False
         if card.hint is not None:
             return False  # one hint per card; repeats are ignored
-        card.hint = self.model.hint(self.probs[qid])
+        card.hint = max(self.probs[qid].items(), key=lambda kv: kv[1])
         card.used_hint = True
         m.emit("hint", {"qid": qid, "ai_pick": card.hint[0], "p": card.hint[1]})
         return True
@@ -553,26 +538,19 @@ class Room:
 
     def _question_for(self, member: Member, moment: Moment, state: DetectorState
                       ) -> Question | None:
-        key = (moment.moment_id, member.player_id if moment.category == "player" else None)
+        key = (moment.moment_id, member.player_id)
         if key not in self.moment_cache:
             self.moment_cache[key] = self._propose(state, moment, member.player_id,
                                                    roster=self.roster)
             q = self.moment_cache[key]
-            if q is not None:
+            if q is not None and q.qid not in self.questions:
                 self.questions[q.qid] = q
                 self.moment_qids.setdefault(moment.moment_id, []).append(q.qid)
-                self.probs[q.qid] = self._shown_probs(q, state)
+                self.probs[q.qid] = self._shown_probs(q)
         return self.moment_cache[key]
 
-    def _shown_probs(self, q: Question, state: DetectorState) -> dict[str, float]:
-        params = dict(q.params)
-        if q.player_id:
-            params["player_id"] = q.player_id
-        try:
-            raw = self.model.option_probs(q.template_id, state, params)
-        except (KeyError, ValueError) as exc:
-            logger.warning("model has no probabilities for %s (%r); using 50/50", q.qid, exc)
-            raw = {}
+    def _shown_probs(self, q: Question) -> dict[str, float]:
+        raw = self.generator.probs(q.qid) or {}
         shown = {o.id: raw.get(o.id, 0.0) for o in q.options}
         total = sum(shown.values())
         if total <= 0:
@@ -599,7 +577,7 @@ class Room:
                 return
             q = self._question_for(m, moment, state)
             if q is None:
-                if moment.category == "player":
+                if moment.category == "player" or self.generator.is_per_user(moment.moment_id):
                     m.pacer.lock_now([moment.moment_id])  # only this user lacks a question
                 else:
                     self._drop_moment(moment)
@@ -844,14 +822,14 @@ def _num(x: float | None) -> float | None:
 
 
 def build_bundle(match_id: str = DEFAULT_MATCH_ID) -> MatchBundle:
-    """Load a match, run the detector over it and attach model and typical card count.
+    """Load a match, run the detector over it and attach the typical card count.
 
     Raises:
-        ImportError: if ingest, detect or model are not importable.
+        ImportError: if ingest or detect are not importable.
         FileNotFoundError: if the match does not exist.
     """
     from backend.detect.detector import Detector
     from backend.ingest import load_match
     match = load_match(match_id)
     states = list(Detector(match.roster, match.roster.home, match.roster.away).run(match))
-    return MatchBundle(match, states, DefaultModel(match_id), typical_cards_for(match_id))
+    return MatchBundle(match, states, None, typical_cards_for(match_id))

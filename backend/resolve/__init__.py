@@ -1,11 +1,8 @@
-"""Resolver [4]: settles questions from events. Pure code, no LLM.
+"""Resolver [4]: settles questions from events with the bank's primitives. Pure code, no LLM.
 
-Public API: ``Resolver``, ``register``, ``Verdict``, ``RuleContext`` (see ``registry.py`` for
-how to add a template).
+Public API: ``Resolver`` (``watcher.py``); the primitives live in ``primitives.py``.
 """
 
-from backend.resolve import rules  # noqa: F401  (registers the 10 catalog templates)
-from backend.resolve.engine import Resolver
-from backend.resolve.registry import RuleContext, Verdict, register
+from backend.resolve.watcher import Resolver
 
-__all__ = ["Resolver", "RuleContext", "Verdict", "register"]
+__all__ = ["Resolver"]

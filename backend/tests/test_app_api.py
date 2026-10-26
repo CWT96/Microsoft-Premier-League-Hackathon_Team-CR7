@@ -189,7 +189,7 @@ def test_ticks_run_off_the_event_loop_thread():
         loop_threads.add(threading.get_ident())
         await fast_sleep(delay)
 
-    from backend.agents.question_generator_stub import propose as stub
+    from backend.tests.fixtures.questions import fake_propose as stub
 
     def spy(state, moment, pid, roster=None):
         tick_threads.add(threading.get_ident())

@@ -1,7 +1,7 @@
 """test_e2e.py — the real dataset through /ws at max speed, lobby to score.final.
 
 Last Modified: 2026-10-24 23:59, first version
-Inputs:  data/source/ demo match (via backend.ingest), backend.detect, backend.model
+Inputs:  data/source/ demo match (via backend.ingest), backend.detect, backend.bank
 Outputs: data/generated/e2e_log.jsonl (every server message)
 
 Workflow:
@@ -35,7 +35,7 @@ SCHEMAS = {"question.open": "question", "question.result": "result", "score.fina
 
 def _available() -> bool:
     try:
-        for name in ("backend.ingest", "backend.detect.detector", "backend.model"):
+        for name in ("backend.ingest", "backend.detect.detector", "backend.bank"):
             importlib.import_module(name)
         from backend.core.constants import DEFAULT_MATCH_ID
         from backend.ingest import load_match
