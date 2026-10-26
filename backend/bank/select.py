@@ -53,24 +53,29 @@ def _ask_picker(picker: Picker, cands: list[Candidate], state: MatchState,
 
 def select_for_slot(state: MatchState, open_at: float, users: dict[str, Player],
                     bank: dict[str, Template], picker: Picker | None = None,
-                    timeout_s: float = 2.0) -> SlotDecision | None:
-    """Choose what to ask in this slot, or None if nothing valid exists."""
+                    timeout_s: float = 2.0,
+                    exclude: frozenset[str] = frozenset()) -> SlotDecision | None:
+    """Choose what to ask in this slot, or None if nothing valid exists.
+
+    exclude: template ids the caller rules out for this slot (the kind draw is unchanged).
+    """
     rng = slot_rng(state.match_id, open_at)
     kind = rng.choice(_KINDS)
 
     if kind == "player":
         per_user: dict[str, list[Candidate]] = {
-            uid: _player_candidates(state, bank, open_at, users[uid]) for uid in sorted(users)
+            uid: _player_candidates(state, bank, open_at, users[uid], exclude=exclude)
+            for uid in sorted(users)
         }
         if per_user and all(per_user.values()):
             chosen = {uid: rng.choice(c) for uid, c in per_user.items()}
             return SlotDecision(open_at, "player", None, chosen)
         kind = "instant"
 
-    cands = build_candidates(kind, state, bank, open_at)
+    cands = build_candidates(kind, state, bank, open_at, exclude=exclude)
     if not cands and kind == "window":
         kind = "instant"
-        cands = build_candidates(kind, state, bank, open_at)
+        cands = build_candidates(kind, state, bank, open_at, exclude=exclude)
     if not cands:
         return None
 

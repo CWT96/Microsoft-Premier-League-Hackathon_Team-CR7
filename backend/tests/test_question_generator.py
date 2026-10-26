@@ -85,3 +85,29 @@ def test_resolver_refuses_a_question_the_bank_did_not_make() -> None:
     _, q = _first_filled(gen, None)
     with pytest.raises(ValueError):
         Resolver(_gen()).watch(q, q.lock_at, 1)
+
+
+NEXT_PASS = {"next_pass_dir", "next_pass_complete", "next_pass_long"}
+
+
+def test_unsafe_set_on_current_data_is_the_three_next_pass_templates() -> None:
+    from backend.agents.quiet import open_play_settle_rates, unsafe_in_open_play
+    assert unsafe_in_open_play() == NEXT_PASS
+    rates = open_play_settle_rates()
+    assert all(rates[t] < 0.5 for t in ("player_next_pass_forward", "player_next_pass_long"))
+
+
+def _templates_by_situation(situation: str) -> set[str]:
+    gen, seen = _gen(), set()
+    for t in range(200, 2600, 11):
+        s = _state_at(t)
+        m = Moment(f"m{t}", "instant", "instant", s.t, s.t + 6, "fixed", situation, 0.2, 1)
+        q = gen.propose(s, m, None)
+        if q is not None:
+            seen.add(q.template_id)
+    return seen
+
+
+def test_open_play_never_asks_a_next_pass_question_but_a_dead_ball_can() -> None:
+    assert not (_templates_by_situation("calm_play") & NEXT_PASS)
+    assert _templates_by_situation("throw_in") & NEXT_PASS

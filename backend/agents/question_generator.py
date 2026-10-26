@@ -8,6 +8,8 @@ Outputs: ``Question`` per (moment, user); the bank ``Candidate`` behind each qid
 Workflow:
   - Timing decides WHEN (a Moment); the bank decides WHAT. One decision per moment, cached.
   - Calm-play moments → ``select_for_slot`` (kind drawn 1/3 each: instant / window / player).
+    In open play (ball live) the templates the match settles before a person can answer are
+    left out (``agents/quiet.py``); at a dead ball every template is allowed.
   - Kickoff / half-time stack moments → ``select_stack``; the 2 forecast moments take the 2
     shared cards in moment-id order, the player moment takes each user's card.
   - Scheduled player moments and water breaks → player / window candidates directly.
@@ -40,6 +42,7 @@ MAX_TONE_CHARS = 40
 LABELS = {"yes": "Yes", "no": "No", "forward": "Forward", "back": "Back", "long": "Long",
           "short": "Short"}
 STACK_PHASE = {"kickoff_stack": "kickoff", "ht_stack": "half_time"}
+OPEN_PLAY = frozenset({"calm_play", "stalled_near_box"})  # moment situations with the ball live
 
 def event_dict(e: MatchEvent) -> dict:
     """A ``MatchEvent`` as the contract-shaped dict the bank reads."""
@@ -118,16 +121,25 @@ class BankGenerator:
             return ("shared", stack.shared[idx] if idx < len(stack.shared) else None)
         if moment.kind == "player_instant":
             return ("per_user", {})  # filled lazily per user below
+        exclude = self._exclude(moment)
         if moment.kind == "water_break":
             cands = build_candidates("window", st, self.bank, moment.open_at)
             rng = slot_rng(st.match_id, moment.open_at)
             return ("shared", rng.choice(cands) if cands else None)
-        slot = select_for_slot(st, moment.open_at, self._users(), self.bank)
+        slot = select_for_slot(st, moment.open_at, self._users(), self.bank, exclude=exclude)
         if slot is None:
             return ("none", None)
         if slot.kind == "player":
             return ("per_user", dict(slot.per_user))
         return ("shared", slot.shared)
+
+    @staticmethod
+    def _exclude(moment: Moment) -> frozenset[str]:
+        """Templates to leave out: those play settles too fast, while the ball is live."""
+        if moment.situation not in OPEN_PLAY:
+            return frozenset()
+        from backend.agents.quiet import unsafe_in_open_play  # quiet imports this module
+        return unsafe_in_open_play()
 
     def is_per_user(self, moment_id: str) -> bool:
         """True if the moment's cards differ per user (a missing card skips only that user)."""
@@ -147,7 +159,7 @@ class BankGenerator:
         chosen = d[1]
         if player_id not in chosen:  # joined later, or a scheduled player moment
             found = _player_candidates(self.state(ds), self.bank, moment.open_at,
-                                       self.players[player_id])
+                                       self.players[player_id], exclude=self._exclude(moment))
             chosen[player_id] = slot_rng(self.match.match_id, moment.open_at).choice(found) \
                 if found else None
         return chosen[player_id]
