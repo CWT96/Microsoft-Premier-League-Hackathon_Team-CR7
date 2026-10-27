@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "tracking.schema.json",
+  "title": "TrackingFrame",
+  "description": "Payload of match.tracking, once per match second. FIXED frame: the home team attacks left to right for the whole match (no end swap). Metres on a 105x68 pitch.",
+  "type": "object",
+  "required": [
+    "t",
+    "half",
+    "players",
+    "ball"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "t": {
+      "type": "number",
+      "minimum": 0
+    },
+    "half": {
+      "type": "integer",
+      "enum": [
+        1,
+        2
+      ]
+    },
+    "players": {
+      "type": "array",
+      "maxItems": 22,
+      "items": {
+        "type": "object",
+        "required": [
+          "player_id",
+          "team",
+          "x",
+          "y"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "player_id": {
+            "type": "string"
+          },
+          "team": {
+            "type": "string"
+          },
+          "x": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 105
+          },
+          "y": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 68
+          }
+        }
+      }
+    },
+    "ball": {
+      "oneOf": [
+        {
+          "type": "array",
+          "prefixItems": [
+            {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 105
+            },
+            {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 68
+            }
+          ],
+          "minItems": 2,
+          "maxItems": 2
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  }
+}

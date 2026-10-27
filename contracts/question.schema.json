@@ -19,7 +19,7 @@
   "properties": {
     "qid": {
       "type": "string",
-      "description": "e.g. q-17"
+      "description": "e.g. q-17. Equals the timing moment id, shared by every user who picks up that moment. Player moments differ per user: <moment id>-<player_id>"
     },
     "category": {
       "type": "string",
@@ -95,6 +95,45 @@
     "params": {
       "type": "object",
       "description": "Template parameters named as in the docs/pipeline.md catalog, e.g. {\"line\": 2}, {\"window_s\": 90}, {\"dead_zone_m\": 5}. Player forecast vs instant is given by template_id (player_stat_over vs player_touch_window)."
+    },
+    "tone": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 40,
+      "description": "Optional pop-up line about the moment (e.g. 'Throw-in. Quick one!'), suggested by the timing agent; the generator may replace or drop it"
+    },
+    "situation": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "calm_play",
+        "stalled_near_box",
+        "throw_in",
+        "goal_kick",
+        "set_piece_wait",
+        "referee_decision",
+        "substitution",
+        "injury",
+        "water_break",
+        "after_goal",
+        "kickoff",
+        "half_time",
+        null
+      ],
+      "description": "Moment vocabulary (timing agent): what is happening on the pitch when the moment opened. Different from the detector vocabulary in match.state"
+    },
+    "lock_rule": {
+      "type": "string",
+      "enum": [
+        "fixed",
+        "on_restart"
+      ],
+      "description": "fixed (default): locks at lock_at. on_restart: locks the instant the set piece is taken; lock_at is then only the latest possible lock, and question.locked is sent early",
+      "default": "fixed"
     }
   }
 }
