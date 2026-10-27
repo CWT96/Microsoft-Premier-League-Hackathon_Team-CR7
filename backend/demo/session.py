@@ -171,6 +171,7 @@ class DemoSession:
         await send(_env("demo.session", {"teams": {"home": TEAMS["NBR"], "away": TEAMS["CAL"]},
                                          "you": {"team": self.team},
                                          "duration": self.timeline.duration,
+                                         "ai_lines": self.timeline.ai_lines,
                                          "forecasts": FORECASTS_INFO}))
         elapsed = 0.0
         for cue in self.timeline.cues:
@@ -191,6 +192,7 @@ class DemoSession:
         if self.open_call == call_id:
             self.open_call = None
         answer = self.timeline.calls[call_id].answer
+        line = self.timeline.lines.get(call_id)
         pick = self._picks.get(call_id)
         score = score_call(pick, answer, self.streak)
         self.total += score.points
@@ -199,4 +201,5 @@ class DemoSession:
         await send(_env("call.result", {
             "call_id": call_id, "answer": answer, "pick": pick, "too_quick": score.too_quick,
             "correct": score.correct, "points": score.points,
-            "streak_bonus": score.streak_bonus, "total": self.total, "streak": self.streak}))
+            "streak_bonus": score.streak_bonus, "total": self.total, "streak": self.streak,
+            "explain": line.explain if line else ""}))

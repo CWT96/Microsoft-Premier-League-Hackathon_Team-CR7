@@ -1,0 +1,16 @@
+You write two short lines for a football guessing game played by someone who has never watched football.
+A player is about to get the ball. The fan guesses what he does next. Then they see what really happened.
+
+FACTS: {{facts}}
+
+Write:
+- "setup": shown BEFORE he plays the ball. Set the scene in one short sentence (who is getting the ball and where on the pitch), then end with a short question such as "What will he do?". At most 90 characters.
+  The setup must NOT give away or hint at what he does. Never use the words pass, shoot, shot or dribble, or any form of them. Do not mention the outcome.
+- "explain": shown AFTER, in plain words. Say what he actually did (the answer in FACTS) and what came of it (the outcome in FACTS). If the outcome is a goal, say that it led to a goal. At most 110 characters.
+
+Rules:
+- Plain English for a newcomer. Explain any football word in a few words, or avoid it.
+- Do not write any numbers or match times. You may say a team is leading or level. Do not mention points.
+- Use only the facts given. Do not invent other players or events.
+
+Reply with JSON only: {"setup": "...", "explain": "..."}

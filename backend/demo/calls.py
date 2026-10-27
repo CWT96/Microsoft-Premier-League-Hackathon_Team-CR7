@@ -33,6 +33,8 @@ class Call:
     team: str
     answer: str
     lock_xy: tuple[float, float] | None = None  # answering event's location, 105 x 68, own frame
+    open_xy: tuple[float, float] | None = None  # opening pass's end (where he gets it), same frame
+    lock_outcome: str | None = None  # raw outcome name of the answering event ("Goal", "Blocked")
 
 
 def _t(e: dict) -> float:
@@ -45,6 +47,18 @@ def _xy(e: dict) -> tuple[float, float] | None:
     """Raw StatsBomb location (120 x 80) in the 105 x 68 frame of ``MatchEvent``."""
     loc = e.get("location")
     return (loc[0] * 105 / 120, loc[1] * 68 / 80) if loc else None
+
+
+def _end_xy(e: dict) -> tuple[float, float] | None:
+    """Raw pass ``end_location`` in the 105 x 68 frame."""
+    loc = e.get("pass", {}).get("end_location")
+    return (loc[0] * 105 / 120, loc[1] * 68 / 80) if loc else None
+
+
+def _outcome_name(f: dict) -> str | None:
+    """Raw outcome name of a Pass / Shot / Dribble (a completed pass has none)."""
+    body = f.get(f["type"]["name"].lower(), {})
+    return body.get("outcome", {}).get("name") if isinstance(body, dict) else None
 
 
 def find_moments(match_id: str = "nbr-cal-seed42") -> list[Call]:
@@ -70,7 +84,8 @@ def find_moments(match_id: str = "nbr-cal-seed42") -> list[Call]:
                 continue  # a carry: keep walking
             if _t(f) - _t(e) >= MIN_WINDOW_S:
                 moments.append(Call("c-" + f["id"], e["period"], _t(e), _t(f), str(rid),
-                                    codes[f["team"]["id"]], answer, _xy(f)))
+                                    codes[f["team"]["id"]], answer, _xy(f), _end_xy(e),
+                                    _outcome_name(f)))
             break
     return sorted(moments, key=lambda c: (c.half, c.open_t))
 

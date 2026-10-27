@@ -8,8 +8,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
+from backend.agents.llm import LLMClient
 from backend.core.types import Match, MatchEvent
 from backend.demo.calls import ON_BALL, Call, find_moments, select_calls
+from backend.demo.lines import CallLines, build_lines
 from backend.demo.names import TEAMS, clock_label, display_name, fixed_xy
 from backend.demo.shape import load_slots, on_pitch, team_shape
 
@@ -50,6 +52,8 @@ class Timeline:
     events: tuple[MatchEvent, ...] = ()
     half_ends: dict[int, float] = field(default_factory=dict)
     final_score: tuple[int, int] = (0, 0)
+    lines: dict[str, CallLines] = field(default_factory=dict)  # setup / explain per call_id
+    ai_lines: bool = False  # every line came from the LLM cache and passed the guards
 
 
 SCRIPT: tuple[Play | Pause, ...] = (
@@ -92,7 +96,7 @@ def _shape_cue(slots: list, at: float, half: int, t: float, ball: tuple[float, f
 
 
 def _play_cues(match: Match, play: Play, at: float, goals: list[MatchEvent],
-               calls: list[Call]) -> list[Cue]:
+               calls: list[Call], lines: dict[str, CallLines]) -> list[Cue]:
     """Cues of one Play, with the play starting at real time ``at``."""
     cues: list[Cue] = []
     slots = load_slots()
@@ -122,7 +126,7 @@ def _play_cues(match: Match, play: Play, at: float, goals: list[MatchEvent],
         player = display_name(c.player_id)
         cues.append(Cue(at + (c.open_t - play.start_t), "call.open", {
             "call_id": c.call_id, "player": player, "team": TEAMS[c.team]["code"],
-            "prompt": f"{player} on the ball. What's the call?", "options": list(OPTIONS)}))
+            "prompt": lines[c.call_id].setup, "options": list(OPTIONS)}))
         lock_at = at + (c.lock_t - play.start_t)
         cues.append(Cue(lock_at, "call.lock", {"call_id": c.call_id}))
         xy = fixed_xy(c.team, c.lock_xy)
@@ -134,12 +138,17 @@ def _play_cues(match: Match, play: Play, at: float, goals: list[MatchEvent],
     return cues
 
 
-def build_timeline(match: Match, script: tuple = SCRIPT) -> Timeline:
-    """Walk ``script`` with a real-time cursor and emit every cue, sorted by (at, rank)."""
+def build_timeline(match: Match, script: tuple = SCRIPT, client: LLMClient | None = None
+                   ) -> Timeline:
+    """Walk ``script`` with a real-time cursor and emit every cue, sorted by (at, rank).
+
+    Call lines come from ``client`` (default: the committed LLM cache, never the network).
+    """
     goals = sorted((e for e in match.events if e.type == "goal"), key=lambda e: (e.half, e.t))
     moments = find_moments(match.match_id)
     cues: list[Cue] = []
     calls: dict[str, Call] = {}
+    lines: dict[str, CallLines] = {}
     cursor, last = 0.0, (1, 0.0)
     for step in script:
         if isinstance(step, Pause):
@@ -153,9 +162,11 @@ def build_timeline(match: Match, script: tuple = SCRIPT) -> Timeline:
         last = (step.half, step.end_t)
         chosen = select_calls(moments, step.half, step.start_t, step.end_t)
         calls.update({c.call_id: c for c in chosen})
-        cues.extend(_play_cues(match, step, cursor, goals, chosen))
+        lines.update(build_lines(match, chosen, client))
+        cues.extend(_play_cues(match, step, cursor, goals, chosen, lines))
         cursor += step.end_t - step.start_t
     cues.sort(key=lambda c: (c.at, _RANK[c.type]))
     final = (sum(g.team == HOME for g in goals), sum(g.team == AWAY for g in goals))
     return Timeline(tuple(cues), calls, cursor, tuple(match.events),
-                    {1: match.first_half_end_t, 2: match.full_end_t}, final)
+                    {1: match.first_half_end_t, 2: match.full_end_t}, final, lines,
+                    bool(lines) and all(ln.ai for ln in lines.values()))

@@ -128,7 +128,7 @@ function resetLiveUi() {
   $("score").textContent = "0 – 0";
   $("total").textContent = "0";
   $("backing").textContent = "Backing " + TEAM_NAMES[team];
-  ["gain", "jump", "goal", "pop", "modal"].forEach((id) => { $(id).hidden = true; });
+  ["gain", "jump", "goal", "pop", "modal", "ai-caption"].forEach((id) => { $(id).hidden = true; });
   showTag(false);
   $("players").textContent = ""; // no dots left over from the previous run
   setStreak(0);
@@ -144,6 +144,7 @@ function resetLiveUi() {
 function onSession(d) {
   const you = d.you && TEAM_NAMES[d.you.team];
   if (you) $("backing").textContent = "Backing " + you;
+  $("ai-caption").hidden = d.ai_lines !== true;
   buildForecasts(d.forecasts);
 }
 
@@ -310,13 +311,14 @@ function onCallOpen(d) {
   }
   s.call = { id: d.call_id, player: d.player || "the player", locked: false, result: false };
   const prompt = String(d.prompt || "What's the call?");
-  const cut = prompt.indexOf(". ");
+  const cut = prompt.lastIndexOf(". "); // context sentence(s), then the question
   $("call-ctx").textContent = cut > 0 ? prompt.slice(0, cut + 1) : "";
   $("call-q").textContent = cut > 0 ? prompt.slice(cut + 2) : prompt;
   $("call-team").textContent = (TEAM_NAMES[d.team] || "").toUpperCase();
   $("call-team").hidden = !TEAM_NAMES[d.team];
   setStatus("● OPEN · LOCKS WHEN " + s.call.player.toUpperCase() + " PLAYS IT", false);
   setLine("Call it before the ball moves.", false);
+  $("call-explain").hidden = true;
   optionButtons().forEach((b) => {
     b.className = "opt";
     b.disabled = false;
@@ -364,6 +366,9 @@ function onCallResult(d) {
   markOptions(d.answer, d.pick);
   setStatus("CALL CLOSED", true);
   setLine(resultLine(d), true);
+  const explain = typeof d.explain === "string" ? d.explain : "";
+  $("call-explain").textContent = explain;
+  $("call-explain").hidden = !explain;
   later("result", RESULT_HOLD_MS, showStandby);
 }
 
