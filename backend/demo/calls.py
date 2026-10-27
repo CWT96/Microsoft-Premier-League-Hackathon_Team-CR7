@@ -1,21 +1,26 @@
 """Decision moments for the demo: where the fan is asked PASS / SHOOT / DRIBBLE.
 
-A moment is a completed forward pass; the receiver's next on-ball actions decide the answer.
+Read from the raw StatsBomb events (ingest drops dribbles and pass recipients). A moment opens on a
+completed pass; the receiver's first pass / shot / dribble is the answer and locks the call.
 """
 
 from __future__ import annotations
 
-import math
+import json
 from dataclasses import dataclass
 
-from backend.core.types import Match, MatchEvent
+from backend.ingest import statsbomb
+from backend.ingest.loader import SOURCE_DIR
 
+# Kept so the old script.py still imports until it is rewired.
 ON_BALL = {"pass", "carry", "shot"}
-MIN_PASS_END_X = 60.0
-DRIBBLE_CARRY_M = 8.0
-MIN_GAP_S = 5.0
 CALL_WINDOW_S = 5.0
 
+MIN_WINDOW_S = 3.0
+MIN_GAP_S = 6.0
+
+_WALK = {"Pass", "Carry", "Shot", "Dribble"}
+_ANSWER = {"Pass": "PASS", "Shot": "SHOOT", "Dribble": "DRIBBLE"}
 _PRIORITY = {"SHOOT": 0, "DRIBBLE": 1, "PASS": 2}
 
 
@@ -23,57 +28,55 @@ _PRIORITY = {"SHOOT": 0, "DRIBBLE": 1, "PASS": 2}
 class Call:
     call_id: str
     half: int
+    open_t: float
     lock_t: float
     player_id: str
     team: str
     answer: str
 
 
-def _answer(seq: list[MatchEvent]) -> str | None:
-    """Right call for a receiver's on-ball sequence, or None if there is no decision."""
-    if any(e.type == "shot" for e in seq):
-        return "SHOOT"
-    carried = sum(
-        math.dist(e.start, e.end) for e in seq
-        if e.type == "carry" and e.start is not None and e.end is not None
-    )
-    if carried >= DRIBBLE_CARRY_M:
-        return "DRIBBLE"
-    if any(e.type == "pass" for e in seq):
-        return "PASS"
-    return None
+def _t(e: dict) -> float:
+    """Match clock in seconds, same clock as ``MatchEvent.t`` (second half continues from 2700)."""
+    frac = float(e["timestamp"].split(":")[-1]) % 1
+    return e["minute"] * 60 + e["second"] + frac
 
 
-def find_moments(match: Match) -> list[Call]:
-    """Every decision moment in the match, sorted by (half, lock_t)."""
-    on_ball = [e for e in match.events if e.type in ON_BALL]
+def find_moments(match_id: str = "nbr-cal-seed42") -> list[Call]:
+    """Every answerable decision moment in the match, sorted by (half, open_t)."""
+    _, hid = statsbomb.find_match(match_id, SOURCE_DIR)
+    codes = {t["team_id"]: t["code"]
+             for t in json.loads((SOURCE_DIR / "extras" / "teams.json").read_text())}
+    raw = json.loads((SOURCE_DIR / "events" / f"{hid}.json").read_text())
+    evs = sorted((e for e in raw if e["type"]["name"] in _WALK),
+                 key=lambda e: (e["period"], _t(e), e["index"]))
     moments: list[Call] = []
-    for i, e in enumerate(on_ball):
-        if e.type != "pass" or e.outcome != "complete":
+    for i, e in enumerate(evs):
+        if e["type"]["name"] != "Pass" or "outcome" in e["pass"]:
             continue
-        if e.end is None or e.end[0] < MIN_PASS_END_X or i + 1 >= len(on_ball):
+        rid = e["pass"].get("recipient", {}).get("id")
+        if rid is None:
             continue
-        first = on_ball[i + 1]
-        if first.team != e.team or first.player_id == e.player_id:
-            continue
-        seq = [first]
-        for nxt in on_ball[i + 2:]:
-            if nxt.player_id != first.player_id:
+        for f in evs[i + 1:]:
+            if f["period"] != e["period"] or f["player"]["id"] != rid:
                 break
-            seq.append(nxt)
-        answer = _answer(seq)
-        if answer is not None:
-            moments.append(Call("c-" + first.id, first.half, first.t,
-                                first.player_id or "", first.team, answer))
-    return sorted(moments, key=lambda c: (c.half, c.lock_t))
+            answer = _ANSWER.get(f["type"]["name"])
+            if answer is None:
+                continue  # a carry: keep walking
+            if _t(f) - _t(e) >= MIN_WINDOW_S:
+                moments.append(Call("c-" + f["id"], e["period"], _t(e), _t(f), str(rid),
+                                    codes[f["team"]["id"]], answer))
+            break
+    return sorted(moments, key=lambda c: (c.half, c.open_t))
 
 
 def select_calls(moments: list[Call], half: int, start_t: float, end_t: float) -> list[Call]:
-    """Calls for one play range: greedy by SHOOT > DRIBBLE > PASS then time, MIN_GAP_S apart."""
-    cands = sorted((c for c in moments if c.half == half and start_t <= c.lock_t <= end_t),
+    """Calls for one play range: greedy by SHOOT > DRIBBLE > PASS then time, no overlap, gapped."""
+    cands = sorted((c for c in moments
+                    if c.half == half and start_t <= c.open_t and c.lock_t <= end_t),
                    key=lambda c: (_PRIORITY[c.answer], c.lock_t))
     accepted: list[Call] = []
     for c in cands:
-        if all(abs(c.lock_t - a.lock_t) >= MIN_GAP_S for a in accepted):
+        if all(abs(c.open_t - a.open_t) >= MIN_GAP_S
+               and (c.open_t >= a.lock_t or a.open_t >= c.lock_t) for a in accepted):
             accepted.append(c)
-    return sorted(accepted, key=lambda c: c.lock_t)
+    return sorted(accepted, key=lambda c: c.open_t)

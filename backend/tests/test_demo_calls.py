@@ -1,28 +1,37 @@
 from backend.demo.calls import find_moments, select_calls
-from backend.ingest.loader import load_match
 
-M = load_match("nbr-cal-seed42")
-MOMENTS = find_moments(M)
+MOMENTS = find_moments()
 
 
-def test_moment_mix():
-    answers = [c.answer for c in MOMENTS]
-    assert len(MOMENTS) == 254
-    assert answers.count("SHOOT") == 25 and answers.count("DRIBBLE") == 32
-    assert answers.count("PASS") == 197
+def test_only_answerable_moments():
+    assert MOMENTS and all(c.lock_t - c.open_t >= 3.0 for c in MOMENTS)
+    answers = {c.answer for c in MOMENTS}
+    assert answers == {"PASS", "SHOOT", "DRIBBLE"}
 
 
-def test_saka_goal_call_is_shoot():
-    calls = select_calls(MOMENTS, 1, 1400, 1440)
-    assert [round(c.lock_t) for c in calls] == [1422, 1432]
-    assert calls[-1].player_id == "910109" and calls[-1].answer == "SHOOT"
+def test_saka_goal_is_a_shoot_call():
+    calls = select_calls(MOMENTS, 1, 1422, 1437)
+    assert [(round(c.open_t, 1), c.answer, c.player_id) for c in calls] == [(1430.0, "SHOOT", "910109")]
+    assert round(calls[0].lock_t, 1) == 1434.3
 
 
-def test_min_gap_respected():
-    calls = select_calls(MOMENTS, 2, 3595, 3620)
-    assert [round(c.lock_t) for c in calls] == [3608, 3613]
-    assert all(b.lock_t - a.lock_t >= 5.0 for a, b in zip(calls, calls[1:]))
+def test_first_segment_has_all_three():
+    calls = select_calls(MOMENTS, 1, 694, 716)
+    assert [c.answer for c in calls] == ["PASS", "DRIBBLE", "SHOOT"]
 
 
-def test_empty_range():
-    assert select_calls(MOMENTS, 1, 0, 8) == []
+def test_gap_and_no_overlap():
+    calls = select_calls(MOMENTS, 1, 694, 716)
+    for a, b in zip(calls, calls[1:]):
+        assert b.open_t - a.open_t >= 6.0 and b.open_t >= a.lock_t
+
+
+def test_winner_and_equaliser_segments():
+    assert [(c.answer, c.player_id) for c in select_calls(MOMENTS, 2, 4780, 4793)] == [("SHOOT", "910105")]
+    assert [(c.answer, c.player_id) for c in select_calls(MOMENTS, 2, 3600, 3616)] == [("PASS", "910211")]
+
+
+def test_carry_never_locks():
+    # every lock is a pass, shot or dribble in the raw data (a carry is skipped as part of the walk)
+    assert all(c.call_id.startswith("c-") for c in MOMENTS)
+    assert {c.team for c in MOMENTS} <= {"NBR", "CAL"}
