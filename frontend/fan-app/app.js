@@ -863,7 +863,7 @@ function onBreak(kind, d) {
   if (Array.isArray(d.score)) setScore(d.score);
   showStandby();
   setLive(false);
-  if (typeof d.total === "number") setTotal(d.total, 0);
+  if (typeof d.total === "number") setTotal(d.total, Math.max(0, d.total - (s.total || 0)));
   if (d.saved === true) s.save.saved = true;
   if (kind === "full") return onFullTime(d);
   $("clock").textContent = "HALF TIME";

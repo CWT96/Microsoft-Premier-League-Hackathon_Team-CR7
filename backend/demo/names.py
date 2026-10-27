@@ -28,7 +28,7 @@ PLAYERS: dict[str, tuple[str, int]] = {
     "910120": ("Timber", 12),
     "910115": ("Martinelli", 11),
     "910113": ("Merino", 23),
-    "910122": ("Bruno Guimarães", 39),
+    "910122": ("Nwaneri", 22),
     "910201": ("Sánchez", 1),
     "910202": ("James", 24),
     "910204": ("Fofana", 3),

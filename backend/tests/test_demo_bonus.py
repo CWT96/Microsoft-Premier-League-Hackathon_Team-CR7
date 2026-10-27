@@ -204,7 +204,7 @@ def test_bonus_added_once_ht_then_rest_at_ft():
     assert backed_s.total == ft["total"]
     pb = next(r for r in ft["rows"] if r["key"] == "pb")
     assert pb == {"key": "pb", "label": "PLAYER BONUS", "points": ft_bonus,
-                  "detail": "Earned by the 2 player(s) you backed"}
+                  "detail": "Earned by the 2 players you backed"}
     rows = {r["key"]: r["points"] for r in ft["rows"]}
     assert rows["rt"] + rows["fc"] + rows["pb"] == ft["total"]
     # friends unchanged
@@ -239,7 +239,7 @@ def test_saliba_goal_lands_at_full_time_only():
     assert all(s["what"] != "Goal" for s in ht["players"][0]["stats"])
     assert {"what": "Goal", "count": 1, "pts": 400} in ft["players"][0]["stats"]
     assert next(r for r in ft["rows"] if r["key"] == "pb")["detail"] == (
-        "Earned by the 1 player(s) you backed")
+        "Earned by the player you backed")
 
 
 def test_no_players_backed():

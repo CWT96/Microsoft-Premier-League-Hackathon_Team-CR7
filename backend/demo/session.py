@@ -178,8 +178,9 @@ class DemoSession:
             fc = f"{self.window_hits} forecasts hit" + (
                 " · full-time result nailed" if self.final_right else "")
             cards = self._bonus((1, 2), True)
-            pb = (f"Earned by the {len(cards)} player(s) you backed" if cards
-                  else "Back players next match")
+            pb = ("Back players next match" if not cards else
+                  "Earned by the player you backed" if len(cards) == 1
+                  else f"Earned by the {len(cards)} players you backed")
             rows = [
                 {"key": "rt", "label": "REAL-TIME CALLS", "points": self.call_points,
                  "detail": f"{self.correct_calls} correct calls · best streak of {self.best_streak}"},
