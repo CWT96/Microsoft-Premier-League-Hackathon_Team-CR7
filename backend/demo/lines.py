@@ -35,6 +35,10 @@ SCHEMA: dict[str, Any] = {
 ZONES = ("own half", "midfield", "attacking third", "in the box")
 VERBS = {"PASS": "pass", "SHOOT": "shoot", "DRIBBLE": "dribble"}
 LEAK_RE = re.compile(r"pass|shoot|shot|dribbl", re.IGNORECASE)  # any form of an answer word
+# words that hint at an answer: stems for strike / score / finish / cross, whole words for the
+# short ones so "first" or "brunt" still pass
+HINT_RE = re.compile(r"\b(?:strik\w*|fir(?:e|es|ed|ing)|scor\w*|finish\w*|cross\w*"
+                     r"|teammates?|run(?:s|ning)?|ran)\b", re.IGNORECASE)
 HOME = "NBR"
 HALF_X, THIRD_X = 52.5, 70.0
 BOX_X, BOX_Y0, BOX_Y1 = 88.5, 13.84, 54.16  # penalty box in the 105 x 68 frame
@@ -72,17 +76,25 @@ def zone(call: Call) -> str:
     return "attacking third" if x >= THIRD_X else "midfield" if x >= HALF_X else "own half"
 
 
-def outcome(call: Call, events: tuple[MatchEvent, ...] | list[MatchEvent]) -> str:
-    """What came of his action: a shot's result, or a goal the move led to, else the move went on."""
-    if call.answer == "SHOOT":
-        return SHOT_OUTCOMES.get(call.lock_outcome or "", "shot missed")
+def goal_after(call: Call, events: tuple[MatchEvent, ...] | list[MatchEvent]
+               ) -> MatchEvent | None:
+    """The goal his team scores within GOAL_FOLLOW_S of the lock, before the other team plays."""
     after = sorted((e for e in events if e.half == call.half
                     and call.lock_t <= e.t <= call.lock_t + GOAL_FOLLOW_S), key=lambda e: e.t)
     for e in after:
         if e.team != call.team:
             break
         if e.type == "goal":
-            return "goal"
+            return e
+    return None
+
+
+def outcome(call: Call, events: tuple[MatchEvent, ...] | list[MatchEvent]) -> str:
+    """What came of his action: a shot's result, a goal the move set up, else the move went on."""
+    if call.answer == "SHOOT":
+        return SHOT_OUTCOMES.get(call.lock_outcome or "", "shot missed")
+    if goal_after(call, events) is not None:
+        return "set up a goal"
     if call.lock_outcome and call.lock_outcome != "Complete":  # a failed pass or dribble
         return "lost the ball"
     return "kept the move going"
@@ -90,10 +102,13 @@ def outcome(call: Call, events: tuple[MatchEvent, ...] | list[MatchEvent]) -> st
 
 def call_facts(call: Call, match: Match) -> dict:
     goals = [g for g in match.events if g.type == "goal" and (g.half, g.t) <= (call.half, call.open_t)]
-    return {"player": display_name(call.player_id), "team": TEAMS[call.team]["name"],
-            "minute": clock_label(call.half, call.open_t),
-            "score": [sum(g.team == HOME for g in goals), sum(g.team != HOME for g in goals)],
-            "zone": zone(call), "answer": call.answer, "outcome": outcome(call, match.events)}
+    facts = {"player": display_name(call.player_id), "team": TEAMS[call.team]["name"],
+             "minute": clock_label(call.half, call.open_t),
+             "score": [sum(g.team == HOME for g in goals), sum(g.team != HOME for g in goals)],
+             "zone": zone(call), "answer": call.answer, "outcome": outcome(call, match.events)}
+    if facts["outcome"] == "set up a goal":  # he did not score: name who did
+        facts["scorer"] = display_name(goal_after(call, match.events).player_id)
+    return facts
 
 
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -114,7 +129,7 @@ def check_setup(text: Any, facts: dict) -> bool:
     if not llm.safe_text(text, MAX_SETUP_CHARS) or not llm.number_guard(text, facts):
         return False
     lowered = text.lower()
-    return LEAK_RE.search(text) is None and str(facts.get("answer", "")).lower() not in lowered
+    return LEAK_RE.search(text) is None and HINT_RE.search(text) is None and str(facts.get("answer", "")).lower() not in lowered
 
 
 def check_explain(text: Any, facts: dict) -> bool:

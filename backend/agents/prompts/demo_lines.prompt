@@ -5,8 +5,9 @@ FACTS: {{facts}}
 
 Write:
 - "setup": shown BEFORE he plays the ball. Set the scene in one short sentence (who is getting the ball and where on the pitch), then end with a short question such as "What will he do?". At most 90 characters.
-  The setup must NOT give away or hint at what he does. Never use the words pass, shoot, shot or dribble, or any form of them. Do not mention the outcome.
-- "explain": shown AFTER, in plain words. Say what he actually did (the answer in FACTS) and what came of it (the outcome in FACTS). If the outcome is a goal, say that it led to a goal. At most 110 characters.
+  The setup must NOT give away or hint at what he does. Never use the words pass, shoot, shot, dribble, strike, fire, score, finish, cross, teammate or run, or any form of them. Do not mention the outcome.
+- "explain": shown AFTER, in plain words. Say what he actually did (the answer in FACTS) and what came of it (the outcome in FACTS). If the outcome is "goal" or "set up a goal", say that it led to a goal. At most 110 characters.
+  If the answer is PASS or DRIBBLE, he did not score; say who did if a goal followed.
 
 Rules:
 - Plain English for a newcomer. Explain any football word in a few words, or avoid it.

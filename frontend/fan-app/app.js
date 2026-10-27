@@ -7,7 +7,7 @@ const TEAM_NAMES = { ARS: "Arsenal", CHE: "Chelsea" };
 const POP_MS = 1600;      // points pop-up over the pitch
 const GOAL_MS = 2600;     // goal banner
 const JUMP_MS = 2000;     // jump card (JUMP_CARD_S on the server)
-const RESULT_HOLD_MS = 4000; // result stays on the call card, then back to "reading the play"
+const RESULT_HOLD_MS = 5500; // result stays on the call card, then back to "reading the play"
 const SWITCH_GUARD_MS = 600; // taps ignored on call options right after the auto-switch to REAL TIME
 const DRIBBLE_TAG_MS = 1000; // "DRIBBLE!" label on the ball
 const SILENCE_MS = 40000; // no message for this long (half time is 10 s) = connection lost

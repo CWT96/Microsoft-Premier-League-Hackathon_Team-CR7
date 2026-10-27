@@ -67,7 +67,16 @@ def test_all_facts_have_known_values(tmp_path):
     outs = [by_id[k]["outcome"] for k in tl.calls]
     # Estêvão's pass sets up João Pedro's goal; Saka's first shot is blocked
     assert outs == ["kept the move going", "kept the move going", "shot blocked", "goal",
-                    "goal", "goal"]
+                    "set up a goal", "goal"]
+
+
+def test_pass_that_sets_up_a_goal_names_the_scorer(tmp_path):
+    tl = build_timeline(M, client=llm.LLMClient(mode="cache", cache_dir=tmp_path))
+    by_player = {ln.facts["player"]: ln.facts for ln in tl.lines.values()}
+    assert by_player["Estêvão"]["outcome"] == "set up a goal"
+    assert by_player["Estêvão"]["scorer"] == "João Pedro"
+    saka = tl.lines[saka_call(tl).call_id].facts
+    assert saka["outcome"] == "goal" and "scorer" not in saka
 
 
 @pytest.mark.parametrize("setup", ["He will shoot", "Time for a PASS?", "A shot is on",
@@ -137,5 +146,11 @@ def test_cached_lines_are_used(tmp_path):
 def test_check_setup_rejects_answer_words():
     facts = {"answer": "SHOOT", "score": [0, 0]}
     assert lines.check_setup("Saka is in space. What will he do?", facts)
-    for bad in ("Passing lane open?", "SHOOTING chance", "Big shot", "dribble time"):
-        assert not lines.check_setup(bad, facts)
+    for bad in ("Passing lane open?", "SHOOTING chance", "Big shot", "dribble time",
+                "Can he strike?", "Striking range!", "Will he fire?", "Can he score?",
+                "Scoring chance here", "Time to finish it?", "A cross is on", "Crossing time",
+                "A teammate is free", "Teammates are open", "Will he run?", "Running at them?"):
+        assert not lines.check_setup(bad, facts), bad
+    for ok in ("First touch in the box. What now?", "He is in a brunt of pressure. What now?",
+               "Arsenal are level at the moment. What will he do?"):
+        assert lines.check_setup(ok, facts), ok
