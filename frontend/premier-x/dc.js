@@ -169,7 +169,9 @@
       if (v === undefined || v === null || v === false) { continue; }
       el.setAttribute(name, v === true ? "" : String(v));
     }
-    el.__k = path + "/" + tpl.__tid + (key !== null && key !== undefined ? "~" + key : "");
+    // an explicit key names the node by itself, so a list item keeps its element when the
+    // list reorders (a pitch dot keeps transitioning from where it is)
+    el.__k = key !== null && key !== undefined ? "k:" + tpl.__tid + "~" + key : path + "/" + tpl.__tid;
     el.__dc = dc;
     var kids = [];
     build(tpl, scope, el.__k, kids);

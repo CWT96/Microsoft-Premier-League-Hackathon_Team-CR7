@@ -29,7 +29,7 @@ DEMO_MATCH_ID = "nbr-cal-seed42"
 MAX_SESSIONS_ENV = "MAX_DEMO_SESSIONS"
 DEFAULT_MAX_SESSIONS = 50
 START_TIMEOUT_S = 10.0
-POST_MATCH_S = 120.0  # how long a finished demo keeps its socket (and slot) for signup
+POST_MATCH_S = 600.0  # how long a finished demo keeps its socket (and slot) for signup
 MAX_FRAME_BYTES = 4096
 TEAM_CODES = frozenset({"ARS", "CHE"})
 WS_CLOSE_NORMAL = 1000
@@ -138,6 +138,8 @@ def make_demo_router(*, sleep: Sleep = asyncio.sleep, load: Callable[[], Match] 
                     if msg.get("type") == "call.answer":
                         data = msg.get("data") or {}
                         session.answer(data.get("call_id"), data.get("pick"))
+                    elif msg.get("type") == "half_time.skip":
+                        session.skip_half_time()
                     elif (reply := forecast(msg.get("type"), msg.get("data"))) is not None:
                         await send(reply)
                 except (ValueError, KeyError, TypeError, AttributeError):

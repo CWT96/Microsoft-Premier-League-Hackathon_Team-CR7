@@ -21,11 +21,13 @@ def test_all_inside_pitch():
 
 
 def test_holder_is_on_the_ball():
+    # a shape is where everyone is at the next beat: the one before Saka's shot has him on the ball
     events = [c for c in TL.cues if c.type == "demo.event" and c.data["xy"]]
-    shapes = {c.at: c for c in SHAPES}
     saka = next(e for e in events if e.data["player"] == "Saka" and e.data["type"] == "shot")
-    dot = next(p for p in shapes[saka.at].data["players"] if p["num"] == 7 and p["team"] == "ARS")
-    assert [dot["x"], dot["y"]] == saka.data["xy"]
+    before = [c for c in SHAPES if c.at < saka.at][-1]
+    dot = next(p for p in before.data["players"] if p["num"] == 7 and p["team"] == "ARS")
+    assert [dot["x"], dot["y"]] == saka.data["xy"] == before.data["ball"]
+    assert before.data["holder"] == "Saka"
 
 
 def test_goalkeepers_stay_home():

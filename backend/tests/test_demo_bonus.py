@@ -65,6 +65,19 @@ def test_squads_shape():
         "Delap", "Gittens", "Lavia", "Gusto"]
 
 
+def test_display_only_matches():
+    s = bonus.squads()
+    assert [(m["home"], m["away"], m["playable"]) for m in s["matches"]] == [
+        ("ARS", "CHE", True), ("LIV", "MCI", False), ("NEW", "TOT", False)]
+    others = s["other_teams"]
+    assert set(others) == {"LIV", "MCI", "NEW", "TOT"}
+    for code, team in others.items():
+        assert sum(p["starter"] for p in team["players"]) == 11
+        assert team["popular"] in {p["id"] for p in team["players"]}
+        assert all(p["pos"] in s["scoring"] and p["id"].startswith(code + "-") for p in team["players"])
+    assert bonus.sanitise("ARS", ["LIV-7"]) == []  # display-only players never earn
+
+
 def test_scoring_table_exact():
     sc = bonus.squads()["scoring"]
     assert sc["GK"] == {"label": "Goalkeeper", "earns": "saves, clean sheets", "rules": [

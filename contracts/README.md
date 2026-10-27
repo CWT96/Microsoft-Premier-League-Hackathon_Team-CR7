@@ -202,7 +202,7 @@ Endpoint: `GET /demo/ws` (`wss://` on the deployed https site). Same envelope as
 1. Client connects. If `MAX_DEMO_SESSIONS` sockets (default 50) are already open, the server accepts and closes at once with **1013** (try again later).
 2. Client sends `start` within **10 s**. A missing, late or malformed `start`, or a team other than `ARS`/`CHE`, closes with **1008**. Bad `players` never close the socket; they are dropped.
 3. Server sends `demo.session`, then the timed cues of the highlights run, ending with `demo.full_time`.
-4. After `demo.full_time` the socket stays open for up to **120 s** (`POST_MATCH_S`) so the fan can still `signup`. Then the server closes with **1000**. It also closes with 1000 whenever the client leaves.
+4. After `demo.full_time` the socket stays open for up to **600 s** (`POST_MATCH_S`) so the fan can still `signup`. Then the server closes with **1000**. It also closes with 1000 whenever the client leaves.
 
 Clock values: `t` is match seconds (same convention as `/ws`), `clock` is the display label (`MM:SS`, or `45+M:SS` / `90+M:SS`), `score` is `[home, away]`. Pitch coordinates are metres in a fixed frame: Arsenal attack left to right (105 × 68), Chelsea's are rotated 180°.
 
@@ -214,6 +214,7 @@ Clock values: `t` is match seconds (same convention as `/ws`), `clock` is the di
 | `call.answer` | `{call_id, pick: "PASS" \| "SHOOT" \| "DRIBBLE"}` | None. Accepted only for the open call, once per call. Anything else is ignored silently. The result arrives in `call.result`. |
 | `forecast.pick` | `{key: "f5" \| "f10" \| "f15", pick}` | `forecast.locked` or `forecast.rejected`. Picks: `ars`/`che` for `f5` and `f10`, `goal`/`nogoal` for `f15`. |
 | `forecast.final` | `{result: "ars" \| "draw" \| "che", home, away}` | `forecast.final_saved` or `forecast.rejected` (`key: "final"`). Goals are integers 0–9, must agree with `result`, and cannot be below the current score. Can be changed until it locks at the start of the second half. |
+| `half_time.skip` | `{}` | None. Ends the half-time break now (the fan saved or closed the save sheet). Ignored outside half time. |
 | `signup` | `{email}` | `signup.saved` or `signup.rejected`. The email is only checked for shape; it is never stored, logged, sent or echoed. |
 
 ```json
@@ -231,13 +232,13 @@ Clock values: `t` is match seconds (same convention as `/ws`), `clock` is the di
 | `demo.session` | `{teams: {home, away}, you: {team, players: [card]}, duration, ai_lines, forecasts, room: {code, friends: [{name, saved, calls: {call_id: points}}]}}` | Once, right after `start`. `ai_lines` is true when every call line came from the LLM cache and passed the guards. `forecasts` lists the three windows and the final-result options with their points. `room.friends` gives each simulated friend's running call points after each call, so the app can rank the fan in the room during play (forecasts land in the half-time and full-time boards). |
 | `demo.jump` | `{title, clock}` | A 2 s title card before each highlight clip (the first one is the intro). |
 | `demo.clock` | `{half, clock, score, t}` | Once per real second while a clip plays. |
-| `demo.event` | `{type, team, player, xy, end_xy}` | Each on-ball event in a clip. `type` ∈ `pass`, `carry`, `shot`, `goal`, `save`, `kickoff`, `dribble`. `xy`/`end_xy` may be null. |
-| `demo.shape` | `{players: [{team, num, x, y}]}` | 22 dots at each clip start and with each located event. **Estimated** from the formation and the ball; there is no tracking data. |
+| `demo.event` | `{type, team, player, xy, end_xy, dur, flight, to}` | Each on-ball event in a clip. `type` ∈ `pass`, `carry`, `shot`, `goal`, `save`, `kickoff`, `dribble`. `xy`/`end_xy` may be null. `dur`: seconds until the next on-ball event of the clip; `flight`: seconds the ball takes to reach `end_xy` (pass ≈ 18 m/s, shot ≈ 30 m/s, carry = `dur`); `to`: the pass receiver, else null. |
+| `demo.shape` | `{players: [{team, num, x, y}], dur, ball, holder}` | Where the 22 players stand at the **next** on-ball moment, reached in `dur` seconds (`0` = place them now: the first shape of each clip, sent with its `demo.jump`). Sent with each located event; `ball` is the ball spot then and `holder` the player on it (null if none). A pass receiver is already moving to where the ball lands. **Estimated** from the formation and the ball; there is no tracking data. |
 | `demo.goal` | `{team, player, clock, score}` | Right after the goal's `demo.event`. |
 | `call.open` | `{call_id, player, team, prompt, options}` | The ball is passed to a player. `prompt` is the AI-written (cached) setup line. |
 | `call.locked` | `{call_id}` | That player passes, shoots or dribbles. Answers after this are ignored. |
 | `call.result` | `{call_id, answer, pick, too_quick, correct, points, streak_bonus, total, streak, explain}` | Right after `call.locked`. Points: +10 answered, +100 more if correct, streak bonus +50 per step from the 3rd correct call in a row. Unanswered: `pick: null`, `too_quick: true`, 0 points, streak kept. |
-| `demo.half_time` | `{score, seconds, room, breakdown, players, you: {rank}, total, saved}` | After the first half. `seconds` is the pause length (10). `players` is the bonus card of each backed player for the first half. |
+| `demo.half_time` | `{score, seconds, room, breakdown, players, you: {rank}, total, saved}` | After the first half. `seconds` is the longest the break lasts (30); `half_time.skip` ends it earlier. `players` is the bonus card of each backed player for the first half. |
 | `demo.full_time` | `{score, seconds, rows, badges, stamp, room, players, total, saved}` | Last cue. `rows` are the three result lines, `badges` ⊆ ORACLE / ON FIRE / GOOD EYE, `stamp` ranks the fan in the room and against a simulated crowd of 1,000. |
 
 `total` is the fan's running total in every message that carries it: calls, forecasts, player bonus (first half added before `demo.half_time`, the rest before `demo.full_time`) and the signup bonus. `room.players` is the fan plus three simulated friends (Mia, Dan, Leo), sorted by points.
@@ -282,7 +283,7 @@ Clock values: `t` is match seconds (same convention as `/ws`), `clock` is the di
 
 ### GET /demo/squads
 
-Both squads and the player-bonus scoring table, for the "back up to 2 players" screen. `popular` is the id of the player the app offers as a one-tap quick pick; `pos` ∈ `GK`, `DEF`, `MID`, `FWD`; `rules` are `[stat, points]` pairs. Code: `backend/demo/bonus.py` (`squads`).
+Both squads and the player-bonus scoring table, for the "back up to 2 players" screen. `matches` lists the pick screen's three matches (`playable` only for ARS v CHE) and `other_teams` the squads of the display-only teams (LIV, MCI, NEW, TOT; ids `<CODE>-<num>`), same shape as `teams`. `popular` is the id of the player the app offers as a one-tap quick pick; `pos` ∈ `GK`, `DEF`, `MID`, `FWD`; `rules` are `[stat, points]` pairs. Code: `backend/demo/bonus.py` (`squads`).
 
 ```json
 {"teams": {"ARS": {"name": "Arsenal", "popular": "910109", "players": [{"id": "910101", "name": "Raya", "num": 1, "pos": "GK", "starter": true}, "…"]},

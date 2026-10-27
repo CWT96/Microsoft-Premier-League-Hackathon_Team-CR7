@@ -109,7 +109,7 @@ a{color:#04F5FF}a:hover{color:#8AFAFF}
     <div style="position: absolute; right: 8px; top: 28%; height: 44%; width: 46px; border: 1.5px solid rgba(255,255,255,0.38); border-right: none"></div>
 
     <sc-for list="{{players}}" as="p" hint-placeholder-count="22">
-      <div style="position: absolute; left: {{p.l}}; top: {{p.t}}; width: 15px; height: 15px; margin: -7.5px 0 0 -7.5px; box-sizing: border-box; border-radius: 50%; background: {{p.bg}}; border: 1.5px solid {{p.edge}}; color: {{p.ink}}; display: flex; align-items: center; justify-content: center; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 8.5px; line-height: 1; transition: left {{p.dur}}ms linear, top {{p.dur}}ms linear">{{p.n}}</div>
+      <div key="{{p.k}}" style="position: absolute; left: {{p.l}}; top: {{p.t}}; width: 15px; height: 15px; margin: -7.5px 0 0 -7.5px; box-sizing: border-box; border-radius: 50%; background: {{p.bg}}; border: 1.5px solid {{p.edge}}; color: {{p.ink}}; display: flex; align-items: center; justify-content: center; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 8.5px; line-height: 1; transition: left {{p.dur}}ms linear, top {{p.dur}}ms linear">{{p.n}}</div>
     </sc-for>
 
     <sc-if value="{{hasHolder}}" hint-placeholder-val="{{ true }}">
@@ -320,22 +320,24 @@ class Component extends DCLogic {
     function pos(x, y) {
       return [Math.max(3, Math.min(97, x / 105 * 100)), Math.max(6, Math.min(94, y / 68 * 100))];
     }
-    var holderNum = A.holder ? app.names[A.holder.team + ":" + A.holder.name] : null;
+    // dots, ball and ring all move by CSS transitions whose times app.pitch() set to land
+    // them together; the ball sits at the holder's feet like the design's off() offset
+    var holderNum = A.holder ? app.names[A.holder.team + ":" + A.holder.name] : undefined;
     var holderKey = A.holder && holderNum !== undefined ? A.holder.team + ":" + holderNum : null;
     var players = [];
-    var holderXY = null;
-    Object.keys(A.dots).forEach(function (k) {
+    Object.keys(A.dots).sort().forEach(function (k) {
       var d = A.dots[k];
       var xy = pos(d.x, d.y);
       var home = d.team === "ARS", isH = k === holderKey;
-      if (isH) { holderXY = xy; }
-      players.push({ n: d.num, l: xy[0] + "%", t: xy[1] + "%", dur: A.dotDur,
+      players.push({ k: k, n: d.num, l: xy[0] + "%", t: xy[1] + "%", dur: d.dur,
         bg: home ? "#FF8A7A" : "#2F5BFF", ink: home ? "#1F0A07" : "#FFFFFF",
         edge: isH ? "#00FF85" : (home ? "#3A120D" : "#DCE5FF") });
     });
     var bxy = pos(A.ball.x, A.ball.y);
+    if (A.ball.feet) { bxy = [bxy[0] + 1.6, bxy[1] + 2.2]; }
+    var rxy = pos(A.ring.x, A.ring.y);
     var hl = {
-      l: (holderXY || bxy)[0] + "%", t: (holderXY || bxy)[1] + "%", dur: A.dotDur, ease: "linear",
+      l: rxy[0] + "%", t: rxy[1] + "%", dur: A.ring.dur, ease: A.ring.ease,
       tag: A.holder ? "#" + (holderNum !== undefined ? holderNum : "") + " " + String(A.holder.name).toUpperCase() : ""
     };
     var ball = { l: bxy[0] + "%", t: bxy[1] + "%", dur: A.ball.dur, ease: A.ball.ease };
@@ -377,7 +379,7 @@ class Component extends DCLogic {
       ribbon1: correct ? "READ THE PLAY" : "TOOK PART",
       answerLabel: answerLabel,
       prompt: prompt, options: options, resultLine: resultLine,
-      players: players, hl: hl, ball: ball, hasHolder: !!A.holder && !!holderXY,
+      players: players, hl: hl, ball: ball, hasHolder: !!A.holder,
       feed: A.feed.map(function (f, i) { return Object.assign({}, f, { delay: (250 + i * 120) + "ms" }); }),
       feedOn: A.feed.length > 0, feedKey: A.feedKey,
       hasJump: !!jump, jumpTitle: jump ? jump.title : "", jumpMinute: jump ? app.minute(jump.clock) : "",

@@ -11,6 +11,8 @@ carry the room board, breakdown, badges and stamp (``room.py``); ``signup`` adds
 
 from __future__ import annotations
 
+import asyncio
+
 import math
 from dataclasses import dataclass
 from typing import Any, Awaitable, Callable
@@ -31,6 +33,7 @@ _DEFS = {d.key: d for d in WINDOWS}
 _FINAL_IDS = {opt for opt, _ in FINAL_OPTIONS}
 _NOT_LIVE = {"demo.jump", "demo.half_time", "demo.full_time"}
 MAX_GOALS = 9
+HALF_TIME_HOLD_S = 30.0  # half time waits this long at most, or until the fan sends half_time.skip
 
 
 @dataclass(frozen=True)
@@ -96,6 +99,8 @@ class DemoSession:
         self._pending: dict[str, _Pending] = {}
         self._final: dict | None = None
         self._final_locked = False
+        self._at_half_time = False
+        self._skip = asyncio.Event()  # set by half_time.skip: the second half starts now
 
     def answer(self, call_id: Any, pick: Any) -> bool:
         """Record a pick for the open call; True if accepted (first answer, valid pick)."""
@@ -133,6 +138,25 @@ class DemoSession:
         self._final = {"result": result, "home": home, "away": away}
         return _env("forecast.final_saved", dict(self._final))
 
+    def skip_half_time(self) -> bool:
+        """End the half-time break now (the fan saved or closed the save sheet); True if it was on."""
+        if not self._at_half_time:
+            return False
+        self._skip.set()
+        return True
+
+    async def _hold_half_time(self, sleep: Sleep) -> None:
+        """Wait for half_time.skip or HALF_TIME_HOLD_S, whichever comes first."""
+        self._at_half_time = True
+        waits = [asyncio.ensure_future(self._skip.wait()), asyncio.ensure_future(sleep(HALF_TIME_HOLD_S))]
+        try:
+            await asyncio.wait(waits, return_when=asyncio.FIRST_COMPLETED)
+        finally:
+            for w in waits:
+                w.cancel()
+            await asyncio.gather(*waits, return_exceptions=True)
+            self._at_half_time = False
+
     def signup(self, email: Any) -> dict:
         """Save progress once: +500. The email is only validated, never kept or echoed."""
         if self.saved:
@@ -164,7 +188,8 @@ class DemoSession:
         """Cue data plus the room / result fields of half time and full time (copy, not shared)."""
         if cue_type == "demo.half_time":
             players = room.board(self.total, self.saved, room.friend_totals(self.timeline), "ht")
-            return {**data, "room": {"code": self.code, "players": players},
+            return {**data, "seconds": HALF_TIME_HOLD_S,
+                    "room": {"code": self.code, "players": players},
                     "breakdown": {"calls": self.call_points, "forecasts": self.forecast_points,
                                   "players": self.bonus_points},
                     "players": self._bonus((1,), False),
@@ -270,6 +295,12 @@ class DemoSession:
                 self.open_call = cue.data["call_id"]
             await self._before(cue.type, cue.data, send)
             await send(_env(cue.type, self._with_room(cue.type, cue.data)))
+            if cue.type == "demo.half_time":
+                # the break lasts until the fan is done with the save sheet (or the hold runs out);
+                # the scripted pause is then skipped, so the second half starts at once
+                await self._hold_half_time(sleep)
+                nxt = next((c.at for c in self.timeline.cues if c.at > cue.at), cue.at)
+                elapsed = max(elapsed, nxt)
 
     async def _lock(self, call_id: str, send: Send) -> None:
         """Close the call, score the pick and send ``call.locked`` + ``call.result``."""

@@ -61,8 +61,31 @@ def test_dribble_is_visible_at_its_lock():
     assert 0 <= x <= 105 and 0 <= y <= 68
     shape = next(c for c in TL.cues if c.type == "demo.shape" and c.at == lock.at
                  and TL.cues.index(c) > TL.cues.index(events[0]))
+    # the shape sent with the dribble is where Zubimendi is at the next beat (his pass)
+    nxt = next(c for c in TL.cues if c.type == "demo.event" and c.at > lock.at)
     holder = [p for p in shape.data["players"] if p["team"] == "ARS" and p["num"] == 36]
-    assert len(holder) == 1 and [holder[0]["x"], holder[0]["y"]] == ev["xy"]
+    assert len(holder) == 1 and [holder[0]["x"], holder[0]["y"]] == nxt.data["xy"]
+    assert shape.data["holder"] == "Zubimendi" and shape.data["dur"] == events[0].data["dur"]
+    assert round(nxt.at - lock.at, 3) == events[0].data["dur"]
+
+
+def test_motion_lands_on_the_next_beat():
+    # every located event says how long until the next one, and its shape gets there in that time
+    evs = [c for c in TL.cues if c.type == "demo.event" and c.data["xy"] and c.data["type"] != "goal"]
+    for e in evs:
+        shape = next(c for c in TL.cues if c.type == "demo.shape" and c.at == e.at)
+        assert shape.data["dur"] == e.data["dur"] and 0 <= e.data["flight"] <= e.data["dur"]
+    passes = [e.data for e in evs if e.data["type"] == "pass" and e.data["to"]]
+    assert ("Calafiori", "Zubimendi") in [(p["player"], p["to"]) for p in passes]
+    long_ball = next(p for p in passes if p["player"] == "Calafiori" and p["to"] == "Zubimendi")
+    assert 3.0 < long_ball["flight"] < long_ball["dur"]  # about 18 m/s over 59 m
+
+
+def test_each_clip_starts_with_a_placed_shape():
+    jumps = [i for i, c in enumerate(TL.cues) if c.type == "demo.jump"]
+    for i in jumps:
+        shape = next(c for c in TL.cues[i:] if c.type == "demo.shape")
+        assert shape.data["dur"] == 0
 
 
 def test_result_stays_on_screen_before_the_next_call():

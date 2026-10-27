@@ -321,7 +321,7 @@ def test_router_routes_forecast_messages():
     with TestClient(app) as client, client.websocket_connect("/demo/ws") as ws:
         ws.send_json(START_ARS)
         assert [ws.receive_json()["type"] for _ in range(4)] == \
-            ["demo.session", "demo.jump", "demo.clock", "demo.shape"]  # stalls at 11:34
+            ["demo.session", "demo.jump", "demo.shape", "demo.clock"]  # stalls at 11:34
         ws.send_json({"type": "forecast.pick", "data": "nope"})
         assert ws.receive_json() == {"type": "forecast.rejected",
                                      "data": {"key": None, "reason": "bad_pick"}}

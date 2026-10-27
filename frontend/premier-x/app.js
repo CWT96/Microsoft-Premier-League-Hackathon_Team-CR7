@@ -21,7 +21,10 @@
       total: 0, streak: 0, lastCallId: null,
       call: null,              // {id, player, team, prompt, phase: ask|locked|reveal|missed, choice, result}
       feed: [], feedAt: 0, feedKey: 0,
-      dots: {}, dotDur: 400, ball: { x: 52.5, y: 34, dur: 400, ease: "linear" }, holder: null,
+      // pitch, in metres (105 x 68): dots {key: {team, num, x, y, dur}}, the ball and the
+      // holder ring {x, y, dur, ease}; dur in ms is the CSS transition that lands them on time
+      dots: {}, ball: { x: 52.5, y: 34, dur: 0, ease: "linear", feet: false },
+      ring: { x: 52.5, y: 34, dur: 0, ease: "linear" }, holder: null, lastEvent: null,
       fc: { pending: {}, last: null, final: null, finalLocked: false, finalResult: null },
       htEndsAt: 0, ht: null, ft: null,
       saved: false, email: "", signup: null, signupError: ""
@@ -112,7 +115,15 @@
     },
     start: function () {
       app.stop();
-      var keep = { team: app.state.team, players: app.state.players.slice() };
+      // only Arsenal v Chelsea has match data: a fan browsing another match plays it as the
+      // side in the same place (home -> Arsenal, away -> Chelsea), without backed players
+      var team = app.state.team, players = app.state.players.slice();
+      if (team !== "ARS" && team !== "CHE") {
+        var m = (app.squads && app.squads.matches || []).filter(function (x) { return x.away === team; })[0];
+        team = m ? "CHE" : "ARS";
+        players = [];
+      }
+      var keep = { team: team, players: players };
       app.state = Object.assign(fresh(), keep, { connecting: true });
       var url = (location.protocol === "https:" ? "wss://" : "ws://") + location.host + "/demo/ws";
       var ws = new WebSocket(url);
@@ -128,6 +139,7 @@
       ws.onclose = function (e) {
         if (app.ws !== ws) { return; }
         app.ws = null;
+        app.signupWaiters.splice(0).forEach(function (f) { f({ ok: false, reason: "offline" }); });
         if (app.state.phase !== "full") {
           app.set({ connecting: false, error: e.code === 1013 ? "Busy right now. Try again in a minute." : "Connection lost." });
         }
@@ -158,6 +170,9 @@
       if (app.state.fc.finalLocked) { return; }
       app.send("forecast.final", { result: result, home: home, away: away });
     },
+    skipHalfTime: function (delay) {
+      app.later(delay || 0, function () { if (app.state.phase === "half") { app.send("half_time.skip", {}); } });
+    },
     signup: function (email) {
       return new Promise(function (resolve) {
         if (app.state.saved) { resolve({ ok: true }); return; }
@@ -183,21 +198,12 @@
         case "demo.clock":
           app.set({ live: d, jump: null, clockLabel: d.clock, score: d.score, phase: "live" });
           break;
-        case "demo.shape":
-          var dots = {};
-          d.players.forEach(function (p) { dots[p.team + ":" + p.num] = { team: p.team, num: p.num, x: p.x, y: p.y }; });
-          var dur = s.shapeAt ? Math.max(300, Math.min(1200, now - s.shapeAt)) : 0;
-          app.set({ dots: dots, dotDur: dur, shapeAt: now });
-          break;
         case "demo.event":
-          var to = d.end_xy || d.xy;
-          var patch = { holder: { team: d.team, name: d.player } };
-          if (to) {
-            var dist = Math.sqrt(Math.pow(to[0] - s.ball.x, 2) + Math.pow(to[1] - s.ball.y, 2));
-            patch.ball = { x: to[0], y: to[1], dur: Math.round(Math.min(1100, 220 + dist * 14)),
-                           ease: d.type === "shot" ? "cubic-bezier(.15,.8,.3,1)" : "cubic-bezier(.25,.7,.35,1)" };
-          }
-          app.set(patch);
+          app.state.lastEvent = d;  // read by the demo.shape that follows it
+          if (d.type === "goal" && d.xy) { app.set({ ball: { x: d.xy[0], y: d.xy[1], dur: 0, ease: "linear", feet: false } }); }
+          break;
+        case "demo.shape":
+          app.pitch(d);
           break;
         case "demo.goal":
           // a goal joins the call history chips still on screen (a call often settles on the goal)
@@ -206,8 +212,7 @@
           app.set({ score: d.score });
           break;
         case "call.open":
-          app.set({ call: { id: d.call_id, player: d.player, team: d.team, prompt: d.prompt, phase: "ask", choice: null },
-                    holder: { team: d.team, name: d.player } });
+          app.set({ call: { id: d.call_id, player: d.player, team: d.team, prompt: d.prompt, phase: "ask", choice: null } });
           break;
         case "call.result":
           var c = s.call && s.call.id === d.call_id ? s.call : { id: d.call_id, player: "", prompt: "", choice: null };
@@ -269,6 +274,68 @@
           break;
       }
     },
+    // ---- the pitch ----
+    // A demo.shape is where everyone stands at the NEXT on-ball moment, reached in d.dur s.
+    // The demo.event just before it says what the ball does meanwhile: a pass flies to the
+    // receiver (who arrives with it), a shot flies to goal, anything else stays at the holder's
+    // feet. CSS transitions do the motion, so it runs at the display's frame rate.
+    pitch: function (d) {
+      var s = app.state;
+      var D = Math.max(0, d.dur || 0) * 1000;
+      var E = s.lastEvent;
+      s.lastEvent = null;
+      var VMAX = 9;  // m/s: nobody but the ball carrier and the receiver runs faster than this
+      var flight = E ? Math.max(0, E.flight || 0) * 1000 : 0;
+      var holderKey = d.holder ? d.players.filter(function (p) {
+        return app.names[p.team + ":" + d.holder] === p.num;
+      }).map(function (p) { return p.team + ":" + p.num; })[0] : null;
+      var receiverKey = E && E.type === "pass" && E.to ? E.team + ":" + app.names[E.team + ":" + E.to] : null;
+      var dots = {};
+      d.players.forEach(function (p) {
+        var key = p.team + ":" + p.num;
+        var old = s.dots[key];
+        var dur = D;
+        if (D > 0 && old) {
+          var dist = Math.sqrt(Math.pow(p.x - old.x, 2) + Math.pow(p.y - old.y, 2));
+          if (key === receiverKey && flight > 0) { dur = flight; }
+          else if (key !== holderKey) { dur = Math.max(D, dist / VMAX * 1000); }
+        }
+        if (!old) { dur = 0; }
+        dots[key] = { team: p.team, num: p.num, x: p.x, y: p.y, dur: Math.round(dur) };
+      });
+      var holder = d.holder ? { team: holderKey ? holderKey.split(":")[0] : (E ? E.team : ""), name: d.holder } : null;
+      var ball, ring;
+      var hd = holderKey ? dots[holderKey] : null;
+      if (D === 0 || !E) {
+        ball = { x: d.ball[0], y: d.ball[1], dur: Math.round(D), ease: "linear", feet: !!d.holder };
+        ring = hd ? { x: hd.x, y: hd.y, dur: Math.round(D), ease: "linear" } : { x: d.ball[0], y: d.ball[1], dur: Math.round(D), ease: "linear" };
+      } else if (E.type === "pass" && E.end_xy) {
+        var easePass = "cubic-bezier(.25,.7,.35,1)";
+        ball = { x: E.end_xy[0], y: E.end_xy[1], dur: Math.round(flight), ease: easePass, feet: !!E.to };
+        ring = { x: E.end_xy[0], y: E.end_xy[1], dur: Math.round(flight), ease: easePass };
+        if (E.to) { holder = { team: E.team, name: E.to }; } else { holder = null; }
+      } else if (E.type === "shot" && E.end_xy) {
+        ball = { x: E.end_xy[0], y: E.end_xy[1], dur: Math.round(flight), ease: "cubic-bezier(.15,.8,.3,1)", feet: false };
+        holder = { team: E.team, name: E.player };
+        var sk = E.team + ":" + app.names[E.team + ":" + E.player];
+        var sd = dots[sk];
+        ring = sd ? { x: sd.x, y: sd.y, dur: sd.dur, ease: "linear" } : { x: E.xy[0], y: E.xy[1], dur: 0, ease: "linear" };
+      } else {
+        ball = { x: d.ball[0], y: d.ball[1], dur: Math.round(D), ease: "linear", feet: !!d.holder };
+        ring = hd ? { x: hd.x, y: hd.y, dur: hd.dur, ease: "linear" } : { x: d.ball[0], y: d.ball[1], dur: Math.round(D), ease: "linear" };
+      }
+      // the ball starts at the event's spot: if it is somewhere else, put it there first
+      var from = E && E.xy ? E.xy : null;
+      var off = from && Math.sqrt(Math.pow(from[0] - s.ball.x, 2) + Math.pow(from[1] - s.ball.y, 2)) > 4;
+      if (off && D > 0) {
+        app.set({ ball: { x: from[0], y: from[1], dur: 0, ease: "linear", feet: E.type !== "shot" } });
+        app.afterPaint(function () { app.set({ dots: dots, ball: ball, ring: ring, holder: holder }); });
+      } else {
+        app.set({ dots: dots, ball: ball, ring: ring, holder: holder });
+      }
+    },
+    afterPaint: function (fn) { requestAnimationFrame(function () { requestAnimationFrame(fn); }); },
+
     pushFeed: function (entries) {
       var key = app.state.feedKey + 1;
       app.set({ feed: entries, feedAt: Date.now(), feedKey: key });

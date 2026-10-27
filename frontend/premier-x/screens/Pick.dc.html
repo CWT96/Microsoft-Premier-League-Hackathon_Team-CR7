@@ -153,20 +153,28 @@ class Component extends DCLogic {
     var team = s.team;
     var chosen = s.players;
     var sq = app.squads;
-    var logos = { ARS: "assets/crests/ars.svg", CHE: "assets/crests/che.svg" };  // relative to the app page
+    function crest(code) { return "assets/crests/" + code.toLowerCase() + ".svg"; }  // relative to the app page
+    function teamOf(code) { return sq ? (sq.teams[code] || (sq.other_teams || {})[code]) : null; }
     var base = "flex: 1; min-width: 0; height: 52px; padding: 0 10px; border-radius: 12px; display: flex; align-items: center; gap: 8px; font-family: inherit; color: #F3F6F9; ";
     var on = base + "background: rgba(0,255,133,0.14); border: 2px solid #00FF85;";
     var off = base + "background: #4A0E52; border: 2px solid #4A0E52;";
-    var matches = [{
-      status: "● LIVE 12'", statusColor: "#FF5C93", meta: "Highlights · about 90 s",
-      home: sq ? sq.teams.ARS.name : "Arsenal", away: sq ? sq.teams.CHE.name : "Chelsea", score: "0 – 0",
-      homeLogo: logos.ARS, awayLogo: logos.CHE,
-      homeOn: team === "ARS", awayOn: team === "CHE",
-      homeStyle: team === "ARS" ? on : off, awayStyle: team === "CHE" ? on : off,
-      pickHome: function () { app.pickTeam("ARS"); }, pickAway: function () { app.pickTeam("CHE"); }
-    }];
+    // Arsenal v Chelsea is the playable demo; the other two are the design's matchday, browsable
+    var defs = sq && sq.matches ? sq.matches : [{ id: "m1", home: "ARS", away: "CHE", status: "LIVE", meta: "Matchweek 9", score: null, playable: true }];
+    var current = defs.filter(function (m) { return m.home === team || m.away === team; })[0] || defs[0];
+    var matches = defs.map(function (m) {
+      var live = m.status.indexOf("LIVE") === 0;
+      var h = teamOf(m.home), a = teamOf(m.away);
+      return {
+        status: (live ? "● " : "") + (m.playable ? "LIVE 12'" : m.status), statusColor: live ? "#FF5C93" : "#04F5FF",
+        meta: m.meta, home: h ? h.name : m.home, away: a ? a.name : m.away, score: m.score || "0 – 0",
+        homeLogo: crest(m.home), awayLogo: crest(m.away),
+        homeOn: team === m.home, awayOn: team === m.away,
+        homeStyle: team === m.home ? on : off, awayStyle: team === m.away ? on : off,
+        pickHome: function () { app.pickTeam(m.home); }, pickAway: function () { app.pickTeam(m.away); }
+      };
+    });
     var sc = sq ? sq.scoring : { GK: { label: "Goalkeeper", earns: "saves, clean sheets", rules: [] }, DEF: { label: "Defender", earns: "tackles, clean sheets", rules: [] }, MID: { label: "Midfielder", earns: "assists, key passes", rules: [] }, FWD: { label: "Forward", earns: "goals, shots", rules: [] } };
-    var players = sq ? sq.teams[team].players : [];
+    var players = teamOf(team) ? teamOf(team).players : [];
     var pBase = "width: 100%; min-height: 56px; padding: 8px 10px; border-radius: 12px; display: flex; align-items: center; gap: 12px; font-family: inherit; ";
     function build(list) {
       return list.map(function (p) {
@@ -197,16 +205,18 @@ class Component extends DCLogic {
         }
       });
     });
-    var popRow = sq ? players.filter(function (p) { return p.id === sq.teams[team].popular; })[0] : null;
+    var popRow = teamOf(team) ? players.filter(function (p) { return p.id === teamOf(team).popular; })[0] : null;
     var posIntro = ["GK", "DEF", "MID", "FWD"].map(function (k) {
       return { label: sc[k].label.toUpperCase(), how: "Earns from " + sc[k].earns };
     });
-    var teamName = sq ? sq.teams[team].name : app.teamName(team);
+    var teamName = teamOf(team) ? teamOf(team).name : app.teamName(team);
     var names = selectedCards.map(function (c) { return c.name; });
-    var summary = "Playing as " + teamName + " · " + (names.length ? "backing " + names.join(" & ") : "no players backed yet");
+    var summary = current.playable
+      ? "Playing as " + teamName + " · " + (names.length ? "backing " + names.join(" & ") : "no players backed yet")
+      : "Demo match tonight: Arsenal v Chelsea · you play " + (team === current.home ? "Arsenal" : "Chelsea");
     return {
       matches: matches, groups: groups, count: chosen.length, teamName: teamName, summary: summary,
-      isUpcoming: false, squadSource: "Official team sheet",
+      isUpcoming: !!current.predicted, squadSource: current.predicted ? "Predicted" : "Official team sheet",
       noneSelected: chosen.length === 0, oneSelected: chosen.length === 1,
       selectedCards: selectedCards, posIntro: posIntro,
       popular: popRow ? { num: popRow.num, name: popRow.name } : { num: "", name: "" },

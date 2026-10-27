@@ -78,7 +78,7 @@ def _score(goals: list[MatchEvent], half: int, t: float) -> list[int]:
 
 
 def _event_data(e: MatchEvent) -> dict:
-    """Wire data of a ``demo.event`` cue."""
+    """Wire data of a ``demo.event`` cue (motion fields are added by ``_play_cues``)."""
     xy, end_xy = fixed_xy(e.team, e.start), fixed_xy(e.team, e.end)
     return {"type": e.type, "team": TEAMS[e.team]["code"], "player": display_name(e.player_id),
             "xy": list(xy) if xy else None, "end_xy": list(end_xy) if end_xy else None}
@@ -86,56 +86,135 @@ def _event_data(e: MatchEvent) -> dict:
 
 _BALL_TYPES = {"pass", "carry", "shot", "kickoff"}
 _CENTRE = (52.5, 34.0)
+PASS_SPEED = 18.0  # m/s, ball in the air or along the ground
+SHOT_SPEED = 30.0  # m/s
+
+
+@dataclass(frozen=True)
+class _Beat:
+    """One on-ball moment of a clip, in time order: a located event or a call's dribble."""
+
+    t: float
+    player_id: str | None
+    team: str  # internal code
+    data: dict  # demo.event wire data
 
 
 def _shape_cue(slots: list, at: float, half: int, t: float, ball: tuple[float, float],
-               holder: str | None) -> Cue:
-    """Shape cue; the wire drops ``id`` (team + num identify a player) to keep the payload small."""
-    players = [{k: v for k, v in p.items() if k != "id"}
-               for p in team_shape(on_pitch(slots, half, t), ball, holder)]
-    return Cue(at, "demo.shape", {"players": players})
+               holder: str | None, dur: float, waiting: tuple[str, list] | None = None) -> Cue:
+    """Shape cue: where the 22 players will be ``dur`` seconds from now (0 = place them now).
+
+    ``waiting`` (player id, spot) is the receiver of the pass made at that moment: he is already
+    on his way to where the ball will land, so he never has to sprint to meet it.
+    The wire drops ``id`` (team + num identify a player) to keep the payload small.
+    """
+    players = []
+    for p in team_shape(on_pitch(slots, half, t), ball, holder):
+        if waiting and p["id"] == waiting[0] and p["id"] != holder:
+            p = {**p, "x": round(min(104.0, max(1.0, waiting[1][0])), 1),
+                 "y": round(min(67.0, max(1.0, waiting[1][1])), 1)}
+        players.append({k: v for k, v in p.items() if k != "id"})
+    return Cue(at, "demo.shape", {"players": players, "dur": round(dur, 3),
+                                  "ball": [round(ball[0], 1), round(ball[1], 1)],
+                                  "holder": display_name(holder) if holder else None})
+
+
+def _dist(a: list | tuple, b: list | tuple) -> float:
+    return ((a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2) ** 0.5
 
 
 def _play_cues(match: Match, play: Play, at: float, goals: list[MatchEvent],
                calls: list[Call], lines: dict[str, CallLines]) -> list[Cue]:
-    """Cues of one Play, with the play starting at real time ``at``."""
+    """Cues of one Play, with the play starting at real time ``at``.
+
+    Motion is choreographed so the pitch stays in step: each ``demo.event`` says how long the
+    ball takes (``flight``) and how long until the next beat (``dur``); the ``demo.shape`` sent
+    with it is where everyone stands at that next beat, reached in ``dur`` seconds (the pass
+    receiver meets the ball after ``flight``). The first shape of a clip places the players at
+    once (``dur`` 0) while the jump card still covers the pitch.
+    """
     cues: list[Cue] = []
     slots = load_slots()
-    in_play = [e for e in match.events if e.type in EVENT_TYPES and e.half == play.half
-               and play.start_t <= e.t < play.end_t]
-    first = next((fixed_xy(e.team, e.start) for e in in_play
-                  if e.type in _BALL_TYPES and e.start), None)
-    cues.append(_shape_cue(slots, at, play.half, play.start_t, first or _CENTRE, None))
+    in_play = sorted((e for e in match.events if e.type in EVENT_TYPES and e.half == play.half
+                      and play.start_t <= e.t < play.end_t), key=lambda e: e.t)
+    beats: list[_Beat] = []
+    for e in in_play:
+        data = _event_data(e)
+        if e.type == "goal":
+            when = at + (e.t - play.start_t)
+            cues.append(Cue(when, "demo.event", {**data, "dur": 0, "flight": 0, "to": None}))
+            cues.append(Cue(when, "demo.goal", {
+                "team": TEAMS[e.team]["code"], "player": display_name(e.player_id),
+                "clock": clock_label(e.half, e.t), "score": _score(goals, e.half, e.t)}))
+            continue
+        beats.append(_Beat(e.t, e.player_id, e.team, data))
+    for c in calls:  # ingest drops dribbles: show the raw one at the call's lock
+        xy = fixed_xy(c.team, c.lock_xy)
+        if c.answer == "DRIBBLE" and xy:
+            beats.append(_Beat(c.lock_t, c.player_id, c.team, {
+                "type": "dribble", "team": TEAMS[c.team]["code"],
+                "player": display_name(c.player_id), "xy": list(xy), "end_xy": None}))
+    beats.sort(key=lambda b: b.t)
+    located = [b for b in beats if b.data["xy"]]
+
+    def waiting(k: int) -> tuple[str, list] | None:
+        """(receiver, landing spot) of the pass made at beat ``k``, if it finds a teammate."""
+        if k + 1 >= len(located) or located[k].data["type"] != "pass" or not located[k].data["end_xy"]:
+            return None
+        b, nxt = located[k], located[k + 1]
+        return (nxt.player_id, b.data["end_xy"]) if nxt.team == b.team and nxt.player_id else None
+
+    def target(k: int) -> tuple[tuple[float, float], str | None]:
+        """Ball spot and holder at beat ``k`` (after the last beat: where its ball ends up)."""
+        if k < len(located):
+            b = located[k]
+            return tuple(b.data["xy"]), b.player_id
+        last = located[-1] if located else None
+        if last is None:
+            return _CENTRE, None
+        end = last.data["end_xy"] or last.data["xy"]
+        holder = last.player_id if last.data["type"] in ("carry", "dribble") else None
+        return tuple(end), holder
+
+    ball0, holder0 = target(0)
+    # placed during the jump card, so the cut to the new clip never shows players teleporting
+    cues.append(_shape_cue(slots, max(0.0, at - JUMP_CARD_S), play.half, play.start_t,
+                           ball0, holder0, 0.0, waiting(0)))
     for k in range(int(-(-(play.end_t - play.start_t) // 1))):
         t = play.start_t + k
         cues.append(Cue(at + k, "demo.clock", {
             "half": play.half, "clock": clock_label(play.half, t),
             "score": _score(goals, play.half, t), "t": float(t)}))
-    for e in match.events:
-        if e.type not in EVENT_TYPES or e.half != play.half or not play.start_t <= e.t < play.end_t:
+    for b in beats:
+        when = at + (b.t - play.start_t)
+        if not b.data["xy"]:
+            cues.append(Cue(when, "demo.event", {**b.data, "dur": 0, "flight": 0, "to": None}))
             continue
-        when = at + (e.t - play.start_t)
-        data = _event_data(e)
-        cues.append(Cue(when, "demo.event", data))
-        if data["xy"] and e.type != "goal":  # the goal-mouth point follows its shot
-            cues.append(_shape_cue(slots, when, e.half, e.t, tuple(data["xy"]), e.player_id))
-        if e.type == "goal":
-            cues.append(Cue(when, "demo.goal", {
-                "team": TEAMS[e.team]["code"], "player": display_name(e.player_id),
-                "clock": clock_label(e.half, e.t), "score": _score(goals, e.half, e.t)}))
+        k = located.index(b)
+        nxt = located[k + 1] if k + 1 < len(located) else None
+        dur = max(0.0, (nxt.t if nxt else play.end_t) - b.t)
+        kind, start, end = b.data["type"], b.data["xy"], b.data["end_xy"]
+        receiver = nxt.player_id if (kind == "pass" and nxt and nxt.team == b.team) else None
+        if kind == "pass" and end:
+            flight = min(dur, max(0.35, _dist(start, end) / PASS_SPEED))
+        elif kind == "shot" and end:
+            flight = min(dur, max(0.25, _dist(start, end) / SHOT_SPEED))
+        elif kind == "carry" and end:
+            flight = dur
+        else:
+            flight = 0.0
+        cues.append(Cue(when, "demo.event", {
+            **b.data, "dur": round(dur, 3), "flight": round(flight, 3),
+            "to": display_name(receiver) if receiver else None}))
+        ball, holder = target(k + 1)
+        cues.append(_shape_cue(slots, when, play.half, nxt.t if nxt else play.end_t,
+                               ball, holder, dur, waiting(k + 1)))
     for c in calls:  # open on the pass, lock on the receiver's action (select_calls: no overlap)
         player = display_name(c.player_id)
         cues.append(Cue(at + (c.open_t - play.start_t), "call.open", {
             "call_id": c.call_id, "player": player, "team": TEAMS[c.team]["code"],
             "prompt": lines[c.call_id].setup, "options": list(OPTIONS)}))
-        lock_at = at + (c.lock_t - play.start_t)
-        cues.append(Cue(lock_at, "call.lock", {"call_id": c.call_id}))
-        xy = fixed_xy(c.team, c.lock_xy)
-        if c.answer == "DRIBBLE" and xy:  # ingest drops dribbles: show the raw one
-            cues.append(Cue(lock_at, "demo.event", {
-                "type": "dribble", "team": TEAMS[c.team]["code"], "player": player,
-                "xy": list(xy), "end_xy": None}))
-            cues.append(_shape_cue(slots, lock_at, c.half, c.lock_t, xy, c.player_id))
+        cues.append(Cue(at + (c.lock_t - play.start_t), "call.lock", {"call_id": c.call_id}))
     return cues
 
 

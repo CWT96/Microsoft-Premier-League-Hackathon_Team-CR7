@@ -140,7 +140,7 @@ a{color:#04F5FF}a:hover{color:#8AFAFF}
             <label for="ht-email" style="font-size: 13px; font-weight: 600">Email</label>
             <input id="ht-email" type="email" autocomplete="email" placeholder="you@example.com" value="{{email}}" onChange="{{onEmail}}" style="height: 52px; box-sizing: border-box; padding: 0 16px; border-radius: 14px; border: 2px solid {{inputBorder}}; background: #37003C; color: #F3F6F9; font-family: inherit; font-size: 16px">
             <sc-if value="{{hasError}}" hint-placeholder-val="{{ false }}">
-              <div style="font-size: 12px; color: #FF8FB3">That email doesn't look right. Mind checking it?</div>
+              <div style="font-size: 12px; color: #FF8FB3">{{errorText}}</div>
             </sc-if>
           </div>
           <div style="{{a.cta}} display: flex; flex-direction: column; gap: 8px">
@@ -215,6 +215,7 @@ class Component extends DCLogic {
       showChip: s.sheet === "closed" && !s.saved,
       showSaved: s.sheet === "closed" && s.saved,
       email: s.email, hasError: s.error,
+      errorText: s.error === "offline" ? "We lost the connection to the match, so this couldn't be saved." : "That email doesn't look right. Mind checking it?",
       inputBorder: s.error ? "#FF8FB3" : "#5C2A63",
       a: {
         badge: "animation: htPop 480ms cubic-bezier(0.2, 0.9, 0.2, 1) 420ms both;",
@@ -228,11 +229,12 @@ class Component extends DCLogic {
         if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) || self.state.busy) { if (!self.state.busy) { self.setState({ error: true }); } return; }
         self.setState({ busy: true });
         app.signup(v).then(function (r) {
-          self.setState(r.ok ? { saved: true, email: v, busy: false } : { error: true, busy: false });
+          self.setState(r.ok ? { saved: true, email: v, busy: false } : { error: r.reason === "offline" ? "offline" : true, busy: false });
         });
       },
-      later: function () { self.dismiss(); },
-      close: function () { self.dismiss(); },
+      // closing the sheet ends the break: the second half kicks off right after it slides away
+      later: function () { self.dismiss(); app.skipHalfTime(900); },
+      close: function () { self.dismiss(); app.skipHalfTime(400); },
       openSheet: function () { self.setState({ sheet: "open" }); }
     };
   }
