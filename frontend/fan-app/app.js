@@ -884,7 +884,8 @@ function onSignupRejected(d) {
   s.save.pending = false;
   setSaveBusy(false);
   if (d.reason === "already") {
-    s.save.saved = true;
+    if (s.save.saved) return; // this run's save already succeeded: keep "+500 PROGRESS SAVED"
+    s.save.saved = true;      // the HUD total catches up with the next server total
     showDone(false);
   } else {
     setEmailError("That email doesn't look right. Mind checking it?");
@@ -899,7 +900,8 @@ function showDone(fresh) {
   $("done-label").textContent = fresh ? "PROGRESS SAVED" : "ALREADY SAVED";
   const line = $("done-line");
   line.textContent = "";
-  line.append("Your " + fmt(s.total) + " points are safe" + (fresh && bonus > 0 ? ", plus a welcome bonus. " : ". "));
+  line.append(fresh ? "Your " + fmt(s.total) + " points are safe" + (bonus > 0 ? ", plus a welcome bonus. " : ". ")
+    : "Your points are already saved. ");
   if (s.save.email) line.append("We'd send a sign-in link to ", el("b", "", s.save.email), ". ");
   line.append("(Demo: nothing is sent.)");
   if (s.sheet) showSaveView();
@@ -910,6 +912,7 @@ function showDone(fresh) {
 // ............................................................ full time (design Result.dc.html)
 
 const ROW_MSG = { rt: "COUNTING REAL-TIME CALLS…", fc: "COUNTING YOUR FORECASTS…", pb: "AND YOUR PLAYERS' BONUS…" };
+const BONUS_MSG = "PLUS YOUR WELCOME BONUS…"; // client-side row: the server's rows leave the +500 out of the total
 const BADGE_CLASS = { "ORACLE": "g", "ON FIRE": "c", "GOOD EYE": "p" };
 
 function onFullTime(d) {
@@ -934,6 +937,7 @@ function onFullTime(d) {
   });
   const sum = rows.reduce((a, r) => a + r.points, 0);
   s.ft = { stage: "idle", rows: rows, raf: 0, total: typeof d.total === "number" ? d.total : sum, me: null };
+  addBonusRow(s.ft);
   $("ft-score").textContent = scoreText(s.score);
   $("ft-stamp").textContent = typeof d.stamp === "string" ? d.stamp : "";
   buildBadges(d.badges);
@@ -1035,7 +1039,7 @@ function countRow(ft, i) {
     return;
   }
   r.node.classList.add("started", "active");
-  $("ft-message").textContent = ROW_MSG[r.key] || "COUNTING…";
+  $("ft-message").textContent = r.key === "wb" ? BONUS_MSG : ROW_MSG[r.key] || "COUNTING…";
   const dur = r.points > 0 ? ROW_MS : ZERO_ROW_MS;
   let t0 = null;
   const frame = (now) => {
@@ -1070,13 +1074,29 @@ function finishCount(ft, fast) {
   });
 }
 
+// After a save the server total includes the +500 but its rows do not: show it as a last row.
+// Before or during the count it counts like the others; after the count it lands at once.
+function addBonusRow(ft) {
+  if (!s.save.saved || ft.rows.some((r) => r.key === "wb")) return;
+  const extra = ft.total - ft.rows.reduce((a, r) => a + r.points, 0);
+  if (extra <= 0) return;
+  const node = document.querySelector('.ft-row[data-key="wb"]');
+  const r = { key: "wb", node: node, points: extra, value: 0, landed: false };
+  ft.rows.push(r);
+  node.hidden = false;
+  if (ft.stage !== "done") return;
+  paintRow(r, r.points, 1);
+  landRow(r);
+  const total = $("ft-total");
+  total.textContent = fmt(ft.total);
+  total.classList.remove("pop"); void total.offsetWidth; total.classList.add("pop");
+  if (ft.me) ft.me.textContent = fmt(ft.total);
+}
+
 function renderFtSave() {
   const ft = s.ft;
-  if (ft.stage === "done" && typeof s.total === "number" && s.save.saved) {
-    ft.total = Math.max(ft.total, s.total); // a save after full time adds the welcome bonus
-    $("ft-total").textContent = fmt(ft.total);
-    if (ft.me) ft.me.textContent = fmt(ft.total);
-  }
+  if (s.save.saved && typeof s.total === "number") ft.total = Math.max(ft.total, s.total);
+  addBonusRow(ft);
   $("ft-save").textContent = s.save.saved ? "POINTS SAVED · " + fmt(ft.total) : "SAVE MY " + fmt(ft.total) + " POINTS";
 }
 
