@@ -78,6 +78,9 @@
         <div id="gain" class="gain" hidden></div>
         <div id="total-wrap" class="total"><span id="total">0</span><small>PTS</small></div>
         <div id="backing" class="muted tiny"></div>
+        <button id="save-chip" class="save-chip" hidden>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h11l3 3v13H5z"/><path d="M8 4v5h7V4"/></svg>Save your points
+        </button>
       </div>
     </header>
 
@@ -185,7 +188,113 @@
       <span id="streak-hint" class="muted tiny">3 right in a row = bonus</span>
     </footer>
 
-    <!-- 4. Half time / full time / connection lost -->
+    <!-- 4. Save sheet: half time, the HUD chip and full time (design HalfTime / Signup) -->
+    <div id="sheet-dim" class="sheet-dim" hidden></div>
+    <div id="sheet" class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title" hidden>
+      <div class="sheet-grip"></div>
+      <form id="save-form" class="sheet-body" novalidate>
+        <div class="row-between">
+          <div class="pts-badge rise-pop"><b id="sheet-pts">0</b><span id="sheet-pts-label"></span></div>
+          <div id="sheet-clock" class="tiny muted"></div>
+        </div>
+        <h2 id="sheet-title" class="sheet-title rise" style="--d:560ms"><span id="sheet-t1"></span> <span id="sheet-t2" class="hl"></span></h2>
+        <div id="sheet-room" class="room-line rise" style="--d:660ms">
+          <div id="sheet-avatars" class="avatars"></div>
+          <span><span id="sheet-room-lead"></span> <span id="sheet-room-saved" class="muted"></span></span>
+        </div>
+        <div class="perks rise" style="--d:750ms">
+          <div class="perk"><svg viewBox="0 0 24 24" style="stroke:#00FF85" aria-hidden="true"><path d="M5 4h11l3 3v13H5z"/><path d="M8 4v5h7V4M8 20v-6h8v6"/></svg><span>Keep points if you leave</span></div>
+          <div class="perk"><svg viewBox="0 0 24 24" style="stroke:#04F5FF" aria-hidden="true"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M7 6H4a3 3 0 0 0 3 4M17 6h3a3 3 0 0 1-3 4"/></svg><span>Season leaderboard</span></div>
+          <div class="perk"><svg viewBox="0 0 24 24" style="stroke:#C9A2FF" aria-hidden="true"><rect x="3" y="8" width="18" height="13" rx="2"/><path d="M12 8v13M3 12h18M12 8c-2-4-6-4-6-1.5S10 8 12 8c2 0 6 1 6-1.5S14 4 12 8z"/></svg><span>+500 welcome bonus</span></div>
+        </div>
+        <div id="sheet-fc" class="label-sm hl rise" style="--d:790ms"></div>
+        <div class="field rise" style="--d:840ms">
+          <label for="email">Email</label>
+          <input id="email" type="email" autocomplete="email" maxlength="254" placeholder="you@example.com">
+          <div id="email-error" class="field-error" hidden></div>
+        </div>
+        <div class="sheet-ctas rise breathe" style="--d:930ms">
+          <button id="save-btn" type="submit" class="cta save-cta">SAVE MY PROGRESS</button>
+          <div class="tiny muted center">Just your email, no password. Takes 5 seconds.</div>
+        </div>
+        <button id="ht-pick" type="button" class="ghost-cta rise" style="--d:980ms">SET YOUR FULL-TIME PICK →</button>
+        <button id="sheet-later" type="button" class="text-btn">Maybe later</button>
+      </form>
+      <div id="save-done" class="sheet-done" hidden>
+        <div class="pop-in"><div id="done-bonus" class="done-bonus">+500</div><div id="done-label" class="done-label">PROGRESS SAVED</div></div>
+        <p id="done-line" class="done-line rise" style="--d:380ms"></p>
+        <button id="done-close" type="button" class="cta save-cta rise" style="--d:480ms"></button>
+      </div>
+    </div>
+
+    <!-- 5. Full time (design Result) -->
+    <div id="ft" class="ft" hidden>
+      <div id="ft-scroll" class="ft-scroll">
+        <div class="row-between">
+          <div class="label-sm muted ft-kicker">FULL TIME</div>
+          <div class="scoreline">
+            <span class="crest-xs"><img src="assets/ars.svg" alt="Arsenal"></span>
+            <span>ARS</span><span id="ft-score">0 – 0</span><span>CHE</span>
+            <span class="crest-xs"><img src="assets/che.svg" alt="Chelsea"></span>
+          </div>
+        </div>
+        <div class="ft-hero">
+          <div class="ft-hero-label">YOUR MATCH SCORE</div>
+          <div id="ft-total" class="ft-total idle">?</div>
+          <div class="ft-msg-slot">
+            <div id="ft-stamp" class="ft-stamp" hidden></div>
+            <div id="ft-message" class="ft-message"></div>
+          </div>
+        </div>
+        <div id="ft-rows" class="ft-rows">
+          <div class="ft-row" data-key="rt" style="--c:#04F5FF" hidden>
+            <div class="ft-row-top">
+              <span class="ft-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></svg></span>
+              <div class="ft-row-text"><b class="ft-row-label"></b><span class="ft-row-detail"></span></div>
+              <span class="ft-val">—</span>
+            </div>
+            <div class="ft-bar"><i></i></div>
+          </div>
+          <div class="ft-row" data-key="fc" style="--c:#00FF85" hidden>
+            <div class="ft-row-top">
+              <span class="ft-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg></span>
+              <div class="ft-row-text"><b class="ft-row-label"></b><span class="ft-row-detail"></span></div>
+              <span class="ft-val">—</span>
+            </div>
+            <div class="ft-bar"><i></i></div>
+          </div>
+          <div class="ft-row" data-key="pb" style="--c:#C9A2FF" hidden>
+            <div class="ft-row-top">
+              <span class="ft-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/></svg></span>
+              <div class="ft-row-text"><b class="ft-row-label"></b><span class="ft-row-detail"></span></div>
+              <span class="ft-val">—</span>
+            </div>
+            <div class="ft-bar"><i></i></div>
+          </div>
+        </div>
+        <div id="ft-badges" class="ft-badges" hidden></div>
+        <div id="ft-room" class="ft-room" hidden>
+          <div class="row-between"><b id="ft-room-code" class="ft-room-code"></b><span id="ft-room-n" class="tiny muted"></span></div>
+          <div id="ft-room-list"></div>
+        </div>
+      </div>
+      <div class="ft-foot">
+        <button id="ft-count" class="cta ft-lever">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="7" width="13" height="13" rx="2"/><path d="M7 11v5M9.5 11v5M12 11v5M16 12h3V5"/><circle cx="19" cy="4" r="1.6"/></svg>
+          <span>COUNT MY POINTS</span>
+        </button>
+        <div id="ft-counting" class="ft-counting" hidden>COUNTING…</div>
+        <button id="ft-skip" class="text-btn" hidden>Skip</button>
+        <div id="ft-save-note" class="ft-save-note" hidden>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h11l3 3v13H5z"/><path d="M8 4v5h7V4"/></svg>
+          <span>Save them to keep climbing the season board.</span>
+        </div>
+        <button id="ft-save" class="cta save-cta" hidden></button>
+        <button id="ft-again" class="ghost-btn">Play again</button>
+      </div>
+    </div>
+
+    <!-- 6. Connection lost -->
     <div id="modal" class="modal" hidden>
       <div class="card modal-card">
         <div id="modal-kicker" class="label muted"></div>
@@ -196,9 +305,7 @@
         </div>
         <div class="label-sm muted">YOUR POINTS</div>
         <div id="modal-total" class="modal-total">0</div>
-        <div id="modal-fc" class="label-sm hl" hidden></div>
         <div id="modal-line" class="muted center"></div>
-        <button id="ht-pick" class="cta" hidden>SET YOUR FULL-TIME PICK <span class="arrow">→</span></button>
         <button id="again" class="cta" hidden>PLAY AGAIN <span class="arrow">→</span></button>
       </div>
     </div>

@@ -11,6 +11,10 @@ const RESULT_HOLD_MS = 5500; // result stays on the call card, then back to "rea
 const SWITCH_GUARD_MS = 600; // taps ignored on call options right after the auto-switch to REAL TIME
 const DRIBBLE_TAG_MS = 1000; // "DRIBBLE!" label on the ball
 const SILENCE_MS = 40000; // no message for this long (half time is 10 s) = connection lost
+const ROW_MS = 2800;      // full-time count-up per row (design Result.dc.html)
+const ZERO_ROW_MS = 700;  // a row worth 0 points lands quickly
+const SIGNUP_WAIT_MS = 6000; // no signup reply by then = let the user try again
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 let team = null;          // ARS or CHE, picked on screen 2
 let ws = null;            // current socket; messages from older sockets are ignored
@@ -50,7 +54,7 @@ document.querySelectorAll(".team-btn").forEach((btn) => {
   };
 });
 $("start").onclick = () => { if (team) startRun(); };
-$("again").onclick = () => startRun();
+$("again").onclick = $("ft-again").onclick = () => startRun();
 
 // ............................................................ socket
 
@@ -61,8 +65,11 @@ function startRun() {
     try { old.close(); } catch (e) { /* already closed */ }
   }
   clearTimers();
-  s = { score: [0, 0], total: 0, streak: 0, call: null, picks: {}, right: 0, calls: 0, finished: false,
+  if (s && s.ft) cancelAnimationFrame(s.ft.raf);
+  s = { score: [0, 0], total: 0, streak: 0, call: null, picks: {}, finished: false,
     tab: "live", pops: [],
+    inBreak: false, htSeen: false, ht: null, ft: null, sheet: null,
+    save: { saved: false, pending: false, email: "", bonus: 0, fresh: false },
     fc: { live: false, info: null, cards: {}, points: 0,
       final: { ft: null, hs: 0, aw: 0, flash: "", saved: null, locked: false, res: null } } };
   resetLiveUi();
@@ -75,7 +82,7 @@ function startRun() {
   later("silence", SILENCE_MS, () => dropSocket(sock));
   sock.onmessage = (ev) => {
     if (sock !== ws) return;
-    later("silence", SILENCE_MS, () => dropSocket(sock));
+    if (!s.finished) later("silence", SILENCE_MS, () => dropSocket(sock)); // after full time the server closes it
     let msg;
     try { msg = JSON.parse(ev.data); } catch (e) { return; }
     if (!msg || typeof msg.type !== "string") return;
@@ -97,8 +104,11 @@ function send(msg) {
 }
 
 function handle(type, d) {
-  // play resumed after half time (forecast replies can arrive during the break)
-  if (type !== "demo.half_time" && !type.startsWith("forecast.")) $("modal").hidden = true;
+  // play resumed after half time (forecast and signup replies can arrive during the break)
+  if (s.inBreak && type !== "demo.half_time" && !type.startsWith("forecast.") && !type.startsWith("signup.")) {
+    s.inBreak = false;
+    if (s.sheet === "half") closeSheet();
+  }
   switch (type) {
     case "demo.session": onSession(d); break;
     case "demo.clock": onClock(d); break;
@@ -117,6 +127,8 @@ function handle(type, d) {
     case "forecast.final_saved": s.fc.final.saved = d; renderForecasts(); break;
     case "forecast.final_locked": onFinalLocked(d); break;
     case "forecast.final_result": onFinalResult(d); break;
+    case "signup.saved": onSignupSaved(d); break;
+    case "signup.rejected": onSignupRejected(d); break;
     default: break; // unknown types are ignored
   }
 }
@@ -128,7 +140,11 @@ function resetLiveUi() {
   $("score").textContent = "0 – 0";
   $("total").textContent = "0";
   $("backing").textContent = "Backing " + TEAM_NAMES[team];
-  ["gain", "jump", "goal", "pop", "modal", "ai-caption"].forEach((id) => { $(id).hidden = true; });
+  ["gain", "jump", "goal", "pop", "modal", "ai-caption", "sheet", "sheet-dim", "save-chip", "ft"].forEach((id) => { $(id).hidden = true; });
+  $("email").value = "";
+  $("done-line").textContent = "";
+  setEmailError("");
+  setSaveBusy(false);
   showTag(false);
   $("players").textContent = ""; // no dots left over from the previous run
   setStreak(0);
@@ -357,8 +373,6 @@ function onCallResult(d) {
   // Totals come from the server, so update them even if the card has moved on.
   if (typeof d.total === "number") setTotal(d.total, d.points);
   if (typeof d.streak === "number") setStreak(d.streak);
-  s.calls += 1;
-  if (d.correct) s.right += 1;
   showPop(d);
   const call = s.call;
   if (!call || call.id !== d.call_id) return;
@@ -502,7 +516,7 @@ function setTab(tab) {
 }
 $("tab-live").onclick = $("fc-back").onclick = () => { if (s) setTab("live"); };
 $("tab-fc").onclick = () => { if (s) setTab("fc"); };
-$("ht-pick").onclick = () => { $("modal").hidden = true; setTab("fc"); };
+$("ht-pick").onclick = () => { if (s) { closeSheet(); setTab("fc"); } };
 
 // Window picks open on demo.clock and close on jumps, half time and full time.
 function setLive(on) {
@@ -725,22 +739,353 @@ function renderFinal() {
 function onBreak(kind, d) {
   if (Array.isArray(d.score)) setScore(d.score);
   showStandby();
-  const full = kind === "full";
-  if (full) s.finished = true;
   setLive(false);
-  $("clock").textContent = full ? "FULL TIME" : "HALF TIME";
-  const secs = Math.round(Number(d.seconds));
-  const line = full
-    ? "You got " + s.right + " of " + s.calls + " calls right. Thanks for playing!"
-    : secs > 0 ? "Second half starts in " + secs + " seconds." : "Second half starts soon.";
-  openModal(full ? "FULL TIME" : "HALF TIME", line, full);
-  $("modal-fc").textContent = "Forecasts: +" + fmt(s.fc.points);
-  $("modal-fc").hidden = false;
-  $("ht-pick").hidden = full || s.fc.final.locked; // the full-time pick stays open until half 2
+  if (typeof d.total === "number") setTotal(d.total, 0);
+  if (d.saved === true) s.save.saved = true;
+  if (kind === "full") return onFullTime(d);
+  $("clock").textContent = "HALF TIME";
+  Object.assign(s, { inBreak: true, htSeen: true, ht: d });
+  if (!s.save.saved) openSheet("half");
 }
+
+// ............................................................ save sheet (half time, HUD chip, full time)
+
+const AV_CLASS = { Mia: "mia", Dan: "dan", Leo: "leo" };
+
+function avatar(p) {
+  const name = String(p.name || "?");
+  return el("span", "av " + (p.me ? "me" : AV_CLASS[name] || ""), p.me ? "YOU" : name.charAt(0).toUpperCase());
+}
+
+function roomPlayers(d) {
+  const room = d && d.room;
+  if (!room || typeof room.code !== "string" || !Array.isArray(room.players)) return null;
+  const players = room.players.filter((p) => p && typeof p.name === "string");
+  return players.length ? { code: room.code, players: players } : null;
+}
+
+function joinNames(names) {
+  return names.length < 2 ? names.join("") : names.slice(0, -1).join(", ") + " and " + names[names.length - 1];
+}
+
+// "You lead Room 4K7Q. Mia and Dan already saved theirs." (global constraints room line rule)
+function renderRoomLine(d) {
+  const room = roomPlayers(d);
+  $("sheet-room").hidden = !room;
+  if (!room) return;
+  const rank = d.you && typeof d.you.rank === "number" ? d.you.rank : null;
+  const youLead = rank !== null ? rank === 1 : Boolean(room.players[0].me);
+  const leader = room.players.find((p) => !p.me) || room.players[0];
+  $("sheet-room-lead").textContent = (youLead ? "You lead" : leader.name + " leads") + " Room " + room.code + ".";
+  const savers = room.players.filter((p) => !p.me && p.saved === true).map((p) => p.name);
+  $("sheet-room-saved").textContent = savers.length ? joinNames(savers) + " already saved theirs." : "";
+  $("sheet-avatars").textContent = "";
+  room.players.forEach((p) => $("sheet-avatars").append(avatar(p)));
+}
+
+// kind: "half" (half-time sheet), "chip" (from the HUD chip), "full" (from the full-time screen)
+function openSheet(kind) {
+  clearTimeout(timers.sheet);
+  s.sheet = kind;
+  const half = kind === "half", d = s.ht || {};
+  $("sheet-pts").textContent = fmt(s.total);
+  $("sheet-pts-label").textContent = half ? "PTS AT THE BREAK" : "PTS WAITING TO BE SAVED";
+  $("sheet-t1").textContent = half ? "Great first half." : "Keep your points.";
+  $("sheet-t2").textContent = half ? "Save your progress." : "Climb the season.";
+  const secs = Math.round(Number(d.seconds));
+  $("sheet-clock").textContent = half ? (secs > 0 ? "Second half in " + secs + " s" : "Second half soon") : "";
+  if (half) renderRoomLine(d);
+  else $("sheet-room").hidden = true;
+  const b = d.breakdown || {};
+  $("sheet-fc").textContent = (typeof b.calls === "number" ? "Calls: +" + fmt(b.calls) + " · " : "")
+    + "Forecasts: +" + fmt(typeof b.forecasts === "number" ? b.forecasts : s.fc.points);
+  $("sheet-fc").hidden = !half;
+  $("ht-pick").hidden = !half || s.fc.final.locked; // the full-time pick stays open until half 2
+  $("save-btn").textContent = half ? "SAVE MY PROGRESS" : "SAVE MY POINTS";
+  $("sheet-later").textContent = kind === "full" ? "Not now" : "Maybe later";
+  $("done-close").textContent = kind === "full" ? "BACK TO MY SCORE" : "BACK TO THE MATCH";
+  if (s.save.saved) showDone(s.save.fresh);
+  showSaveView();
+  ["sheet", "sheet-dim"].forEach((id) => {
+    const node = $(id);
+    node.classList.remove("out");
+    node.hidden = true; void node.offsetWidth; node.hidden = false; // replay the slide-up
+  });
+  $("save-chip").hidden = true;
+}
+
+function showSaveView() {
+  $("save-form").hidden = s.save.saved;
+  $("save-done").hidden = !s.save.saved;
+}
+
+// Slide the sheet out; the chip stays in the HUD until the points are saved.
+function closeSheet(now) {
+  if (!s.sheet) return;
+  s.sheet = null;
+  const hide = () => { $("sheet").hidden = true; $("sheet-dim").hidden = true; };
+  if (now) { clearTimeout(timers.sheet); hide(); }
+  else {
+    $("sheet").classList.add("out");
+    $("sheet-dim").classList.add("out");
+    later("sheet", 240, hide);
+  }
+  updateChip();
+}
+
+function updateChip() {
+  $("save-chip").hidden = !s.htSeen || s.save.saved || s.finished || Boolean(s.sheet);
+}
+
+$("sheet-later").onclick = $("sheet-dim").onclick = $("done-close").onclick = () => { if (s) closeSheet(); };
+$("save-chip").onclick = () => { if (s) openSheet("chip"); };
+$("email").oninput = () => setEmailError("");
+
+function setEmailError(text) {
+  $("email-error").textContent = text;
+  $("email-error").hidden = !text;
+  $("email").classList.toggle("bad", Boolean(text));
+}
+
+function setSaveBusy(busy) {
+  $("save-btn").disabled = busy;
+  if (busy) $("save-btn").textContent = "SAVING…";
+  else if (s && s.sheet) $("save-btn").textContent = s.sheet === "half" ? "SAVE MY PROGRESS" : "SAVE MY POINTS";
+}
+
+// One signup in flight at a time; the server adds the +500 once.
+$("save-form").onsubmit = (ev) => {
+  ev.preventDefault();
+  if (!s || s.save.saved || s.save.pending) return;
+  const email = $("email").value.trim();
+  if (email.length > 254 || !EMAIL_RE.test(email)) return setEmailError("That email doesn't look right. Mind checking it?");
+  if (!ws || ws.readyState !== WebSocket.OPEN) return setEmailError("The match has closed, so we can't save now. Play again to save.");
+  Object.assign(s.save, { pending: true, email: email });
+  setSaveBusy(true);
+  send({ type: "signup", data: { email: email } });
+  later("signup", SIGNUP_WAIT_MS, () => {
+    s.save.pending = false;
+    setSaveBusy(false);
+    setEmailError("No answer from the match. Try again.");
+  });
+};
+
+function onSignupSaved(d) {
+  clearTimeout(timers.signup);
+  const bonus = Number(d.bonus) || 0;
+  Object.assign(s.save, { saved: true, pending: false, bonus: bonus, fresh: true });
+  setSaveBusy(false);
+  if (typeof d.total === "number") setTotal(d.total, bonus);
+  showDone(true);
+}
+
+function onSignupRejected(d) {
+  clearTimeout(timers.signup);
+  s.save.pending = false;
+  setSaveBusy(false);
+  if (d.reason === "already") {
+    s.save.saved = true;
+    showDone(false);
+  } else {
+    setEmailError("That email doesn't look right. Mind checking it?");
+  }
+}
+
+// "+500 PROGRESS SAVED" with the honest demo line, then refresh everything that shows the total.
+function showDone(fresh) {
+  const bonus = s.save.bonus;
+  $("done-bonus").textContent = "+" + fmt(bonus);
+  $("done-bonus").hidden = !fresh || bonus <= 0;
+  $("done-label").textContent = fresh ? "PROGRESS SAVED" : "ALREADY SAVED";
+  const line = $("done-line");
+  line.textContent = "";
+  line.append("Your " + fmt(s.total) + " points are safe" + (fresh && bonus > 0 ? ", plus a welcome bonus. " : ". "));
+  if (s.save.email) line.append("We'd send a sign-in link to ", el("b", "", s.save.email), ". ");
+  line.append("(Demo: nothing is sent.)");
+  if (s.sheet) showSaveView();
+  updateChip();
+  if (s.ft) renderFtSave();
+}
+
+// ............................................................ full time (design Result.dc.html)
+
+const ROW_MSG = { rt: "COUNTING REAL-TIME CALLS…", fc: "COUNTING YOUR FORECASTS…", pb: "AND YOUR PLAYERS' BONUS…" };
+const BADGE_CLASS = { "ORACLE": "g", "ON FIRE": "c", "GOOD EYE": "p" };
+
+function onFullTime(d) {
+  s.finished = true;
+  clearTimeout(timers.silence); // the server keeps the socket open for a late save, then closes it
+  $("clock").textContent = "FULL TIME";
+  closeSheet(true);
+  $("save-chip").hidden = true;
+  const rows = [];
+  (Array.isArray(d.rows) ? d.rows : []).forEach((r) => {
+    const node = r && ROW_MSG.hasOwnProperty(r.key) ? document.querySelector('.ft-row[data-key="' + r.key + '"]') : null;
+    if (!node || rows.some((x) => x.node === node)) return;
+    node.querySelector(".ft-row-label").textContent = String(r.label || "");
+    node.querySelector(".ft-row-detail").textContent = String(r.detail || "");
+    rows.push({ key: r.key, node: node, points: Math.max(0, Math.round(Number(r.points) || 0)), value: 0, landed: false });
+  });
+  document.querySelectorAll(".ft-row").forEach((node) => {
+    node.hidden = !rows.some((r) => r.node === node);
+    node.className = "ft-row";
+    node.querySelector(".ft-val").textContent = "—";
+    node.querySelector(".ft-bar i").style.width = "0";
+  });
+  const sum = rows.reduce((a, r) => a + r.points, 0);
+  s.ft = { stage: "idle", rows: rows, raf: 0, total: typeof d.total === "number" ? d.total : sum, me: null };
+  $("ft-score").textContent = scoreText(s.score);
+  $("ft-stamp").textContent = typeof d.stamp === "string" ? d.stamp : "";
+  buildBadges(d.badges);
+  buildRoom(d);
+  $("ft").classList.remove("fast", "done");
+  $("ft-scroll").scrollTop = 0;
+  setFtStage("idle");
+  $("ft").hidden = false;
+}
+
+function buildBadges(badges) {
+  const box = $("ft-badges");
+  box.textContent = "";
+  (Array.isArray(badges) ? badges : []).forEach((b) => {
+    if (!b || typeof b.title !== "string") return;
+    const n = box.children.length;
+    const card = el("div", "ft-badge " + (BADGE_CLASS[b.title] || ["g", "c", "p"][n % 3]));
+    card.style.setProperty("--i", n);
+    card.append(el("b", "", b.title), el("span", "", String(b.text || "")));
+    box.append(card);
+  });
+}
+
+function buildRoom(d) {
+  const room = roomPlayers(d), list = $("ft-room-list");
+  list.textContent = "";
+  s.ft.hasRoom = Boolean(room);
+  if (!room) return;
+  $("ft-room-code").textContent = "ROOM " + room.code;
+  const friends = room.players.filter((p) => !p.me).length;
+  $("ft-room-n").textContent = friends + (friends === 1 ? " friend" : " friends") + " played";
+  room.players.forEach((p, i) => {
+    const row = el("div", "ft-room-row" + (p.me ? " me" : ""));
+    row.style.setProperty("--i", i);
+    const pts = el("span", "pts", fmt(p.pts));
+    row.append(el("span", "pos", String(i + 1)), avatar(p), el("span", "name", p.me ? "You" : p.name), pts);
+    if (p.me) s.ft.me = pts;
+    list.append(row);
+  });
+}
+
+// idle -> counting -> done; each stage shows only its own controls.
+function setFtStage(stage) {
+  const ft = s.ft;
+  ft.stage = stage;
+  const idle = stage === "idle", done = stage === "done";
+  $("ft-count").hidden = !idle;
+  $("ft-counting").hidden = $("ft-skip").hidden = stage !== "counting";
+  $("ft-rows").classList.toggle("counting", stage === "counting");
+  $("ft").classList.toggle("done", done);
+  ["ft-save-note", "ft-save"].forEach((id) => { $(id).hidden = !done; });
+  $("ft-badges").hidden = !done || !$("ft-badges").children.length;
+  $("ft-room").hidden = !done || !ft.hasRoom;
+  $("ft-stamp").hidden = !done || !$("ft-stamp").textContent;
+  $("ft-message").hidden = done;
+  $("ft-message").classList.toggle("blink", stage === "counting");
+  if (idle) $("ft-message").textContent = "READY WHEN YOU ARE";
+  const total = $("ft-total");
+  total.className = "ft-total" + (idle ? " idle" : "");
+  total.textContent = idle ? "?" : fmt(rowsSum(ft));
+  if (done) {
+    total.textContent = fmt(ft.total);
+    void total.offsetWidth;
+    total.classList.add("pop");
+    renderFtSave();
+  }
+}
+
+function rowsSum(ft) {
+  return ft.rows.reduce((a, r) => a + r.value, 0);
+}
+
+function paintRow(r, value, progress) {
+  r.value = value;
+  r.node.querySelector(".ft-val").textContent = "+" + fmt(value);
+  r.node.querySelector(".ft-bar i").style.width = (r.points > 0 ? progress * 100 : 0) + "%";
+}
+
+function landRow(r) {
+  r.landed = true;
+  r.node.classList.remove("active");
+  r.node.classList.add("started", "landed");
+}
+
+$("ft-count").onclick = () => {
+  const ft = s && s.ft;
+  if (!ft || ft.stage !== "idle") return;
+  setFtStage("counting");
+  countRow(ft, 0);
+};
+
+// Rows count up one after another (2.8 s each, ease-out), then the stamp, badges and room.
+function countRow(ft, i) {
+  if (s.ft !== ft || ft.stage !== "counting") return;
+  const r = ft.rows[i];
+  if (!r) {
+    $("ft-message").textContent = "";
+    later("ft", 650, () => { if (s.ft === ft && ft.stage === "counting") finishCount(ft, false); });
+    return;
+  }
+  r.node.classList.add("started", "active");
+  $("ft-message").textContent = ROW_MSG[r.key] || "COUNTING…";
+  const dur = r.points > 0 ? ROW_MS : ZERO_ROW_MS;
+  let t0 = null;
+  const frame = (now) => {
+    if (s.ft !== ft || ft.stage !== "counting") return;
+    if (t0 === null) t0 = now;
+    const t = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - t, 4);
+    paintRow(r, t >= 1 ? r.points : Math.round(r.points * e), e);
+    $("ft-total").textContent = fmt(rowsSum(ft));
+    if (t < 1) { ft.raf = requestAnimationFrame(frame); return; }
+    landRow(r);
+    if (i + 1 < ft.rows.length) later("ft", 500, () => countRow(ft, i + 1));
+    else countRow(ft, i + 1);
+  };
+  ft.raf = requestAnimationFrame(frame);
+}
+
+$("ft-skip").onclick = () => {
+  const ft = s && s.ft;
+  if (!ft || ft.stage !== "counting") return;
+  finishCount(ft, true);
+};
+
+function finishCount(ft, fast) {
+  cancelAnimationFrame(ft.raf);
+  clearTimeout(timers.ft);
+  ft.rows.forEach((r) => { if (!r.landed) { paintRow(r, r.points, 1); landRow(r); } });
+  $("ft").classList.toggle("fast", fast);
+  setFtStage("done");
+  later("ft", (fast ? 0.4 : 1) * 2000, () => {
+    const box = $("ft-scroll");
+    try { box.scrollTo({ top: box.scrollHeight, behavior: "smooth" }); } catch (e) { box.scrollTop = box.scrollHeight; }
+  });
+}
+
+function renderFtSave() {
+  const ft = s.ft;
+  if (ft.stage === "done" && typeof s.total === "number" && s.save.saved) {
+    ft.total = Math.max(ft.total, s.total); // a save after full time adds the welcome bonus
+    $("ft-total").textContent = fmt(ft.total);
+    if (ft.me) ft.me.textContent = fmt(ft.total);
+  }
+  $("ft-save").textContent = s.save.saved ? "POINTS SAVED · " + fmt(ft.total) : "SAVE MY " + fmt(ft.total) + " POINTS";
+}
+
+$("ft-save").onclick = () => { if (s && s.ft) openSheet("full"); };
 
 function connectionLost(code) {
   clearTimers();
+  closeSheet(true);
+  $("save-chip").hidden = true;
   const line = code === 1013
     ? "Lots of people are playing right now. Try again in a moment."
     : "We lost the connection to the match.";
@@ -753,7 +1098,5 @@ function openModal(kicker, line, again) {
   $("modal-total").textContent = s.total.toLocaleString("en-US");
   $("modal-line").textContent = line;
   $("again").hidden = !again;
-  $("modal-fc").hidden = true;
-  $("ht-pick").hidden = true;
   $("modal").hidden = false;
 }
