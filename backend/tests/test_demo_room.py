@@ -88,15 +88,15 @@ def test_friends_deterministic_exact_totals():
     rows = room.friend_totals(TL)
     assert rows == room.friend_totals(TL)
     assert rows == [{"name": "Mia", "ht": 1890, "ft": 8010, "saved": True},
-                    {"name": "Dan", "ht": 140, "ft": 1660, "saved": True},
-                    {"name": "Leo", "ht": 240, "ft": 260, "saved": False}]
+                    {"name": "Dan", "ht": 40, "ft": 3060, "saved": True},
+                    {"name": "Leo", "ht": 390, "ft": 410, "saved": False}]
 
 
 def test_f15_one_pending_window():
-    """Play 2 starts (23:42) inside Play 1's f15 window (11:31-26:31): no pick there."""
-    assert [(h, t) for h, t, _ in room._f15_outcomes(TL)] == [(1, 691.0), (2, 3600.0),
-                                                               (2, 4780.0)]
-    assert len(room.play_starts(TL)) == 4
+    """Plays 2 and 3 start (16:51, 23:47) inside Play 1's f15 window (11:34-26:34): no pick there."""
+    assert [(h, t) for h, t, _ in room._f15_outcomes(TL)] == [(1, 694.0), (2, 3603.0),
+                                                               (2, 4783.0)]
+    assert len(room.play_starts(TL)) == 5
 
 
 def test_friend_pick_rule():
@@ -132,7 +132,22 @@ def test_stamp_and_badges():
     assert room.badges(True, 3, "Saka") == [
         {"title": "ORACLE", "text": "Called the full-time result"},
         {"title": "ON FIRE", "text": "3 calls in a row"},
-        {"title": "GOOD EYE", "text": "You called Saka's goal"}]
+        {"title": "GOOD EYE", "text": "Your pick Saka scored"}]
+
+
+def test_good_eye_is_a_backed_player_who_scored():
+    saka = {"name": "Saka", "stats": [{"what": "Goal", "count": 1, "pts": 4}]}
+    rice = {"name": "Rice", "stats": [{"what": "Played 60+ minutes", "count": 1, "pts": 2}]}
+    assert room.good_eye([rice, saka]) == "Saka"
+    assert room.good_eye([rice]) is None and room.good_eye([]) is None
+
+
+def test_backing_saka_earns_good_eye():
+    session = DemoSession(TL, "ARS", code="K7QX", players=["910109"])
+    ft = of(run(session), "demo.full_time")
+    assert {"title": "GOOD EYE", "text": "Your pick Saka scored"} in ft["badges"]
+    session = DemoSession(TL, "ARS", code="K7QX", players=["910108"])  # Rice: no goal
+    assert all(b["title"] != "GOOD EYE" for b in of(run(session), "demo.full_time")["badges"])
 
 
 # --- half time and full time ---------------------------------------------------
@@ -146,7 +161,7 @@ def test_perfect_judge_is_first_with_all_badges():
                        "players", "total"}
     assert ht["total"] == next(p for p in ht["room"]["players"] if p["me"])["pts"]
     assert ht["you"] == {"rank": 1} and ht["saved"] is False and ht["room"]["code"] == "K7QX"
-    assert [p["name"] for p in ht["room"]["players"]] == ["You", "Mia", "Leo", "Dan"]  # Dan 140 < Leo 240 at HT
+    assert [p["name"] for p in ht["room"]["players"]] == ["You", "Mia", "Leo", "Dan"]  # Dan 40 < Leo 390 at HT
     assert ht["room"]["players"][0] == {"name": "You", "pts": ht["breakdown"]["calls"]
                                         + ht["breakdown"]["forecasts"], "saved": False, "me": True}
     assert ht["breakdown"]["calls"] == 4 * 110 + 50 * 3
@@ -162,8 +177,7 @@ def test_perfect_judge_is_first_with_all_badges():
                              "detail": "Back players next match", "points": 0}
     assert sum(r["points"] for r in ft["rows"]) == ft["total"] == session.total
     assert ft["badges"] == [{"title": "ORACLE", "text": "Called the full-time result"},
-                            {"title": "ON FIRE", "text": "6 calls in a row"},
-                            {"title": "GOOD EYE", "text": "You called Saka's goal"}]
+                            {"title": "ON FIRE", "text": "6 calls in a row"}]  # no players backed
     pct = room.top_pct(session.total, room.crowd_totals(TL))
     assert ft["stamp"] == f"#1 IN ROOM K7QX · TOP {pct}% TONIGHT"
     pts = [p["pts"] for p in ft["room"]["players"]]
@@ -178,8 +192,8 @@ def test_always_shoot_judge():
     assert ft["rows"][0]["detail"] == "3 correct calls · best streak of 2"
     assert ft["rows"][1] == {"key": "fc", "label": "FORECAST", "detail": "0 forecasts hit",
                              "points": 0}
-    assert ft["badges"] == [{"title": "GOOD EYE", "text": "You called Saka's goal"}]
-    assert ft["stamp"] == "#3 IN ROOM K7QX · TOP 94% TONIGHT"  # above Leo (260), below Dan (1660)
+    assert ft["badges"] == []  # no players backed, so no GOOD EYE
+    assert ft["stamp"] == "#4 IN ROOM K7QX · TOP 94% TONIGHT"  # below Leo (410) and Dan (3060)
 
 
 def test_calls_and_f15_and_final_judge_leads():

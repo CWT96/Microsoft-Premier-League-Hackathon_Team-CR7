@@ -15,8 +15,6 @@ from typing import Any, Callable
 
 from backend.demo.calls import Call
 from backend.demo.forecasts import WINDOWS, outcome, score_final, score_window
-from backend.demo.lines import goal_after
-from backend.demo.names import display_name
 from backend.demo.points import score_call
 from backend.demo.script import OPTIONS, Timeline
 
@@ -183,12 +181,12 @@ def rank_of(players: list[dict]) -> int:
     return next(i for i, p in enumerate(players, 1) if p["me"])
 
 
-def goal_scorer(call: Call, timeline: Timeline) -> str | None:
-    """Who scored the goal this call's move ended in, else None."""
-    if call.answer == "SHOOT":
-        return display_name(call.player_id) if call.lock_outcome == "Goal" else None
-    goal = goal_after(call, timeline.events)
-    return display_name(goal.player_id) if goal is not None else None
+def good_eye(cards: list[dict]) -> str | None:
+    """Name of the first backed player who scored (design: "Your pick Saka scored"), else None."""
+    for card in cards:
+        if any(row["what"] == "Goal" for row in card.get("stats", [])):
+            return card["name"]
+    return None
 
 
 def badges(final_right: bool, best_streak: int, good_eye: str | None) -> list[dict]:
@@ -198,7 +196,7 @@ def badges(final_right: bool, best_streak: int, good_eye: str | None) -> list[di
     if best_streak >= ON_FIRE_FROM:
         out.append({"title": "ON FIRE", "text": f"{best_streak} calls in a row"})
     if good_eye:
-        out.append({"title": "GOOD EYE", "text": f"You called {good_eye}'s goal"})
+        out.append({"title": "GOOD EYE", "text": f"Your pick {good_eye} scored"})
     return out
 
 

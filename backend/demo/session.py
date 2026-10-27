@@ -88,7 +88,6 @@ class DemoSession:
         self.correct_calls = 0
         self.window_hits = 0
         self.final_right = False
-        self.good_eye: str | None = None  # scorer of the first goal the fan called
         self.saved = False  # signed up (the email itself is never kept)
         self.open_call: str | None = None
         self._picks: dict[str, str] = {}
@@ -188,7 +187,7 @@ class DemoSession:
                 {"key": "pb", "label": "PLAYER BONUS", "detail": pb,
                  "points": self.bonus_points}]
             return {**data, "rows": rows,
-                    "badges": room.badges(self.final_right, self.best_streak, self.good_eye),
+                    "badges": room.badges(self.final_right, self.best_streak, room.good_eye(cards)),
                     "stamp": room.stamp(rank, self.code, pct),
                     "room": {"code": self.code, "players": players}, "players": cards,
                     "total": self.total, "saved": self.saved}
@@ -284,8 +283,6 @@ class DemoSession:
         self.best_streak = max(self.best_streak, score.streak)
         if score.correct:
             self.correct_calls += 1
-            if self.good_eye is None:
-                self.good_eye = room.goal_scorer(self.timeline.calls[call_id], self.timeline)
         await send(_env("call.locked", {"call_id": call_id}))
         await send(_env("call.result", {
             "call_id": call_id, "answer": answer, "pick": pick, "too_quick": score.too_quick,

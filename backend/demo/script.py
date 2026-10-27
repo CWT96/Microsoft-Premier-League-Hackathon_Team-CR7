@@ -57,11 +57,12 @@ class Timeline:
 
 
 SCRIPT: tuple[Play | Pause, ...] = (
-    Play(1, 691, 716, "Arsenal on the attack"),
-    Play(1, 1422, 1440, "Saka's goal"),
+    Play(1, 694, 716, "Arsenal on the attack"),
+    Play(1, 1011, 1023, "Arsenal keep pushing"),
+    Play(1, 1427, 1440, "Saka's goal"),
     Pause("half_time", 10),
-    Play(2, 3600, 3616, "Chelsea hit back"),
-    Play(2, 4780, 4796, "The winner"),
+    Play(2, 3603, 3616, "Chelsea hit back"),
+    Play(2, 4783, 4796, "The winner"),
     Pause("full_time", 0),
 )
 

@@ -96,14 +96,14 @@ def test_window_settles_after_jump():
         "key": "f5", "pick": "che", "outcome": "ars", "correct": False, "points": 0,
         "total": msgs[res_i]["data"]["total"], "to_clock": "16:34", "text": "Not this time"}
     jump = index_of(msgs, lambda m: m["type"] == "demo.jump"
-                    and m["data"]["title"] == "Saka's goal")
-    assert jump < res_i and res_i + 1 == index_of(msgs, first_clock("23:42"))
+                    and m["data"]["title"] == "Arsenal keep pushing")
+    assert jump < res_i and res_i + 1 == index_of(msgs, first_clock("16:51"))
     assert types(msgs).count("forecast.result") == 1
 
 
 def test_hit_adds_to_shared_total():
     session = DemoSession(TL, "ARS")
-    pick = at_clock("23:42", lambda reply: reply(session.forecast_pick("f10", "ars")))
+    pick = at_clock("23:47", lambda reply: reply(session.forecast_pick("f10", "ars")))
 
     def hook(env: dict, reply) -> None:
         if env["type"] == "call.open":  # every call right, so the call total is not zero
@@ -114,7 +114,7 @@ def test_hit_adds_to_shared_total():
     res_i = index_of(msgs, of_type("forecast.result"))
     res = msgs[res_i]["data"]
     assert res["key"] == "f10" and res["outcome"] == "ars" and res["correct"] is True
-    assert res["points"] == 1000 and res["text"] == "Forecast hit" and res["to_clock"] == "33:42"
+    assert res["points"] == 1000 and res["text"] == "Forecast hit" and res["to_clock"] == "33:47"
     calls_before = [m["data"] for m in msgs[:res_i] if m["type"] == "call.result"]
     assert res["total"] == calls_before[-1]["total"] + 1000
     after = next(m["data"] for m in msgs[res_i:] if m["type"] == "call.result")
@@ -242,8 +242,8 @@ def test_settled_key_can_be_picked_again():
     replies: list[dict] = []
 
     def hook(env: dict, reply) -> None:
-        # the 11:34 window (694–994) settles just before the 23:42 tick, so f5 is free again
-        if env["type"] == "demo.clock" and env["data"]["clock"] in ("11:34", "23:42"):
+        # the 11:34 window (694–994) settles at the jump to 16:51, so f5 is free again by 23:47
+        if env["type"] == "demo.clock" and env["data"]["clock"] in ("11:34", "23:47"):
             replies.append(session.forecast_pick("f5", "ars"))
             reply(replies[-1])
 
@@ -283,7 +283,7 @@ def test_no_shot_window_text():
     res = msgs[res_i]["data"]
     assert res["outcome"] == "none" and res["points"] == 0 and res["to_clock"] == "70:14"
     assert res["text"] == "No shots in that spell. No points lost."
-    assert res_i + 1 == index_of(msgs, first_clock("79:40"))
+    assert res_i + 1 == index_of(msgs, first_clock("79:43"))
 
 
 def test_demo_clock_has_t():
@@ -292,7 +292,7 @@ def test_demo_clock_has_t():
     for c in clocks:
         assert set(c.data) == {"half", "clock", "score", "t"}
         assert isinstance(c.data["t"], float) and c.data["half"] in (1, 2)
-    assert clocks[0].data == {"half": 1, "clock": "11:31", "score": [0, 0], "t": 691.0}
+    assert clocks[0].data == {"half": 1, "clock": "11:34", "score": [0, 0], "t": 694.0}
     assert TL.half_ends == {1: 2856.618, 2: 5667.866} and TL.final_score == (2, 1)
     assert TL.events
 
@@ -321,13 +321,13 @@ def test_router_routes_forecast_messages():
     with TestClient(app) as client, client.websocket_connect("/demo/ws") as ws:
         ws.send_json(START_ARS)
         assert [ws.receive_json()["type"] for _ in range(4)] == \
-            ["demo.session", "demo.jump", "demo.clock", "demo.shape"]  # stalls at 11:31
+            ["demo.session", "demo.jump", "demo.clock", "demo.shape"]  # stalls at 11:34
         ws.send_json({"type": "forecast.pick", "data": "nope"})
         assert ws.receive_json() == {"type": "forecast.rejected",
                                      "data": {"key": None, "reason": "bad_pick"}}
         ws.send_json({"type": "forecast.pick", "data": {"key": "f5", "pick": "ars"}})
         assert ws.receive_json() == {"type": "forecast.locked", "data": {
-            "key": "f5", "pick": "ars", "from_clock": "11:31", "to_clock": "16:31"}}
+            "key": "f5", "pick": "ars", "from_clock": "11:34", "to_clock": "16:34"}}
         ws.send_json({"type": "forecast.final", "data": {"result": "ars", "home": 2, "away": 1}})
         assert ws.receive_json() == {"type": "forecast.final_saved",
                                      "data": {"result": "ars", "home": 2, "away": 1}}
