@@ -56,9 +56,9 @@ Suggested backend split (the two owners may swap): **core** = `ingest/ detect/ m
 - Every question has exactly 2 options. If the excluded third outcome happens, the question is void for everyone. The UI never shows the word "void".
 - Questions come from one shared stream of timing moments: every user who picks up a moment gets the same question (except favourite-player moments, which name each user's own player), and every moment locks before its outcome can happen. Each user moves through the stream at their own pace. Favourite-player moments open at the same time for everyone, and their difficulty is tuned to P≈0.5.
 - Timing decides when and why (the moment's situation). The question generator alone decides what is asked.
-- No point numbers or running total on screen during the match. Only ✓ and coins.
+- Room flow (`/ws`): no point numbers or running total on screen during the match. Only ✓ and coins. Demo mode (`/demo/ws`, the judged fan app) is the agreed exception: it shows live points and a running total.
 - Every number in LLM text must appear in that call's `facts` (number guard), or a template is used instead.
-- Synthetic data and fictional clubs only.
+- Synthetic data only. Fictional clubs, except the demo relabel (approved 2026-10-27): demo mode shows the synthetic match as Arsenal vs Chelsea with real player names (`backend/demo/names.py`). The data itself stays synthetic.
 - When a match dataset appears in `data/source/`, first run the three must-have checks at the top of `data/README.md` (ball coordinates, player positions with fitting stats, both dull spells and attacks). Report any gaps before writing ingest code.
 
 ## Infrastructure
