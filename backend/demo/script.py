@@ -53,11 +53,11 @@ class Timeline:
 
 
 SCRIPT: tuple[Play | Pause, ...] = (
-    Play(1, 694, 716, "Arsenal on the attack"),
-    Play(1, 1422, 1437, "Saka's goal"),
+    Play(1, 691, 716, "Arsenal on the attack"),
+    Play(1, 1422, 1440, "Saka's goal"),
     Pause("half_time", 10),
     Play(2, 3600, 3616, "Chelsea hit back"),
-    Play(2, 4780, 4793, "The winner"),
+    Play(2, 4780, 4796, "The winner"),
     Pause("full_time", 0),
 )
 
@@ -123,7 +123,14 @@ def _play_cues(match: Match, play: Play, at: float, goals: list[MatchEvent],
         cues.append(Cue(at + (c.open_t - play.start_t), "call.open", {
             "call_id": c.call_id, "player": player, "team": TEAMS[c.team]["code"],
             "prompt": f"{player} on the ball. What's the call?", "options": list(OPTIONS)}))
-        cues.append(Cue(at + (c.lock_t - play.start_t), "call.lock", {"call_id": c.call_id}))
+        lock_at = at + (c.lock_t - play.start_t)
+        cues.append(Cue(lock_at, "call.lock", {"call_id": c.call_id}))
+        xy = fixed_xy(c.team, c.lock_xy)
+        if c.answer == "DRIBBLE" and xy:  # ingest drops dribbles: show the raw one
+            cues.append(Cue(lock_at, "demo.event", {
+                "type": "dribble", "team": TEAMS[c.team]["code"], "player": player,
+                "xy": list(xy), "end_xy": None}))
+            cues.append(_shape_cue(slots, lock_at, c.half, c.lock_t, xy, c.player_id))
     return cues
 
 
@@ -133,18 +140,17 @@ def build_timeline(match: Match, script: tuple = SCRIPT) -> Timeline:
     moments = find_moments(match.match_id)
     cues: list[Cue] = []
     calls: dict[str, Call] = {}
-    cursor, first, last = 0.0, True, (1, 0.0)
+    cursor, last = 0.0, (1, 0.0)
     for step in script:
         if isinstance(step, Pause):
             score = _score(goals, *last)
             cues.append(Cue(cursor, f"demo.{step.kind}", {"score": score, "seconds": step.seconds}))
             cursor += step.seconds
             continue
-        if not first:
-            cues.append(Cue(cursor, "demo.jump", {
-                "title": step.title, "clock": clock_label(step.half, step.start_t)}))
-            cursor += JUMP_CARD_S
-        first, last = False, (step.half, step.end_t)
+        cues.append(Cue(cursor, "demo.jump", {  # the first one is the intro card
+            "title": step.title, "clock": clock_label(step.half, step.start_t)}))
+        cursor += JUMP_CARD_S
+        last = (step.half, step.end_t)
         chosen = select_calls(moments, step.half, step.start_t, step.end_t)
         calls.update({c.call_id: c for c in chosen})
         cues.extend(_play_cues(match, step, cursor, goals, chosen))

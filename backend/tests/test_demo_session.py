@@ -239,7 +239,7 @@ def test_disconnect_cancels_session():
         with client.websocket_connect("/demo/ws") as ws:  # a fresh connect starts over
             ws.send_json(START_ARS)
             assert ws.receive_json()["type"] == "demo.session"
-            assert ws.receive_json()["type"] == "demo.clock"
+            assert ws.receive_json()["type"] == "demo.jump"  # the intro card
         assert wait_until(lambda: len(router.active) == 0)
 
 

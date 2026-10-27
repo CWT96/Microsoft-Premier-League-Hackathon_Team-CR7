@@ -10,24 +10,24 @@ def test_only_answerable_moments():
 
 
 def test_saka_goal_is_a_shoot_call():
-    calls = select_calls(MOMENTS, 1, 1422, 1437)
+    calls = select_calls(MOMENTS, 1, 1422, 1440)
     assert [(round(c.open_t, 1), c.answer, c.player_id) for c in calls] == [(1430.0, "SHOOT", "910109")]
     assert round(calls[0].lock_t, 1) == 1434.3
 
 
 def test_first_segment_has_all_three():
-    calls = select_calls(MOMENTS, 1, 694, 716)
+    calls = select_calls(MOMENTS, 1, 691, 716)
     assert [c.answer for c in calls] == ["PASS", "DRIBBLE", "SHOOT"]
 
 
 def test_gap_and_no_overlap():
-    calls = select_calls(MOMENTS, 1, 694, 716)
+    calls = select_calls(MOMENTS, 1, 691, 716)
     for a, b in zip(calls, calls[1:]):
         assert b.open_t - a.open_t >= 6.0 and b.open_t >= a.lock_t
 
 
 def test_winner_and_equaliser_segments():
-    assert [(c.answer, c.player_id) for c in select_calls(MOMENTS, 2, 4780, 4793)] == [("SHOOT", "910105")]
+    assert [(c.answer, c.player_id) for c in select_calls(MOMENTS, 2, 4780, 4796)] == [("SHOOT", "910105")]
     assert [(c.answer, c.player_id) for c in select_calls(MOMENTS, 2, 3600, 3616)] == [("PASS", "910211")]
 
 

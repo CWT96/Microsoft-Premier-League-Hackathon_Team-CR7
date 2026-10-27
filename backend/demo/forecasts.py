@@ -27,8 +27,8 @@ class ForecastDef:
 
 
 WINDOWS: tuple[ForecastDef, ...] = (
-    ForecastDef("f5", "NEXT 5 MIN", 5, 500, "Will there be a corner?",
-                (("yes", "YES"), ("no", "NO"))),
+    ForecastDef("f5", "NEXT 5 MIN", 5, 500, "Who has more of the ball?",
+                (("ars", "ARSENAL"), ("che", "CHELSEA"))),
     ForecastDef("f10", "NEXT 10 MIN", 10, 1000, "Who takes the next shot?",
                 (("ars", "ARSENAL"), ("che", "CHELSEA"))),
     ForecastDef("f15", "NEXT 15 MIN", 15, 1500, "Will anyone score?",
@@ -45,7 +45,9 @@ def outcome(events: Sequence[MatchEvent], key: str, half: int, t0: float, t1: fl
     """Settle forecast `key` from events in the same half with t0 <= t <= t1."""
     inside = [e for e in events if e.half == half and t0 <= e.t <= t1]
     if key == "f5":
-        return "yes" if any(e.type == "corner" for e in inside) else "no"
+        home = sum(e.type == "pass" and e.team == "NBR" for e in inside)
+        away = sum(e.type == "pass" and e.team == "CAL" for e in inside)
+        return "ars" if home > away else "che" if away > home else "none"
     if key == "f10":
         shots = sorted((e for e in inside if e.type == "shot"), key=lambda e: e.t)
         return _TEAM_TO_SIDE.get(shots[0].team, "none") if shots else "none"

@@ -9,6 +9,7 @@ const GOAL_MS = 2600;     // goal banner
 const JUMP_MS = 2000;     // jump card (JUMP_CARD_S on the server)
 const RESULT_HOLD_MS = 4000; // result stays on the call card, then back to "reading the play"
 const SWITCH_GUARD_MS = 600; // taps ignored on call options right after the auto-switch to REAL TIME
+const DRIBBLE_TAG_MS = 1000; // "DRIBBLE!" label on the ball
 const SILENCE_MS = 40000; // no message for this long (half time is 10 s) = connection lost
 
 let team = null;          // ARS or CHE, picked on screen 2
@@ -44,7 +45,7 @@ document.querySelectorAll(".team-btn").forEach((btn) => {
     document.querySelectorAll(".team-btn").forEach((b) => {
       b.setAttribute("aria-pressed", String(b === btn));
     });
-    $("pick-summary").textContent = "You're backing " + TEAM_NAMES[team] + ". Kick-off as soon as you tap.";
+    $("pick-summary").textContent = "You're backing " + TEAM_NAMES[team] + ". Starts as soon as you tap.";
     $("start").disabled = false;
   };
 });
@@ -167,13 +168,24 @@ function setScore(score) {
 }
 
 // Place the ball at xy, then glide to end_xy. A null keeps the ball where it is.
+// A dribble flashes "DRIBBLE!" on the ball for DRIBBLE_TAG_MS, then shows the player's name.
 function onEvent(d) {
+  clearTimeout(timers.tag);
   moveBall(d.xy, d.end_xy);
-  showTag(Boolean(d.player));
-  if (!d.player) return;
+  if (d.type === "dribble") {
+    setTag("DRIBBLE!");
+    if (d.player) later("tag", DRIBBLE_TAG_MS, () => setTag(d.player));
+    return;
+  }
+  setTag(d.player);
+}
+
+function setTag(label) {
+  showTag(Boolean(label));
+  if (!label) return;
   const text = $("tag-text");
-  text.textContent = d.player;
-  let w = d.player.length * 1.8;
+  text.textContent = label;
+  let w = label.length * 1.8;
   try { w = text.getComputedTextLength(); } catch (e) { /* not rendered yet */ }
   placeTag(w + 2.4);
 }
@@ -556,7 +568,8 @@ function onForecastResult(d) {
   settled();
   const c = s.fc.cards[d.key];
   showPop({ fc: true, points: d.points, label: c ? c.def.label : "FORECAST",
-    line: d.correct ? "FORECAST HIT" : d.outcome === "none" ? "NO SHOTS · NO POINTS LOST" : "NOT THIS TIME" });
+    line: d.correct ? "FORECAST HIT" : d.outcome !== "none" ? "NOT THIS TIME"
+      : d.key === "f5" ? "EVEN SPLIT · NO POINTS LOST" : "NO SHOTS · NO POINTS LOST" });
   if (!c) return;
   Object.assign(c, { state: "result", pick: d.pick, res: d });
   renderForecasts();

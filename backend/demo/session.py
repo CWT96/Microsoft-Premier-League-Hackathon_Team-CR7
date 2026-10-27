@@ -126,8 +126,9 @@ class DemoSession:
             points = score_window(p.defn, p.pick, got)
             self.total += points
             text = ("Forecast hit" if points else
-                    "No shots in that spell. No points lost." if got == "none" else
-                    "Not this time")
+                    "Not this time" if got != "none" else
+                    "Even split. No points lost." if key == "f5" else
+                    "No shots in that spell. No points lost.")
             await send(_env("forecast.result", {
                 "key": key, "pick": p.pick, "outcome": got, "correct": p.pick == got,
                 "points": points, "total": self.total, "to_clock": clock_label(p.half, p.t1),

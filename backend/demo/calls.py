@@ -32,12 +32,19 @@ class Call:
     player_id: str
     team: str
     answer: str
+    lock_xy: tuple[float, float] | None = None  # answering event's location, 105 x 68, own frame
 
 
 def _t(e: dict) -> float:
     """Match clock in seconds, same clock as ``MatchEvent.t`` (second half continues from 2700)."""
     frac = float(e["timestamp"].split(":")[-1]) % 1
     return e["minute"] * 60 + e["second"] + frac
+
+
+def _xy(e: dict) -> tuple[float, float] | None:
+    """Raw StatsBomb location (120 x 80) in the 105 x 68 frame of ``MatchEvent``."""
+    loc = e.get("location")
+    return (loc[0] * 105 / 120, loc[1] * 68 / 80) if loc else None
 
 
 def find_moments(match_id: str = "nbr-cal-seed42") -> list[Call]:
@@ -63,7 +70,7 @@ def find_moments(match_id: str = "nbr-cal-seed42") -> list[Call]:
                 continue  # a carry: keep walking
             if _t(f) - _t(e) >= MIN_WINDOW_S:
                 moments.append(Call("c-" + f["id"], e["period"], _t(e), _t(f), str(rid),
-                                    codes[f["team"]["id"]], answer))
+                                    codes[f["team"]["id"]], answer, _xy(f)))
             break
     return sorted(moments, key=lambda c: (c.half, c.open_t))
 
