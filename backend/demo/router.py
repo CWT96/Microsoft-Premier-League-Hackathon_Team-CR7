@@ -1,8 +1,10 @@
 """WS /demo/ws: one DemoSession per socket, beside a reader that takes the fan's calls.
 
 Protocol: first message ``start`` {team: ARS|CHE} within 10 s, else close 1008. Then any
-number of ``call.answer`` {call_id, pick}; bad input after start is ignored. The server
-closes with 1000 after ``demo.full_time``. Sockets over ``max_sessions`` close with 1013.
+number of ``call.answer`` {call_id, pick} (bad input ignored), ``forecast.pick`` {key, pick}
+and ``forecast.final`` {result, home, away} (each answered with the session's reply; bad shapes
+get ``forecast.rejected`` reason ``bad_pick``). The server closes with 1000 after
+``demo.full_time``. Sockets over ``max_sessions`` close with 1013.
 """
 
 from __future__ import annotations
@@ -102,14 +104,27 @@ def make_demo_router(*, sleep: Sleep = asyncio.sleep, load: Callable[[], Match] 
                 return False
             return True
 
+        def forecast(kind: Any, data: Any) -> dict | None:
+            """The session's reply to a forecast message; None if ``kind`` is not one."""
+            if not isinstance(data, dict):
+                data = {}  # the session rejects the missing fields as bad_pick
+            if kind == "forecast.pick":
+                return session.forecast_pick(data.get("key"), data.get("pick"))
+            if kind == "forecast.final":
+                return session.forecast_final(data.get("result"), data.get("home"),
+                                              data.get("away"))
+            return None
+
         async def reader() -> None:
-            """Route ``call.answer``; ignore anything malformed; return when the client leaves."""
+            """Route calls and forecasts; skip malformed frames; return when the client leaves."""
             while True:
                 try:
                     msg = await _recv(ws)
                     if msg.get("type") == "call.answer":
                         data = msg.get("data") or {}
                         session.answer(data.get("call_id"), data.get("pick"))
+                    elif (reply := forecast(msg.get("type"), msg.get("data"))) is not None:
+                        await send(reply)
                 except (ValueError, KeyError, TypeError, AttributeError):
                     continue
                 except GONE:

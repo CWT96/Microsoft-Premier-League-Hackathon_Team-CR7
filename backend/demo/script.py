@@ -6,7 +6,7 @@ Cue ``data`` is JSON-ready: the session sends it verbatim (except ``call.lock``)
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from backend.core.types import Match, MatchEvent
 from backend.demo.calls import CALL_WINDOW_S, ON_BALL, Call, find_moments, select_calls
@@ -42,9 +42,14 @@ class Cue:
 
 @dataclass(frozen=True)
 class Timeline:
+    """Cues plus what the session needs to settle forecasts (events, half ends, final score)."""
+
     cues: tuple[Cue, ...]
     calls: dict[str, Call]
     duration: float
+    events: tuple[MatchEvent, ...] = ()
+    half_ends: dict[int, float] = field(default_factory=dict)
+    final_score: tuple[int, int] = (0, 0)
 
 
 SCRIPT: tuple[Play | Pause, ...] = (
@@ -99,7 +104,7 @@ def _play_cues(match: Match, play: Play, at: float, goals: list[MatchEvent],
         t = play.start_t + k
         cues.append(Cue(at + k, "demo.clock", {
             "half": play.half, "clock": clock_label(play.half, t),
-            "score": _score(goals, play.half, t)}))
+            "score": _score(goals, play.half, t), "t": float(t)}))
     for e in match.events:
         if e.type not in EVENT_TYPES or e.half != play.half or not play.start_t <= e.t < play.end_t:
             continue
@@ -148,4 +153,6 @@ def build_timeline(match: Match, script: tuple = SCRIPT) -> Timeline:
         cues.extend(_play_cues(match, step, cursor, goals, chosen))
         cursor += step.end_t - step.start_t
     cues.sort(key=lambda c: (c.at, _RANK[c.type]))
-    return Timeline(tuple(cues), calls, cursor)
+    final = (sum(g.team == HOME for g in goals), sum(g.team == AWAY for g in goals))
+    return Timeline(tuple(cues), calls, cursor, tuple(match.events),
+                    {1: match.first_half_end_t, 2: match.full_end_t}, final)
