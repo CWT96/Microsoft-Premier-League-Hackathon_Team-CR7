@@ -144,6 +144,41 @@ img { object-fit: contain; }
 .pips i { width: 14px; height: 6px; border-radius: 3px; background: var(--edge); }
 .pips i.on { background: var(--green); }
 
+/* tabs and forecast panel (design: frontend/demo-ux screens/Forecast) */
+.tabs { display: flex; gap: 6px; margin: 0 16px 10px; padding: 4px; background: var(--card); border-radius: 12px; }
+.tab { flex: 1; height: 38px; border: 0; border-radius: 9px; background: none; position: relative;
+  font-family: var(--cond); font-weight: 800; font-size: 17px; letter-spacing: 1px; }
+.tab.on { background: var(--ink); color: var(--bg); }
+.tab-dot { position: absolute; top: 8px; right: 14px; width: 8px; height: 8px; border-radius: 50%; background: var(--green); }
+.fc { margin: 10px 16px 0; display: flex; flex-direction: column; gap: 10px; }
+.fc-head { padding: 12px; border-radius: 14px; border: 0; }
+.fc-list { display: flex; flex-direction: column; gap: 10px; }
+.fc-card { padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+.fc-card.on { border-color: var(--cyan); }
+.fc-pts { font-family: var(--cond); font-weight: 800; font-style: italic; font-size: 24px; color: var(--green); }
+.fc-q { font-family: var(--cond); font-weight: 800; font-size: 23px; line-height: 1.05; text-transform: uppercase; }
+.fc-opts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.fc-opts.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.fc-opts .opt { height: 46px; border-radius: 10px; font-family: var(--cond); font-weight: 800; font-size: 18px; letter-spacing: 1px; }
+.fc-opts .opt:disabled:not(.mine):not(.answer):not(.wrong) { opacity: .5; }
+.fc-note { min-height: 18px; font-size: 12px; line-height: 1.4; color: var(--muted); }
+.fc-note.lock { font-family: var(--cond); font-weight: 800; font-size: 14px; letter-spacing: 1px; color: var(--cyan); }
+.fc-note.hit { font-weight: 700; color: var(--green); }
+.fc-note.flash { color: var(--cyan); }
+.fc-link { display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 700; color: var(--muted); }
+.fc-link::before, .fc-link::after { content: ""; flex: 1; height: 1px; background: var(--edge); }
+.steppers { display: flex; align-items: center; gap: 6px; font-family: var(--cond); font-weight: 800; font-size: 28px; }
+.steppers.off { opacity: .55; }
+.stepper { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.stepper button { width: 36px; height: 26px; border-radius: 8px; border: 1px solid var(--edge); background: var(--card2); font-size: 16px; line-height: 1; }
+.stepper button:disabled { opacity: .35; }
+.stepper b { font-size: 32px; line-height: 1; }
+.stepper small { font-family: Inter, sans-serif; font-size: 10px; font-weight: 700; color: var(--muted); }
+.fc-foot { padding: 12px 0 18px; border-top: 1px solid var(--card2); }
+.fc-potential { font-family: var(--cond); font-weight: 800; font-style: italic; font-size: 28px; line-height: 1; color: var(--green); }
+.fc-back { height: 46px; padding: 0 18px; border: 0; border-radius: 12px; background: var(--green); color: var(--bg);
+  font-family: var(--cond); font-weight: 800; font-size: 18px; letter-spacing: 1px; }
+
 /* 4. half time / full time / connection lost */
 .modal { position: absolute; inset: 0; z-index: 10; background: rgba(26,0,32,.82); display: flex; align-items: center; justify-content: center; padding: 20px; animation: mcFade .2s ease-out both; }
 .modal-card { width: 100%; padding: 22px 18px; display: flex; flex-direction: column; align-items: center; gap: 10px; }

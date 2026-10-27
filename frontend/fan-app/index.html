@@ -81,6 +81,11 @@
       </div>
     </header>
 
+    <div class="tabs">
+      <button id="tab-live" class="tab on">REAL TIME</button>
+      <button id="tab-fc" class="tab">FORECAST<i id="tab-dot" class="tab-dot" hidden></i></button>
+    </div>
+
     <div class="pitch">
       <svg viewBox="0 0 105 68" aria-label="Pitch">
         <rect x="0" y="0" width="105" height="68" class="grass"/>
@@ -117,7 +122,7 @@
       </div>
     </div>
 
-    <div class="card call">
+    <div id="rt" class="card call">
       <div id="standby" class="standby">
         <div class="cyan label"><span class="dot live-dot cyan-bg"></span> READING THE PLAY</div>
         <div class="muted">The next call pops up when a player gets the ball and has a choice to make.</div>
@@ -142,7 +147,37 @@
       </div>
     </div>
 
-    <footer class="streak-row">
+    <div id="fc" class="fc" hidden>
+      <div class="card fc-head row-between">
+        <div class="label-sm">BIGGER CALL, BIGGER POINTS</div>
+        <div class="muted tiny">Look further ahead, earn more</div>
+      </div>
+      <div id="fc-cards" class="fc-list"></div>
+      <div id="ft-card" class="card fc-card">
+        <div class="row-between">
+          <span class="badge">FULL TIME</span>
+          <span id="ft-pts" class="fc-pts"></span>
+        </div>
+        <div class="fc-q">How does it end?</div>
+        <div id="ft-opts" class="fc-opts three"></div>
+        <div class="fc-link"><span>LINKED TO YOUR RESULT</span></div>
+        <div class="row-between">
+          <div><div class="small"><b>Exact score</b></div><div id="ft-exact" class="tiny hl"></div></div>
+          <div id="steppers" class="steppers">
+            <div class="stepper"><button id="hs-up" aria-label="Arsenal goals up">+</button><b id="hs">0</b><button id="hs-down" aria-label="Arsenal goals down">−</button><small>ARS</small></div>
+            <span class="muted">–</span>
+            <div class="stepper"><button id="aw-up" aria-label="Chelsea goals up">+</button><b id="aw">0</b><button id="aw-down" aria-label="Chelsea goals down">−</button><small>CHE</small></div>
+          </div>
+        </div>
+        <div id="ft-note" class="fc-note"></div>
+      </div>
+      <div class="fc-foot row-between">
+        <div><div class="tiny muted">Riding on your forecasts</div><div id="fc-potential" class="fc-potential">+0</div></div>
+        <button id="fc-back" class="fc-back">BACK TO LIVE CALLS</button>
+      </div>
+    </div>
+
+    <footer id="streak" class="streak-row">
       <span class="label muted">STREAK</span>
       <span id="pips" class="pips"><i></i><i></i><i></i><i></i><i></i></span>
       <span id="streak-hint" class="muted tiny">3 right in a row = bonus</span>
@@ -159,6 +194,7 @@
         </div>
         <div class="label-sm muted">YOUR POINTS</div>
         <div id="modal-total" class="modal-total">0</div>
+        <div id="modal-fc" class="label-sm hl" hidden></div>
         <div id="modal-line" class="muted center"></div>
         <button id="again" class="cta" hidden>PLAY AGAIN <span class="arrow">→</span></button>
       </div>
