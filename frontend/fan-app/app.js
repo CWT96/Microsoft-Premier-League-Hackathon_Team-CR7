@@ -8,6 +8,7 @@ const POP_MS = 1600;      // points pop-up over the pitch
 const GOAL_MS = 2600;     // goal banner
 const JUMP_MS = 2000;     // jump card (JUMP_CARD_S on the server)
 const RESULT_HOLD_MS = 4000; // result stays on the call card, then back to "reading the play"
+const SWITCH_GUARD_MS = 600; // taps ignored on call options right after the auto-switch to REAL TIME
 const SILENCE_MS = 40000; // no message for this long (half time is 25 s) = connection lost
 
 let team = null;          // ARS or CHE, picked on screen 2
@@ -288,7 +289,10 @@ const SUBS = { PASS: "to a teammate", SHOOT: "at goal", DRIBBLE: "run with it" }
 function onCallOpen(d) {
   if (typeof d.call_id !== "string") return;
   clearTimeout(timers.result);
-  if (s.tab === "fc") setTab("live"); // never let a live call go unseen
+  if (s.tab === "fc") { // never let a live call go unseen
+    setTab("live");
+    s.switchedAt = Date.now(); // a tap meant for the forecast panel must not land on a call
+  }
   s.call = { id: d.call_id, player: d.player || "the player", locked: false, result: false };
   const prompt = String(d.prompt || "What's the call?");
   const cut = prompt.indexOf(". ");
@@ -311,6 +315,7 @@ optionButtons().forEach((btn) => {
   btn.onclick = () => {
     const call = s && s.call;
     if (!call || call.locked || s.picks[call.id]) return;
+    if (Date.now() - (s.switchedAt || 0) < SWITCH_GUARD_MS) return;
     s.picks[call.id] = btn.dataset.pick;
     send({ type: "call.answer", data: { call_id: call.id, pick: btn.dataset.pick } });
     optionButtons().forEach((b) => {
@@ -477,6 +482,7 @@ function setTab(tab) {
 }
 $("tab-live").onclick = $("fc-back").onclick = () => { if (s) setTab("live"); };
 $("tab-fc").onclick = () => { if (s) setTab("fc"); };
+$("ht-pick").onclick = () => { $("modal").hidden = true; setTab("fc"); };
 
 // Window picks open on demo.clock and close on jumps, half time and full time.
 function setLive(on) {
@@ -707,7 +713,8 @@ function onBreak(kind, d) {
     : "Second half starts in " + Math.round(Number(d.seconds) || 25) + " seconds.";
   openModal(full ? "FULL TIME" : "HALF TIME", line, full);
   $("modal-fc").textContent = "Forecasts: +" + fmt(s.fc.points);
-  $("modal-fc").hidden = !full;
+  $("modal-fc").hidden = false;
+  $("ht-pick").hidden = full || s.fc.final.locked; // the full-time pick stays open until half 2
 }
 
 function connectionLost(code) {
@@ -725,5 +732,6 @@ function openModal(kicker, line, again) {
   $("modal-line").textContent = line;
   $("again").hidden = !again;
   $("modal-fc").hidden = true;
+  $("ht-pick").hidden = true;
   $("modal").hidden = false;
 }
