@@ -146,7 +146,13 @@ class DemoSession:
             "total": self.total}))
 
     async def _before(self, cue_type: str, data: dict, send: Send) -> None:
-        """Forecast messages due before a cue goes out, then the live state that cue sets."""
+        """Forecast messages due before a cue goes out, then the live state that cue sets.
+
+        Jump / half time / full time end the Play first, so a pick that arrives while their
+        settlement is being sent is rejected (not_live) instead of left pending forever.
+        """
+        if cue_type in _NOT_LIVE:
+            self._live = None
         if cue_type == "demo.clock":
             await self._settle(send, lambda p: p.half < data["half"] or p.t1 <= data["t"])
             if data["half"] == 2 and not self._final_locked:
@@ -158,8 +164,6 @@ class DemoSession:
         elif cue_type == "demo.full_time":
             await self._settle(send, lambda p: True)
             await self._settle_final(send)
-        if cue_type in _NOT_LIVE:
-            self._live = None
 
     async def run(self, send: Send, sleep: Sleep) -> None:
         """Send ``demo.session`` then every cue at its time, ending with ``demo.full_time``."""

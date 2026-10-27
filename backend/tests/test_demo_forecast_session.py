@@ -306,3 +306,24 @@ def test_router_routes_forecast_messages():
         ws.send_json({"type": "forecast.final", "data": []})
         assert ws.receive_json() == {"type": "forecast.rejected",
                                      "data": {"key": "final", "reason": "bad_pick"}}
+
+
+def test_pick_during_final_settlement_is_rejected():
+    """A pick arriving while a full-time / half-time result is being sent is not left pending."""
+    session = DemoSession(TL, "ARS")
+    late: list[dict] = []
+    picks = {"45+2:28": "f5", "90+4:15": "f15"}
+
+    def hook(env: dict, reply) -> None:
+        kind, data = env["type"], env["data"]
+        if kind == "demo.clock" and data["clock"] in picks:
+            reply(session.forecast_pick(picks.pop(data["clock"]), "yes" if
+                                        data["clock"] == "45+2:28" else "goal"))
+        if kind == "forecast.result":  # the router may deliver a pick during this send
+            late.append(session.forecast_pick(data["key"], data["pick"]))
+            reply(late[-1])
+
+    msgs = run_with(session, hook)
+    assert late == [{"type": "forecast.rejected", "data": {"key": "f5", "reason": "not_live"}},
+                    {"type": "forecast.rejected", "data": {"key": "f15", "reason": "not_live"}}]
+    assert types(msgs).count("forecast.result") == 2 and session._pending == {}
