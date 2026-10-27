@@ -45,7 +45,7 @@ class Friend:
 
 
 FRIENDS: tuple[Friend, ...] = (
-    Friend("Mia", 0.70, ("ars", 2, 1), True),
+    Friend("Mia", 0.70, ("ars", 1, 0), True),
     Friend("Dan", 0.50, ("draw", 1, 1), True),
     Friend("Leo", 0.35, ("che", 1, 2), False),
 )
@@ -57,7 +57,7 @@ def room_code(rng: random.Random | None = None) -> str:
 
 
 def valid_email(email: Any) -> bool:
-    return isinstance(email, str) and len(email) <= MAX_EMAIL_CHARS and bool(EMAIL_RE.match(email))
+    return isinstance(email, str) and len(email) <= MAX_EMAIL_CHARS and bool(EMAIL_RE.fullmatch(email))
 
 
 # --- simulated players ---------------------------------------------------------
@@ -77,10 +77,18 @@ def play_starts(timeline: Timeline) -> list[tuple[int, float]]:
 
 
 def _f15_outcomes(timeline: Timeline) -> list[tuple[int, float, str]]:
-    """(half, t0, outcome) of an f15 pick at each Play's first tick."""
+    """(half, t0, outcome) of an f15 pick at each Play's first tick with no f15 still pending.
+
+    Same one-pending-window rule as the fan: a pick is still pending at a later tick of the
+    same half before its end ``t1`` (half time settles everything of the first half).
+    """
     out = []
+    pending: tuple[int, float] | None = None  # (half, t1) of the last pick
     for half, t0 in play_starts(timeline):
+        if pending is not None and pending[0] == half and pending[1] > t0:
+            continue
         t1 = min(t0 + _F15.minutes * 60, timeline.half_ends.get(half, math.inf))
+        pending = (half, t1)
         out.append((half, t0, outcome(timeline.events, "f15", half, t0, t1)))
     return out
 
@@ -164,11 +172,11 @@ def top_pct(you: int, crowd: list[int]) -> int:
 
 
 def board(you: int, saved: bool, friends: list[dict], phase: str) -> list[dict]:
-    """Players sorted by points desc; the fan wins ties. ``phase`` is "ht" or "ft"."""
+    """Players by points desc; the fan wins ties except at 0 (a fan who never played is last)."""
     players = [{"name": YOU, "pts": you, "saved": saved, "me": True}]
     players += [{"name": f["name"], "pts": f[phase], "saved": f["saved"], "me": False}
                 for f in friends]
-    return sorted(players, key=lambda p: (-p["pts"], not p["me"]))
+    return sorted(players, key=lambda p: (-p["pts"], (not p["me"]) if p["pts"] else p["me"]))
 
 
 def rank_of(players: list[dict]) -> int:

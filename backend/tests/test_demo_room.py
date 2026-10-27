@@ -87,9 +87,16 @@ def of(msgs: list[dict], kind: str) -> dict:
 def test_friends_deterministic_exact_totals():
     rows = room.friend_totals(TL)
     assert rows == room.friend_totals(TL)
-    assert rows == [{"name": "Mia", "ht": 3390, "ft": 11510, "saved": True},
-                    {"name": "Dan", "ht": 1640, "ft": 3160, "saved": True},
+    assert rows == [{"name": "Mia", "ht": 1890, "ft": 8010, "saved": True},
+                    {"name": "Dan", "ht": 140, "ft": 1660, "saved": True},
                     {"name": "Leo", "ht": 240, "ft": 260, "saved": False}]
+
+
+def test_f15_one_pending_window():
+    """Play 2 starts (23:42) inside Play 1's f15 window (11:31-26:31): no pick there."""
+    assert [(h, t) for h, t, _ in room._f15_outcomes(TL)] == [(1, 691.0), (2, 3600.0),
+                                                               (2, 4780.0)]
+    assert len(room.play_starts(TL)) == 4
 
 
 def test_friend_pick_rule():
@@ -115,7 +122,7 @@ def test_room_code_and_email_rules():
         assert re.fullmatch(r"[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{4}", room.room_code())
     assert room.valid_email("a@b.co")
     for bad in ("", "a@b", "a b@c.de", "@b.co", "a@@b.co", None, 5, ["a@b.co"],
-                "a" * 250 + "@b.co"):
+                "a" * 250 + "@b.co", "a@b.co\n", "a@b.co\nb@c.de"):
         assert not room.valid_email(bad), bad
 
 
@@ -137,7 +144,7 @@ def test_perfect_judge_is_first_with_all_badges():
     ht, ft = of(msgs, "demo.half_time"), of(msgs, "demo.full_time")
     assert set(ht) == {"score", "seconds", "room", "breakdown", "you", "saved"}
     assert ht["you"] == {"rank": 1} and ht["saved"] is False and ht["room"]["code"] == "K7QX"
-    assert [p["name"] for p in ht["room"]["players"]] == ["You", "Mia", "Dan", "Leo"]
+    assert [p["name"] for p in ht["room"]["players"]] == ["You", "Mia", "Leo", "Dan"]  # Dan 140 < Leo 240 at HT
     assert ht["room"]["players"][0] == {"name": "You", "pts": ht["breakdown"]["calls"]
                                         + ht["breakdown"]["forecasts"], "saved": False, "me": True}
     assert ht["breakdown"]["calls"] == 4 * 110 + 50 * 3
@@ -169,7 +176,35 @@ def test_always_shoot_judge():
     assert ft["rows"][1] == {"key": "fc", "label": "FORECAST", "detail": "0 forecasts hit",
                              "points": 0}
     assert ft["badges"] == [{"title": "GOOD EYE", "text": "You called Saka's goal"}]
-    assert ft["stamp"] == "#3 IN ROOM K7QX · TOP 97% TONIGHT"  # above Leo (260), below Dan (3160)
+    assert ft["stamp"] == "#3 IN ROOM K7QX · TOP 94% TONIGHT"  # above Leo (260), below Dan (1660)
+
+
+def test_calls_and_f15_and_final_judge_leads():
+    """Perfect calls, an f15 at each Play start (the pending one is rejected), final ARS 2-1."""
+    session = DemoSession(TL, "ARS", code="K7QX")
+    starts = set(room.play_starts(TL))
+
+    def hook(env: dict, reply) -> None:
+        kind, data = env["type"], env["data"]
+        if kind == "call.open":
+            session.answer(data["call_id"], TL.calls[data["call_id"]].answer)
+        if kind == "demo.clock" and (data["half"], data["t"]) in starts:
+            if session._final is None:
+                reply(session.forecast_final("ars", 2, 1))
+            reply(session.forecast_pick("f15", "goal"))
+
+    msgs = run(session, hook)
+    assert of(msgs, "demo.half_time")["you"] == {"rank": 1}
+    ft = of(msgs, "demo.full_time")
+    assert ft["total"] == 1160 + 3 * 1500 + 5000 == 10660
+    assert ft["rows"][1]["detail"] == "3 forecasts hit · full-time result nailed"
+    assert ft["stamp"] == "#1 IN ROOM K7QX · TOP 1% TONIGHT"
+
+
+def test_fan_wins_ties_except_at_zero():
+    friends = [{"name": "Leo", "ht": 240, "ft": 0, "saved": False}]
+    assert [p["me"] for p in room.board(240, False, friends, "ht")] == [True, False]
+    assert [p["me"] for p in room.board(0, False, friends, "ft")] == [False, True]
 
 
 def test_silent_judge_is_last():
