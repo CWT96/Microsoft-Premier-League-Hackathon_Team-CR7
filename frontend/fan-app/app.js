@@ -97,6 +97,7 @@ function handle(type, d) {
     case "demo.session": onSession(d); break;
     case "demo.clock": onClock(d); break;
     case "demo.event": onEvent(d); break;
+    case "demo.shape": onShape(d); break;
     case "demo.goal": onGoal(d); break;
     case "demo.jump": onJump(d); break;
     case "call.open": onCallOpen(d); break;
@@ -117,6 +118,7 @@ function resetLiveUi() {
   $("backing").textContent = "Backing " + TEAM_NAMES[team];
   ["gain", "jump", "goal", "pop", "modal"].forEach((id) => { $(id).hidden = true; });
   showTag(false);
+  $("players").textContent = ""; // no dots left over from the previous run
   setStreak(0);
   moveBall([52.5, 34], null);
   showStandby();
@@ -147,6 +149,38 @@ function onEvent(d) {
   let w = d.player.length * 1.8;
   try { w = text.getComputedTextLength(); } catch (e) { /* not rendered yet */ }
   placeTag(w + 2.4);
+}
+
+// Draw the 22 shirt-number dots. Dots are keyed team-num; any not in this shape are hidden.
+const SVG_NS = "http://www.w3.org/2000/svg";
+
+function onShape(d) {
+  if (!Array.isArray(d.players)) return;
+  const seen = new Set();
+  d.players.forEach((p) => {
+    if (!p || !TEAM_NAMES[p.team]) return;
+    const key = p.team + "-" + p.num;
+    seen.add(key);
+    let g = $("pl-" + key);
+    if (!g) {
+      g = document.createElementNS(SVG_NS, "g");
+      g.id = "pl-" + key;
+      g.setAttribute("class", "pl " + p.team);
+      const c = document.createElementNS(SVG_NS, "circle");
+      c.setAttribute("r", "1.6");
+      const t = document.createElementNS(SVG_NS, "text");
+      t.textContent = String(p.num);
+      g.append(c, t);
+      $("players").append(g);
+    }
+    const x = Math.max(0, Math.min(105, Number(p.x) || 0));
+    const y = Math.max(0, Math.min(68, Number(p.y) || 0));
+    g.style.transform = "translate(" + x + "px, " + y + "px)";
+    g.style.display = "";
+  });
+  Array.from($("players").children).forEach((g) => {
+    if (!seen.has(g.id.slice(3))) g.style.display = "none";
+  });
 }
 
 function moveBall(xy, endXy) {

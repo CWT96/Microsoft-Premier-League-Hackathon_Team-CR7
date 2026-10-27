@@ -86,6 +86,11 @@ img { object-fit: contain; }
 .pitch svg { display: block; width: 100%; height: auto; }
 .grass { fill: #14492F; }
 .lines * { fill: none; stroke: rgba(255,255,255,.38); stroke-width: .35; }
+.pl { transition: transform .8s cubic-bezier(.25,.7,.35,1); }
+.pl circle { stroke: rgba(0,0,0,.55); stroke-width: .3; }
+.pl.ARS circle { fill: #EF0107; }
+.pl.CHE circle { fill: #034694; }
+.pl text { fill: #fff; font-family: var(--cond); font-weight: 700; font-size: 1.6px; text-anchor: middle; dominant-baseline: central; }
 .ball-g { transition: transform .8s cubic-bezier(.25,.7,.35,1); }
 .ball-g.snap { transition: none; }
 .ring { fill: none; stroke: var(--green); stroke-width: .5; transform-box: fill-box; transform-origin: center; animation: mcPulse2 1.3s ease-out infinite; }
