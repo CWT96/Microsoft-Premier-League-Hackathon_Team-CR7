@@ -15,6 +15,7 @@ from fastapi.testclient import TestClient
 from starlette.websockets import WebSocketDisconnect
 
 from backend.app.main import create_app
+from backend.demo.names import TEAMS
 from backend.demo.router import make_demo_router
 from backend.demo.script import build_timeline
 from backend.demo.session import DemoSession
@@ -111,7 +112,7 @@ def test_session_message_and_lock_pairs():
     msgs = run_session(DemoSession(TL, "CHE"))
     first = msgs[0]["data"]
     assert first["you"] == {"team": "CHE"} and first["duration"] == TL.duration
-    assert {t["code"] for t in first["teams"].values()} == {"ARS", "CHE"}
+    assert first["teams"] == {"home": TEAMS["NBR"], "away": TEAMS["CAL"]}
     types = [m["type"] for m in msgs]
     assert "call.lock" not in types
     for i, t in enumerate(types):

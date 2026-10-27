@@ -42,7 +42,8 @@ class DemoSession:
 
     async def run(self, send: Send, sleep: Sleep) -> None:
         """Send ``demo.session`` then every cue at its time, ending with ``demo.full_time``."""
-        await send(_env("demo.session", {"teams": TEAMS, "you": {"team": self.team},
+        await send(_env("demo.session", {"teams": {"home": TEAMS["NBR"], "away": TEAMS["CAL"]},
+                                         "you": {"team": self.team},
                                          "duration": self.timeline.duration}))
         elapsed = 0.0
         for cue in self.timeline.cues:
