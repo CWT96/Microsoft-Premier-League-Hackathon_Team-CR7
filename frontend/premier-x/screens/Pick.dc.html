@@ -26,10 +26,7 @@ a{color:#04F5FF}a:hover{color:#8AFAFF}
     <a href="Main.dc.html" aria-label="Back" style="width: 40px; height: 40px; border-radius: 12px; background: #37003C; color: #F3F6F9; display: flex; align-items: center; justify-content: center">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"></path></svg>
     </a>
-    <div style="display: flex; flex-direction: column; gap: 2px">
-      <div style="font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 26px; line-height: 1; text-transform: uppercase">Pick your side</div>
-      <div style="font-size: 12px; color: #CDB8D1">Takes 10 seconds. You can change it anytime.</div>
-    </div>
+    <div style="font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 26px; line-height: 1; text-transform: uppercase">Pick your side</div>
   </div>
 
   <div style="flex: 1; overflow-y: auto; padding: 16px 20px 8px; display: flex; flex-direction: column; gap: 12px">
@@ -67,7 +64,7 @@ a{color:#04F5FF}a:hover{color:#8AFAFF}
     <sc-if value="{{noneSelected}}" hint-placeholder-val="{{ false }}">
       <div class="mc-in" style="padding: 14px; border-radius: 14px; background: rgba(201,162,255,0.1); border: 1px solid rgba(201,162,255,0.45); display: flex; flex-direction: column; gap: 10px">
         <div style="font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 22px; line-height: 1.05; text-transform: uppercase">Back a player. <span style="color: #C9A2FF">Earn while you watch.</span></div>
-        <div style="font-size: 13px; line-height: 1.45; color: #EEDFF0">Pick up to 2 players you like. Every goal, save or tackle they make earns you bonus points. No predictions, just cheer.</div>
+        <div style="font-size: 13px; line-height: 1.45; color: #EEDFF0">Pick up to 2 players you like. Every goal, save or tackle they make earns you bonus points.</div>
         <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px">
           <sc-for list="{{posIntro}}" as="pi" hint-placeholder-count="4">
             <div style="padding: 8px 10px; border-radius: 10px; background: #37003C; display: flex; flex-direction: column; gap: 2px">
@@ -159,7 +156,7 @@ class Component extends DCLogic {
     var on = base + "background: rgba(0,255,133,0.14); border: 2px solid #00FF85;";
     var off = base + "background: #4A0E52; border: 2px solid #4A0E52;";
     // Arsenal v Chelsea is the playable demo; the other two are the design's matchday, browsable
-    var defs = sq && sq.matches ? sq.matches : [{ id: "m1", home: "ARS", away: "CHE", status: "LIVE", meta: "Matchweek 9", score: null, playable: true }];
+    var defs = sq && sq.matches ? sq.matches : [{ id: "m1", home: "ARS", away: "CHE", status: "LIVE", meta: "Matchday 9", score: null, playable: true }];
     var current = defs.filter(function (m) { return m.home === team || m.away === team; })[0] || defs[0];
     var matches = defs.map(function (m) {
       var live = m.status.indexOf("LIVE") === 0;
@@ -211,9 +208,7 @@ class Component extends DCLogic {
     });
     var teamName = teamOf(team) ? teamOf(team).name : app.teamName(team);
     var names = selectedCards.map(function (c) { return c.name; });
-    var summary = current.playable
-      ? "Playing as " + teamName + " · " + (names.length ? "backing " + names.join(" & ") : "no players backed yet")
-      : "Demo match tonight: Arsenal v Chelsea · you play " + (team === current.home ? "Arsenal" : "Chelsea");
+    var summary = "Playing as " + teamName + " · " + (names.length ? "backing " + names.join(" & ") : "no players backed yet");
     return {
       matches: matches, groups: groups, count: chosen.length, teamName: teamName, summary: summary,
       isUpcoming: !!current.predicted, squadSource: current.predicted ? "Predicted" : "Official team sheet",

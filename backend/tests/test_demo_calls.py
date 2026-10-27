@@ -42,3 +42,8 @@ def test_carry_never_locks():
     # every lock is a pass, shot or dribble in the raw data (a carry is skipped as part of the walk)
     assert all(c.call_id.startswith("c-") for c in MOMENTS)
     assert {c.team for c in MOMENTS} <= {"NBR", "CAL"}
+
+
+def test_team_filter_keeps_one_side():
+    assert select_calls(MOMENTS, 2, 3600, 3616, "NBR") == []
+    assert [c.player_id for c in select_calls(MOMENTS, 2, 3600, 3616, "CAL")] == ["910211"]

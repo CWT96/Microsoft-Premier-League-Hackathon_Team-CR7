@@ -32,7 +32,7 @@ a{color:#04F5FF}a:hover{color:#8AFAFF}
         <span class="mc-live-dot" style="width: 8px; height: 8px; border-radius: 50%; background: #FF5C93; display: inline-block"></span>
         <span>{{liveLabel}}</span>
       </div>
-      <div style="font-size: 12px; color: #CDB8D1">Matchweek 9</div>
+      <div style="font-size: 12px; color: #CDB8D1">{{matchday}}</div>
     </div>
     <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: center; gap: 8px">
       <div style="display: flex; flex-direction: column; align-items: center; gap: 6px">
@@ -56,8 +56,8 @@ a{color:#04F5FF}a:hover{color:#8AFAFF}
   </div>
 
   <div style="padding: 24px 20px 0; display: flex; flex-direction: column; gap: 10px">
-    <h1 style="margin: 0; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 42px; line-height: 0.95; text-transform: uppercase">Watching the game? <span style="color: #00FF85">Call the next play.</span></h1>
-    <p style="margin: 0; font-size: 15px; line-height: 1.45; color: #CDB8D1">Guess what happens next, stack up points, beat your mates. No football knowledge needed. Free, and no sign-up to start.</p>
+    <h1 style="margin: 0; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 42px; line-height: 0.95; text-transform: uppercase">Every play is a call. <span style="color: #00FF85">Make yours.</span></h1>
+    <p style="margin: 0; font-size: 15px; line-height: 1.45; color: #CDB8D1">Pass, shoot or dribble? Call it before the ball moves and climb your room's leaderboard. Free to play, no sign-up.</p>
   </div>
 
   <div style="padding: 20px 20px 0">
@@ -100,8 +100,10 @@ a{color:#04F5FF}a:hover{color:#8AFAFF}
 <script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
 class Component extends DCLogic {
   renderVals() {
-    // the highlights run opens at 11:34 with the score 0-0; the crowd is the 1,000 simulated fans
-    return { venue: "the Emirates", liveLabel: "LIVE 12'", score: "0 – 0", crowd: "1,000" };
+    // the match card: Arsenal v Chelsea from GET /demo/squads (the run opens at 11:34, 0-0)
+    var m = app.squads && app.squads.matches ? app.squads.matches[0] : null;
+    return { venue: "the Emirates", liveLabel: "LIVE 12'", score: "0 – 0",
+             matchday: m ? m.meta : "Matchday 9", crowd: app.fmt(m ? m.fans : 128406) };
   }
 }
 </script>

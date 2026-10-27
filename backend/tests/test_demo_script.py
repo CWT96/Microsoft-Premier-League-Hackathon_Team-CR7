@@ -5,12 +5,13 @@ TL = build_timeline(load_match("nbr-cal-seed42"))
 types = [c.type for c in TL.cues]
 
 def test_about_ninety_seconds():
-    assert TL.duration == 93.0
+    assert TL.duration == 99.0
 
 def test_calls_and_mix():
     assert len(TL.calls) == 6
     answers = [c.answer for c in TL.calls.values()]
-    assert answers == ["PASS", "DRIBBLE", "SHOOT", "SHOOT", "PASS", "SHOOT"]
+    assert answers == ["PASS", "DRIBBLE", "SHOOT", "SHOOT", "DRIBBLE", "SHOOT"]
+    assert all(c.team == "NBR" for c in TL.calls.values())  # an Arsenal fan is asked about Arsenal
     assert [c.player_id for c in TL.calls.values()][:3] == ["910104", "910106", "910108"]
 
 def test_goals_and_final_score():
@@ -27,12 +28,13 @@ def test_every_call_opens_before_it_locks():
 
 def test_cues_sorted_and_jumps():
     assert [c.at for c in TL.cues] == sorted(c.at for c in TL.cues)
-    assert types.count("demo.jump") == 5 and types[-1] == "demo.full_time"
+    assert types.count("demo.jump") == 6 and types[-1] == "demo.full_time"
     jumps = [c for c in TL.cues if c.type == "demo.jump"]
     assert jumps[0].at == 0 and TL.cues[0] is jumps[0]
     assert jumps[0].data == {"title": "Arsenal on the attack", "clock": "11:34"}
     assert [j.data["title"] for j in jumps] == [
-        "Arsenal on the attack", "Arsenal keep pushing", "Saka's goal", "Chelsea hit back", "The winner"]
+        "Arsenal on the attack", "Arsenal keep pushing", "Saka's goal", "Chelsea hit back",
+        "Arsenal go again", "The winner"]
 
 def test_windows_do_not_overlap():
     opens = [c for c in TL.cues if c.type == "call.open"]
@@ -47,13 +49,23 @@ def test_calls_unchanged_by_the_cut():
             for c in TL.calls.values()] == [
         (1, 696.555, 699.671, "910104"), (1, 703.418, 711.336, "910106"),
         (1, 1012.86, 1018.49, "910108"), (1, 1429.976, 1434.263, "910109"),
-        (2, 3605.987, 3610.652, "910211"), (2, 4786.224, 4789.933, "910105")]
+        (2, 4424.456, 4428.951, "910119"), (2, 4786.224, 4789.933, "910105")]
+
+
+def test_chelsea_fan_gets_chelsea_calls():
+    che = build_timeline(load_match("nbr-cal-seed42"), team="CHE")
+    assert len(che.calls) == 6 and all(c.team == "CAL" for c in che.calls.values())
+    assert sorted({c.answer for c in che.calls.values()}) == ["DRIBBLE", "PASS", "SHOOT"]
+    goals = [c.data["player"] for c in che.cues if c.type == "demo.goal"]
+    assert goals == ["Saka", "João Pedro", "Saliba"]  # every goal of the match is still shown
+    assert 90 <= che.duration <= 105 and che.team == "CHE"
 
 
 def test_dribble_is_visible_at_its_lock():
     dribble = next(c for c in TL.calls.values() if c.answer == "DRIBBLE")
     lock = next(c for c in TL.cues if c.type == "call.lock" and c.data["call_id"] == dribble.call_id)
-    events = [c for c in TL.cues if c.type == "demo.event" and c.data["type"] == "dribble"]
+    events = [c for c in TL.cues if c.type == "demo.event" and c.data["type"] == "dribble"
+              and c.data["player"] == "Zubimendi"]
     assert len(events) == 1 and events[0].at == lock.at
     ev = events[0].data
     assert ev["team"] == "ARS" and ev["player"] == "Zubimendi" and ev["end_xy"] is None

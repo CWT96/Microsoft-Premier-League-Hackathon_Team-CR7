@@ -73,12 +73,12 @@ def make_demo_router(*, sleep: Sleep = asyncio.sleep, load: Callable[[], Match] 
     router.active = active  # type: ignore[attr-defined]  # exposed for tests and diagnostics
     cache: dict[str, Timeline] = {}
 
-    async def timeline() -> Timeline:
+    async def timeline(team: str = "ARS") -> Timeline:
         """Built once, on first connect, off the event loop."""
-        if "tl" not in cache:
-            cache["tl"] = await asyncio.to_thread(lambda: build_timeline(load()))
+        if team not in cache:
+            cache[team] = await asyncio.to_thread(lambda: build_timeline(load(), team=team))
             await asyncio.to_thread(bonus.match_stats)  # warm: sessions never read it mid-match
-        return cache["tl"]
+        return cache[team]
 
     @router.get("/demo/squads")
     async def demo_squads() -> dict:
@@ -104,7 +104,7 @@ def make_demo_router(*, sleep: Sleep = asyncio.sleep, load: Callable[[], Match] 
         if start is None:
             return
         team, players = start
-        session = DemoSession(await timeline(), team, players=players)
+        session = DemoSession(await timeline(team), team, players=players)
 
         async def send(env: dict) -> None:
             await ws.send_json(env)
@@ -138,8 +138,6 @@ def make_demo_router(*, sleep: Sleep = asyncio.sleep, load: Callable[[], Match] 
                     if msg.get("type") == "call.answer":
                         data = msg.get("data") or {}
                         session.answer(data.get("call_id"), data.get("pick"))
-                    elif msg.get("type") == "half_time.skip":
-                        session.skip_half_time()
                     elif (reply := forecast(msg.get("type"), msg.get("data"))) is not None:
                         await send(reply)
                 except (ValueError, KeyError, TypeError, AttributeError):

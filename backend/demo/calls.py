@@ -91,14 +91,18 @@ def find_moments(match_id: str = "nbr-cal-seed42") -> list[Call]:
     return sorted(moments, key=lambda c: (c.half, c.open_t))
 
 
-def select_calls(moments: list[Call], half: int, start_t: float, end_t: float) -> list[Call]:
+def select_calls(moments: list[Call], half: int, start_t: float, end_t: float,
+                 team: str | None = None) -> list[Call]:
     """Calls for one play range: greedy by DRIBBLE > SHOOT > PASS then time.
+
+    ``team`` (internal code) keeps only that side's moments: a fan is asked about their team.
 
     Accepted calls open at least MIN_GAP_S apart, never overlap, and leave MIN_RESULT_S between
     one call's lock and the next call's opening, so every result is seen before the next card.
     """
     cands = sorted((c for c in moments
-                    if c.half == half and start_t <= c.open_t and c.lock_t <= end_t),
+                    if c.half == half and start_t <= c.open_t and c.lock_t <= end_t
+                    and (team is None or c.team == team)),
                    key=lambda c: (_PRIORITY[c.answer], c.lock_t))
     accepted: list[Call] = []
     for c in cands:

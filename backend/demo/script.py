@@ -54,17 +54,34 @@ class Timeline:
     final_score: tuple[int, int] = (0, 0)
     lines: dict[str, CallLines] = field(default_factory=dict)  # setup / explain per call_id
     ai_lines: bool = False  # every line came from the LLM cache and passed the guards
+    team: str = "ARS"  # the fan's side this cut was made for
 
 
 SCRIPT: tuple[Play | Pause, ...] = (
     Play(1, 694, 716, "Arsenal on the attack"),
     Play(1, 1011, 1023, "Arsenal keep pushing"),
-    Play(1, 1427, 1440, "Saka's goal"),
+    Play(1, 1428, 1440, "Saka's goal"),
     Pause("half_time", 10),
-    Play(2, 3603, 3616, "Chelsea hit back"),
-    Play(2, 4783, 4796, "The winner"),
+    Play(2, 3608, 3616, "Chelsea hit back"),
+    Play(2, 4422, 4433, "Arsenal go again"),
+    Play(2, 4784, 4796, "The winner"),
     Pause("full_time", 0),
 )
+
+# A Chelsea fan's highlights: Chelsea on the ball for the calls, and every goal of the match.
+SCRIPT_CHE = (
+    Play(1, 179, 190, "Chelsea start fast"),
+    Play(1, 328, 347, "Chelsea break"),
+    Play(1, 1430, 1440, "Saka's goal"),
+    Pause("half_time", 10),
+    Play(2, 3604, 3616, "Chelsea hit back"),
+    Play(2, 4372, 4389, "Chelsea push for more"),
+    Play(2, 4786, 4796, "The winner"),
+    Pause("full_time", 0),
+)
+
+# Calls only ever ask about the fan's own team: each side gets its own cut of the match.
+SCRIPTS = {"ARS": SCRIPT, "CHE": SCRIPT_CHE}
 
 # Order of cues that share the same `at`.
 _RANK = {"demo.jump": 0, "demo.half_time": 1, "demo.full_time": 1, "demo.clock": 2,
@@ -218,12 +235,16 @@ def _play_cues(match: Match, play: Play, at: float, goals: list[MatchEvent],
     return cues
 
 
-def build_timeline(match: Match, script: tuple = SCRIPT, client: LLMClient | None = None
-                   ) -> Timeline:
+def build_timeline(match: Match, script: tuple | None = None, client: LLMClient | None = None,
+                   team: str = "ARS") -> Timeline:
     """Walk ``script`` with a real-time cursor and emit every cue, sorted by (at, rank).
 
-    Call lines come from ``client`` (default: the committed LLM cache, never the network).
+    ``team`` (ARS / CHE) is the fan's side: its highlights cut (``SCRIPTS``) unless ``script`` is
+    given, and calls on that side's players only. Call lines come from ``client`` (default: the
+    committed LLM cache, never the network).
     """
+    script = script if script is not None else SCRIPTS[team]
+    side = HOME if team == "ARS" else AWAY
     goals = sorted((e for e in match.events if e.type == "goal"), key=lambda e: (e.half, e.t))
     moments = find_moments(match.match_id)
     cues: list[Cue] = []
@@ -240,7 +261,7 @@ def build_timeline(match: Match, script: tuple = SCRIPT, client: LLMClient | Non
             "title": step.title, "clock": clock_label(step.half, step.start_t)}))
         cursor += JUMP_CARD_S
         last = (step.half, step.end_t)
-        chosen = select_calls(moments, step.half, step.start_t, step.end_t)
+        chosen = select_calls(moments, step.half, step.start_t, step.end_t, side)
         calls.update({c.call_id: c for c in chosen})
         lines.update(build_lines(match, chosen, client))
         cues.extend(_play_cues(match, step, cursor, goals, chosen, lines))
@@ -249,4 +270,4 @@ def build_timeline(match: Match, script: tuple = SCRIPT, client: LLMClient | Non
     final = (sum(g.team == HOME for g in goals), sum(g.team == AWAY for g in goals))
     return Timeline(tuple(cues), calls, cursor, tuple(match.events),
                     {1: match.first_half_end_t, 2: match.full_end_t}, final, lines,
-                    bool(lines) and all(ln.ai for ln in lines.values()))
+                    bool(lines) and all(ln.ai for ln in lines.values()), team)

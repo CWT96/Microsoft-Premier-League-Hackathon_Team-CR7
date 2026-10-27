@@ -39,14 +39,14 @@ _XI_BENCH = {
              (3, "Robertson", "DEF")]),
 }
 
-# id, home, away, status line, meta, score, playable, predicted squads
+# id, home, away, status line, meta, score, playable, predicted squads, fans calling it in the app
 MATCHES = [
-    {"id": "m1", "home": "ARS", "away": "CHE", "status": "LIVE", "meta": "Matchweek 9",
-     "score": None, "playable": True, "predicted": False},
-    {"id": "m2", "home": "LIV", "away": "MCI", "status": "LIVE 61'", "meta": "Matchweek 9",
-     "score": "2 – 2", "playable": False, "predicted": False},
+    {"id": "m1", "home": "ARS", "away": "CHE", "status": "LIVE", "meta": "Matchday 9",
+     "score": None, "playable": True, "predicted": False, "fans": 128406},
+    {"id": "m2", "home": "LIV", "away": "MCI", "status": "LIVE 61'", "meta": "Matchday 9",
+     "score": "2 – 2", "playable": False, "predicted": False, "fans": 141873},
     {"id": "m3", "home": "NEW", "away": "TOT", "status": "TODAY", "meta": "Kick-off 17:30",
-     "score": "vs", "playable": False, "predicted": True},
+     "score": "vs", "playable": False, "predicted": True, "fans": 36210},
 ]
 
 

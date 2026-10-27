@@ -76,6 +76,7 @@ def test_display_only_matches():
         assert team["popular"] in {p["id"] for p in team["players"]}
         assert all(p["pos"] in s["scoring"] and p["id"].startswith(code + "-") for p in team["players"])
     assert bonus.sanitise("ARS", ["LIV-7"]) == []  # display-only players never earn
+    assert all(m["meta"].startswith(("Matchday", "Kick-off")) and m["fans"] > 10000 for m in s["matches"])
 
 
 def test_scoring_table_exact():

@@ -87,16 +87,17 @@ def of(msgs: list[dict], kind: str) -> dict:
 def test_friends_deterministic_exact_totals():
     rows = room.friend_totals(TL)
     assert rows == room.friend_totals(TL)
-    assert rows == [{"name": "Mia", "ht": 1890, "ft": 8010, "saved": True},
+    assert rows == [{"name": "Mia", "ht": 1890, "ft": 5010, "saved": True},
                     {"name": "Dan", "ht": 40, "ft": 3060, "saved": True},
-                    {"name": "Leo", "ht": 390, "ft": 410, "saved": False}]
+                    {"name": "Leo", "ht": 390, "ft": 1910, "saved": False}]
 
 
 def test_f15_one_pending_window():
-    """Plays 2 and 3 start (16:51, 23:47) inside Play 1's f15 window (11:34-26:34): no pick there."""
-    assert [(h, t) for h, t, _ in room._f15_outcomes(TL)] == [(1, 694.0), (2, 3603.0),
-                                                               (2, 4783.0)]
-    assert len(room.play_starts(TL)) == 5
+    """Plays 2 and 3 start (16:51, 23:48) inside Play 1's f15 window (11:34-26:34): no pick there;
+    nor does Play 5 (73:42) inside Play 4's (60:08-75:08)."""
+    assert [(h, t) for h, t, _ in room._f15_outcomes(TL)] == [(1, 694.0), (2, 3608.0),
+                                                               (2, 4784.0)]
+    assert len(room.play_starts(TL)) == 6
 
 
 def test_friend_progress_matches_the_call_part_of_the_totals():
@@ -210,7 +211,7 @@ def test_always_shoot_judge():
     assert ft["rows"][1] == {"key": "fc", "label": "FORECAST", "detail": "0 forecasts hit",
                              "points": 0}
     assert ft["badges"] == []  # no players backed, so no GOOD EYE
-    assert ft["stamp"] == "#4 IN ROOM K7QX · TOP 94% TONIGHT"  # below Leo (410) and Dan (3060)
+    assert ft["stamp"] == "#4 IN ROOM K7QX · TOP 94% TONIGHT"  # below Leo (1910) and Dan (3060)
 
 
 def test_calls_and_f15_and_final_judge_leads():

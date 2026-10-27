@@ -170,9 +170,6 @@
       if (app.state.fc.finalLocked) { return; }
       app.send("forecast.final", { result: result, home: home, away: away });
     },
-    skipHalfTime: function (delay) {
-      app.later(delay || 0, function () { if (app.state.phase === "half") { app.send("half_time.skip", {}); } });
-    },
     signup: function (email) {
       return new Promise(function (resolve) {
         if (app.state.saved) { resolve({ ok: true }); return; }

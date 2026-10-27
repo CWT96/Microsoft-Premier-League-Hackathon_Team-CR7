@@ -103,7 +103,7 @@ def test_window_settles_after_jump():
 
 def test_hit_adds_to_shared_total():
     session = DemoSession(TL, "ARS")
-    pick = at_clock("23:47", lambda reply: reply(session.forecast_pick("f10", "ars")))
+    pick = at_clock("23:48", lambda reply: reply(session.forecast_pick("f10", "ars")))
 
     def hook(env: dict, reply) -> None:
         if env["type"] == "call.open":  # every call right, so the call total is not zero
@@ -114,7 +114,7 @@ def test_hit_adds_to_shared_total():
     res_i = index_of(msgs, of_type("forecast.result"))
     res = msgs[res_i]["data"]
     assert res["key"] == "f10" and res["outcome"] == "ars" and res["correct"] is True
-    assert res["points"] == 1000 and res["text"] == "Forecast hit" and res["to_clock"] == "33:47"
+    assert res["points"] == 1000 and res["text"] == "Forecast hit" and res["to_clock"] == "33:48"
     calls_before = [m["data"] for m in msgs[:res_i] if m["type"] == "call.result"]
     assert res["total"] == calls_before[-1]["total"] + 1000
     after = next(m["data"] for m in msgs[res_i:] if m["type"] == "call.result")
@@ -242,8 +242,8 @@ def test_settled_key_can_be_picked_again():
     replies: list[dict] = []
 
     def hook(env: dict, reply) -> None:
-        # the 11:34 window (694–994) settles at the jump to 16:51, so f5 is free again by 23:47
-        if env["type"] == "demo.clock" and env["data"]["clock"] in ("11:34", "23:47"):
+        # the 11:34 window (694–994) settles at the jump to 16:51, so f5 is free again by 23:48
+        if env["type"] == "demo.clock" and env["data"]["clock"] in ("11:34", "23:48"):
             replies.append(session.forecast_pick("f5", "ars"))
             reply(replies[-1])
 
@@ -275,7 +275,7 @@ def test_all_settled_by_full_time():
 
 
 def test_no_shot_window_text():
-    # 60:14 + 10 min has no shot; it settles after the jump to "The winner"
+    # 60:14 + 10 min has no shot; it settles after the jump to "Arsenal go again"
     session = DemoSession(TL, "ARS")
     msgs = run_with(session, at_clock("60:14", lambda reply: reply(
         session.forecast_pick("f10", "ars"))))
@@ -283,7 +283,7 @@ def test_no_shot_window_text():
     res = msgs[res_i]["data"]
     assert res["outcome"] == "none" and res["points"] == 0 and res["to_clock"] == "70:14"
     assert res["text"] == "No shots in that spell. No points lost."
-    assert res_i + 1 == index_of(msgs, first_clock("79:43"))
+    assert res_i + 1 == index_of(msgs, first_clock("73:42"))
 
 
 def test_demo_clock_has_t():

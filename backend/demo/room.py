@@ -176,7 +176,8 @@ def crowd_totals(timeline: Timeline) -> list[int]:
             lambda half, t0, got: _pick(rng, acc, got, [got, _F15_OTHER[got]]),
             final)
         totals.append(ft)
-    _CROWD_CACHE.clear()  # one demo timeline per process; keep only the latest
+    if len(_CROWD_CACHE) >= 4:  # one timeline per side; never grow without bound
+        _CROWD_CACHE.clear()
     _CROWD_CACHE[id(timeline)] = (timeline, totals)
     return totals
 

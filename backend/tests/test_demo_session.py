@@ -18,7 +18,7 @@ from backend.app.main import create_app
 from backend.demo.names import TEAMS
 from backend.demo.router import make_demo_router
 from backend.demo.script import build_timeline
-from backend.demo.session import HALF_TIME_HOLD_S, DemoSession
+from backend.demo.session import DemoSession
 from backend.ingest.loader import load_match
 from backend.tests.fixtures.replay_fixtures import FakeSource, calm, tiny_bundle
 
@@ -107,7 +107,7 @@ def test_plays_to_full_time_with_results():
     msgs = run_session(session, on_open=lambda cid: session.answer(cid, "SHOOT"))
     assert msgs[0]["type"] == "demo.session" and msgs[-1]["type"] == "demo.full_time"
     res = results(msgs)
-    assert ANSWERS == ["PASS", "DRIBBLE", "SHOOT", "SHOOT", "PASS", "SHOOT"]
+    assert ANSWERS == ["PASS", "DRIBBLE", "SHOOT", "SHOOT", "DRIBBLE", "SHOOT"]
     assert len(res) == 6 and sum(r["correct"] for r in res) == 3
     # correct at calls 3, 4, 6; streak peaks at 2, so no bonus
     assert res[-1]["total"] == 6 * 10 + 3 * 100 == 360 == session.total
@@ -118,9 +118,9 @@ def test_plays_to_full_time_with_results():
 def test_always_pass_scores_less_than_always_shoot():
     session = DemoSession(TL, "ARS")
     res = results(run_session(session, on_open=lambda cid: session.answer(cid, "PASS")))
-    # correct at calls 1 and 5 only
-    assert [r["correct"] for r in res] == [True, False, False, False, True, False]
-    assert res[-1]["total"] == 6 * 10 + 2 * 100 == 260 == session.total
+    # correct at call 1 only
+    assert [r["correct"] for r in res] == [True, False, False, False, False, False]
+    assert res[-1]["total"] == 6 * 10 + 1 * 100 == 160 == session.total
 
 
 def test_session_message_and_lock_pairs():
@@ -147,29 +147,7 @@ def test_sleeps_sum_to_duration_and_skip_zero():
         pass
 
     asyncio.run(DemoSession(TL, "ARS").run(send, record))
-    # nobody closes the save sheet: the half-time hold replaces the scripted 10 s pause
-    assert all(d > 0 for d in slept)
-    assert sum(slept) == pytest.approx(TL.duration - 10 + HALF_TIME_HOLD_S)
-    assert HALF_TIME_HOLD_S in slept
-
-
-def test_half_time_skip_starts_the_second_half():
-    slept: list[float] = []
-    session = DemoSession(TL, "ARS")
-
-    async def record(delay: float) -> None:
-        slept.append(delay)
-        if delay == HALF_TIME_HOLD_S:
-            await asyncio.Event().wait()  # only half_time.skip ends this hold
-
-    async def send(env: dict) -> None:
-        if env["type"] == "demo.half_time":
-            assert env["data"]["seconds"] == HALF_TIME_HOLD_S
-            asyncio.get_running_loop().call_soon(session.skip_half_time)
-
-    assert session.skip_half_time() is False  # not half time yet
-    asyncio.run(asyncio.wait_for(session.run(send, record), 5))
-    assert sum(d for d in slept if d != HALF_TIME_HOLD_S) == pytest.approx(TL.duration - 10)
+    assert all(d > 0 for d in slept) and sum(slept) == pytest.approx(TL.duration)
 
 
 def test_double_answer_counts_once():

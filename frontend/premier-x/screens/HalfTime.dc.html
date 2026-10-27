@@ -232,9 +232,8 @@ class Component extends DCLogic {
           self.setState(r.ok ? { saved: true, email: v, busy: false } : { error: r.reason === "offline" ? "offline" : true, busy: false });
         });
       },
-      // closing the sheet ends the break: the second half kicks off right after it slides away
-      later: function () { self.dismiss(); app.skipHalfTime(900); },
-      close: function () { self.dismiss(); app.skipHalfTime(400); },
+      later: function () { self.dismiss(); },
+      close: function () { self.dismiss(); },
       openSheet: function () { self.setState({ sheet: "open" }); }
     };
   }

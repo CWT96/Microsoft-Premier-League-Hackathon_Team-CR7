@@ -35,5 +35,4 @@ There is no build step and no npm. The fonts are in `assets/fonts/`, so the app 
   - The landing's room-code box.
 - **Other matches:** Pick shows the design's three matches with their squads (from `GET /demo/squads`). Only Arsenal v Chelsea has match data: starting from another match plays it as the side in the same place (home → Arsenal, away → Chelsea).
 - **Pitch:** each `demo.shape` is where everyone is at the next on-ball moment, with the time to get there; the ball, the holder ring and the pass receiver are timed to land together (`app.pitch()`).
-- **Half time:** the break waits for the fan (up to 30 s). Saving or closing the sheet sends `half_time.skip`.
 - **Removed:** "End match (demo)" (the match now ends by itself).
