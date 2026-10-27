@@ -578,9 +578,13 @@ def create_app(source: MatchSource | None = None, *, sleep: Sleep = asyncio.slee
                 pass
 
     app.include_router(make_demo_router(sleep=sleep))
-    fan_app = Path(__file__).resolve().parents[2] / "frontend" / "fan-app"
-    if fan_app.is_dir():  # last, so /api/*, /ws and /demo/ws match first
-        app.mount("/", StaticFiles(directory=fan_app, html=True), name="fan-app")
+    frontend = Path(__file__).resolve().parents[2] / "frontend"
+    # last, so /api/*, /ws and /demo/ws match first. The Premier X (from the design templates)
+    # is the app at /; the earlier fan app stays reachable at /classic/.
+    if (frontend / "fan-app").is_dir():
+        app.mount("/classic", StaticFiles(directory=frontend / "fan-app", html=True), name="fan-app")
+    if (frontend / "premier-x").is_dir():
+        app.mount("/", StaticFiles(directory=frontend / "premier-x", html=True), name="premier-x")
     return app
 
 
