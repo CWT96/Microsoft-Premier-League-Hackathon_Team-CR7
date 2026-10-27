@@ -321,6 +321,7 @@ const SUBS = { PASS: "to a teammate", SHOOT: "at goal", DRIBBLE: "run with it" }
 function onCallOpen(d) {
   if (typeof d.call_id !== "string") return;
   clearTimeout(timers.result);
+  if (s.sheet && !s.save.pending) closeSheet(); // a chip-opened save sheet never hides a live call
   if (s.tab === "fc") { // never let a live call go unseen
     setTab("live");
     s.switchedAt = Date.now(); // a tap meant for the forecast panel must not land on a call
@@ -965,11 +966,19 @@ function buildRoom(d) {
   const room = roomPlayers(d), list = $("ft-room-list");
   list.textContent = "";
   s.ft.hasRoom = Boolean(room);
+  s.ft.room = room ? room.players.map((p) => Object.assign({}, p)) : null;
+  list.classList.remove("now");
   if (!room) return;
   $("ft-room-code").textContent = "ROOM " + room.code;
   const friends = room.players.filter((p) => !p.me).length;
   $("ft-room-n").textContent = friends + (friends === 1 ? " friend" : " friends") + " played";
-  room.players.forEach((p, i) => {
+  renderRoom();
+}
+
+function renderRoom() {
+  const list = $("ft-room-list");
+  list.textContent = "";
+  s.ft.room.forEach((p, i) => {
     const row = el("div", "ft-room-row" + (p.me ? " me" : ""));
     row.style.setProperty("--i", i);
     const pts = el("span", "pts", fmt(p.pts));
@@ -1076,7 +1085,8 @@ function finishCount(ft, fast) {
 
 // After a save the server total includes the +500 but its rows do not: show it as a last row.
 // Before or during the count it counts like the others; after the count it lands at once.
-function addBonusRow(ft) {
+// late: the save came after demo.full_time, so the server's board and stamp do not include it yet.
+function addBonusRow(ft, late) {
   if (!s.save.saved || ft.rows.some((r) => r.key === "wb")) return;
   const extra = ft.total - ft.rows.reduce((a, r) => a + r.points, 0);
   if (extra <= 0) return;
@@ -1084,19 +1094,33 @@ function addBonusRow(ft) {
   const r = { key: "wb", node: node, points: extra, value: 0, landed: false };
   ft.rows.push(r);
   node.hidden = false;
+  if (late) rerank(ft);
   if (ft.stage !== "done") return;
   paintRow(r, r.points, 1);
   landRow(r);
   const total = $("ft-total");
   total.textContent = fmt(ft.total);
   total.classList.remove("pop"); void total.offsetWidth; total.classList.add("pop");
-  if (ft.me) ft.me.textContent = fmt(ft.total);
+}
+
+// Same rule as the server: points desc; on a tie the fan goes above others, except at 0 (below).
+function rerank(ft) {
+  if (!ft.room) return;
+  const me = ft.room.find((p) => p.me);
+  if (!me) return;
+  me.pts = ft.total;
+  const key = (p) => [Number(p.pts) || 0, p.me ? (Number(p.pts) > 0 ? 1 : -1) : 0];
+  ft.room.sort((a, b) => { const x = key(a), y = key(b); return y[0] - x[0] || y[1] - x[1]; });
+  $("ft-room-list").classList.add("now"); // re-ranked rows show at once, not after the reveal delay
+  renderRoom();
+  const stamp = $("ft-stamp");
+  stamp.textContent = stamp.textContent.replace(/^#\d+/, "#" + (ft.room.indexOf(me) + 1));
 }
 
 function renderFtSave() {
   const ft = s.ft;
   if (s.save.saved && typeof s.total === "number") ft.total = Math.max(ft.total, s.total);
-  addBonusRow(ft);
+  addBonusRow(ft, true);
   $("ft-save").textContent = s.save.saved ? "POINTS SAVED · " + fmt(ft.total) : "SAVE MY " + fmt(ft.total) + " POINTS";
 }
 
