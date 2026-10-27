@@ -33,6 +33,10 @@ def run(session: DemoSession) -> list[dict]:
     return sent
 
 
+def me_ht_pts(d: dict) -> int:
+    return next(p for p in d["room"]["players"] if p["me"])["pts"]
+
+
 def of(msgs: list[dict], kind: str) -> dict:
     return next(m["data"] for m in msgs if m["type"] == kind)
 
@@ -189,6 +193,7 @@ def test_bonus_added_once_ht_then_rest_at_ft():
     ht_bonus = sum(p["points"] for p in ht["players"])
     ft_bonus = sum(p["points"] for p in ft["players"])
     assert ht["breakdown"]["players"] == ht_bonus
+    assert ht["total"] == me_ht_pts(ht) == of(plain, "demo.half_time")["total"] + ht_bonus
     assert {"what": "Goal", "count": 1, "pts": 300} in ht["players"][0]["stats"]
     assert [p["id"] for p in ft["players"]] == [SAKA, RICE]
     assert ft_bonus == (bonus.player_bonus(SAKA, (1, 2), True)["points"]
@@ -210,6 +215,22 @@ def test_bonus_added_once_ht_then_rest_at_ft():
     assert you == {"team": "ARS", "players": [
         {"id": SAKA, "name": "Saka", "num": 7, "pos": "FWD"},
         {"id": RICE, "name": "Rice", "num": 41, "pos": "MID"}]}
+
+
+def test_router_warms_stats_with_timeline(monkeypatch):
+    calls = []
+    real = bonus.match_stats
+    monkeypatch.setattr(bonus, "match_stats", lambda *a: calls.append(1) or real(*a))
+    async def stuck(_: float) -> None:  # the match never gets past its first cue
+        await asyncio.sleep(3600)
+
+    app = FastAPI()
+    app.include_router(make_demo_router(sleep=stuck))
+    with TestClient(app) as client:
+        with client.websocket_connect("/demo/ws") as ws:
+            ws.send_json({"type": "start", "data": {"team": "ARS", "players": [SAKA]}})
+            assert ws.receive_json()["type"] == "demo.session"
+            assert calls  # read before the session started, not at half time
 
 
 def test_saliba_goal_lands_at_full_time_only():

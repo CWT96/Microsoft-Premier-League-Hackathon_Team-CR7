@@ -143,7 +143,8 @@ def test_perfect_judge_is_first_with_all_badges():
     msgs = run(session, perfect(session))
     ht, ft = of(msgs, "demo.half_time"), of(msgs, "demo.full_time")
     assert set(ht) == {"score", "seconds", "room", "breakdown", "you", "saved",
-                       "players"}
+                       "players", "total"}
+    assert ht["total"] == next(p for p in ht["room"]["players"] if p["me"])["pts"]
     assert ht["you"] == {"rank": 1} and ht["saved"] is False and ht["room"]["code"] == "K7QX"
     assert [p["name"] for p in ht["room"]["players"]] == ["You", "Mia", "Leo", "Dan"]  # Dan 140 < Leo 240 at HT
     assert ht["room"]["players"][0] == {"name": "You", "pts": ht["breakdown"]["calls"]

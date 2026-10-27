@@ -77,6 +77,7 @@ def make_demo_router(*, sleep: Sleep = asyncio.sleep, load: Callable[[], Match] 
         """Built once, on first connect, off the event loop."""
         if "tl" not in cache:
             cache["tl"] = await asyncio.to_thread(lambda: build_timeline(load()))
+            await asyncio.to_thread(bonus.match_stats)  # warm: sessions never read it mid-match
         return cache["tl"]
 
     @router.get("/demo/squads")

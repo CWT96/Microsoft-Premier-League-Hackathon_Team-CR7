@@ -169,7 +169,8 @@ class DemoSession:
                     "breakdown": {"calls": self.call_points, "forecasts": self.forecast_points,
                                   "players": self.bonus_points},
                     "players": self._bonus((1,), False),
-                    "you": {"rank": room.rank_of(players)}, "saved": self.saved}
+                    "you": {"rank": room.rank_of(players)}, "total": self.total,
+                    "saved": self.saved}
         if cue_type == "demo.full_time":
             players = room.board(self.total, self.saved, room.friend_totals(self.timeline), "ft")
             rank = room.rank_of(players)
