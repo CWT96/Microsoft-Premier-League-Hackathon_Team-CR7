@@ -25,3 +25,13 @@ az containerapp update -g rg-matchday-call -n matchday-call --image matchdaycall
 ```
 
 Tear down after judging: `az group delete -n rg-matchday-call`.
+
+## AI call lines (Azure OpenAI)
+
+The demo's per-call setup and explanation lines are written by `gpt-4.1-mini` on Azure OpenAI resource `aoai-matchday-39c125` (rg-matchday-call, East US, deployment `gpt-4.1-mini`) and committed to `backend/llm_cache/demo_lines/`. The deployed app only reads the cache (`LLM_MODE=cache`); no key is deployed. To regenerate (e.g. after editing `backend/agents/prompts/demo_lines.prompt`):
+
+```bash
+export AZURE_AI_ENDPOINT=https://aoai-matchday-39c125.openai.azure.com/openai/v1 AZURE_AI_DEPLOYMENT=gpt-4.1-mini LLM_MODE=live
+export AZURE_AI_API_KEY=$(az cognitiveservices account keys list -n aoai-matchday-39c125 -g rg-matchday-call --query key1 -o tsv)
+.venv/bin/python -m backend.demo.lines --drop-rejected && .venv/bin/python -m backend.demo.lines
+```

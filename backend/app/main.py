@@ -41,16 +41,19 @@ import time
 import uuid
 from collections import OrderedDict, deque
 from contextlib import asynccontextmanager
+from pathlib import Path
 from typing import Any, Callable, Protocol
 
 from fastapi import FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field, ValidationError, field_validator
 
 from backend.agents import llm
 from backend.app.replay import APP_SEED, MatchBundle, Room, RoomFull, Sleep, build_bundle
 from backend.core.constants import DEFAULT_MATCH_ID
+from backend.demo.router import make_demo_router
 from backend.scoring.scoring import tier_for
 from backend.social.funnel import ops_funnel
 
@@ -574,6 +577,10 @@ def create_app(source: MatchSource | None = None, *, sleep: Sleep = asyncio.slee
             except asyncio.CancelledError:
                 pass
 
+    app.include_router(make_demo_router(sleep=sleep))
+    fan_app = Path(__file__).resolve().parents[2] / "frontend" / "fan-app"
+    if fan_app.is_dir():  # last, so /api/*, /ws and /demo/ws match first
+        app.mount("/", StaticFiles(directory=fan_app, html=True), name="fan-app")
     return app
 
 
