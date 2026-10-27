@@ -159,7 +159,10 @@ function setScore(score) {
   if (f.locked || f.res || (f.hs >= score[0] && f.aw >= score[1])) return;
   f.hs = Math.max(f.hs, score[0]);
   f.aw = Math.max(f.aw, score[1]);
-  if (f.ft) setFinal(resultOf(f.hs, f.aw), "");
+  if (f.ft) {
+    const ft = resultOf(f.hs, f.aw);
+    setFinal(ft, ft !== f.ft ? "result" : ""); // explain a result the live score forced
+  }
   else renderForecasts();
 }
 
@@ -393,7 +396,7 @@ function setTotal(total, gained) {
   $("total").textContent = total.toLocaleString("en-US");
   if (gained > 0) {
     const gain = $("gain"), wrap = $("total-wrap");
-    gain.textContent = "+" + gained;
+    gain.textContent = "+" + fmt(gained);
     gain.hidden = true; void gain.offsetWidth; gain.hidden = false;
     wrap.classList.remove("bump"); void wrap.offsetWidth; wrap.classList.add("bump");
     later("gain", 1300, () => { gain.hidden = true; });
