@@ -11,6 +11,7 @@ from dataclasses import dataclass
 from backend.core.types import Match, MatchEvent
 from backend.demo.calls import CALL_WINDOW_S, ON_BALL, Call, find_moments, select_calls
 from backend.demo.names import TEAMS, clock_label, display_name, fixed_xy
+from backend.demo.shape import load_slots, on_pitch, team_shape
 
 JUMP_CARD_S = 2.0
 OPTIONS = ["PASS", "SHOOT", "DRIBBLE"]
@@ -56,7 +57,7 @@ SCRIPT: tuple[Play | Pause, ...] = (
 
 # Order of cues that share the same `at`.
 _RANK = {"demo.jump": 0, "demo.half_time": 1, "demo.full_time": 1, "demo.clock": 2,
-         "call.lock": 3, "call.open": 4, "demo.event": 5, "demo.goal": 6}
+         "call.lock": 3, "call.open": 4, "demo.event": 5, "demo.shape": 6, "demo.goal": 7}
 
 
 def _score(goals: list[MatchEvent], half: int, t: float) -> list[int]:
@@ -72,10 +73,28 @@ def _event_data(e: MatchEvent) -> dict:
             "xy": list(xy) if xy else None, "end_xy": list(end_xy) if end_xy else None}
 
 
+_BALL_TYPES = {"pass", "carry", "shot", "kickoff"}
+_CENTRE = (52.5, 34.0)
+
+
+def _shape_cue(slots: list, at: float, half: int, t: float, ball: tuple[float, float],
+               holder: str | None) -> Cue:
+    """Shape cue; the wire drops ``id`` (team + num identify a player) to keep the payload small."""
+    players = [{k: v for k, v in p.items() if k != "id"}
+               for p in team_shape(on_pitch(slots, half, t), ball, holder)]
+    return Cue(at, "demo.shape", {"players": players})
+
+
 def _play_cues(match: Match, play: Play, at: float, goals: list[MatchEvent],
                calls: list[Call]) -> list[Cue]:
     """Cues of one Play, with the play starting at real time ``at``."""
     cues: list[Cue] = []
+    slots = load_slots()
+    in_play = [e for e in match.events if e.type in EVENT_TYPES and e.half == play.half
+               and play.start_t <= e.t < play.end_t]
+    first = next((fixed_xy(e.team, e.start) for e in in_play
+                  if e.type in _BALL_TYPES and e.start), None)
+    cues.append(_shape_cue(slots, at, play.half, play.start_t, first or _CENTRE, None))
     for k in range(int(-(-(play.end_t - play.start_t) // 1))):
         t = play.start_t + k
         cues.append(Cue(at + k, "demo.clock", {
@@ -85,7 +104,10 @@ def _play_cues(match: Match, play: Play, at: float, goals: list[MatchEvent],
         if e.type not in EVENT_TYPES or e.half != play.half or not play.start_t <= e.t < play.end_t:
             continue
         when = at + (e.t - play.start_t)
-        cues.append(Cue(when, "demo.event", _event_data(e)))
+        data = _event_data(e)
+        cues.append(Cue(when, "demo.event", data))
+        if data["xy"] and e.type != "goal":  # the goal-mouth point follows its shot
+            cues.append(_shape_cue(slots, when, e.half, e.t, tuple(data["xy"]), e.player_id))
         if e.type == "goal":
             cues.append(Cue(when, "demo.goal", {
                 "team": TEAMS[e.team]["code"], "player": display_name(e.player_id),
