@@ -43,7 +43,7 @@ def test_substitute_replaces_player():
 
 
 def test_calls_and_duration_unchanged():
-    assert len(TL.calls) == 7 and TL.duration == 181.0 and TL.cues[-1].type == "demo.full_time"
+    assert len(TL.calls) == 6 and TL.duration == 82.0 and TL.cues[-1].type == "demo.full_time"
 
 
 def test_shape_payload_small():

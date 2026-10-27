@@ -12,9 +12,8 @@ from dataclasses import dataclass
 from backend.ingest import statsbomb
 from backend.ingest.loader import SOURCE_DIR
 
-# Kept so the old script.py still imports until it is rewired.
+# Ingested event types that move the ball (script.py shows them as demo events).
 ON_BALL = {"pass", "carry", "shot"}
-CALL_WINDOW_S = 5.0
 
 MIN_WINDOW_S = 3.0
 MIN_GAP_S = 6.0

@@ -9,7 +9,7 @@ const GOAL_MS = 2600;     // goal banner
 const JUMP_MS = 2000;     // jump card (JUMP_CARD_S on the server)
 const RESULT_HOLD_MS = 4000; // result stays on the call card, then back to "reading the play"
 const SWITCH_GUARD_MS = 600; // taps ignored on call options right after the auto-switch to REAL TIME
-const SILENCE_MS = 40000; // no message for this long (half time is 25 s) = connection lost
+const SILENCE_MS = 40000; // no message for this long (half time is 10 s) = connection lost
 
 let team = null;          // ARS or CHE, picked on screen 2
 let ws = null;            // current socket; messages from older sockets are ignored
@@ -711,9 +711,10 @@ function onBreak(kind, d) {
   if (full) s.finished = true;
   setLive(false);
   $("clock").textContent = full ? "FULL TIME" : "HALF TIME";
+  const secs = Math.round(Number(d.seconds));
   const line = full
     ? "You got " + s.right + " of " + s.calls + " calls right. Thanks for playing!"
-    : "Second half starts in " + Math.round(Number(d.seconds) || 25) + " seconds.";
+    : secs > 0 ? "Second half starts in " + secs + " seconds." : "Second half starts soon.";
   openModal(full ? "FULL TIME" : "HALF TIME", line, full);
   $("modal-fc").textContent = "Forecasts: +" + fmt(s.fc.points);
   $("modal-fc").hidden = false;

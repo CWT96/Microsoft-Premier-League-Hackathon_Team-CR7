@@ -74,24 +74,24 @@ def of_type(kind: str):
 
 def test_window_settles_after_jump():
     session = DemoSession(TL, "ARS")
-    msgs = run_with(session, at_clock("01:28", lambda reply: reply(
-        session.forecast_pick("f15", "goal"))))
+    msgs = run_with(session, at_clock("11:34", lambda reply: reply(
+        session.forecast_pick("f5", "yes"))))
     locked = index_of(msgs, of_type("forecast.locked"))
-    assert msgs[locked]["data"] == {"key": "f15", "pick": "goal",
-                                    "from_clock": "01:28", "to_clock": "16:28"}
+    assert msgs[locked]["data"] == {"key": "f5", "pick": "yes",
+                                    "from_clock": "11:34", "to_clock": "16:34"}
     res_i = index_of(msgs, of_type("forecast.result"))
     assert msgs[res_i]["data"] == {
-        "key": "f15", "pick": "goal", "outcome": "nogoal", "correct": False, "points": 0,
-        "total": msgs[res_i]["data"]["total"], "to_clock": "16:28", "text": "Not this time"}
+        "key": "f5", "pick": "yes", "outcome": "no", "correct": False, "points": 0,
+        "total": msgs[res_i]["data"]["total"], "to_clock": "16:34", "text": "Not this time"}
     jump = index_of(msgs, lambda m: m["type"] == "demo.jump"
                     and m["data"]["title"] == "Saka's goal")
-    assert jump < res_i and res_i + 1 == index_of(msgs, first_clock("23:20"))
+    assert jump < res_i and res_i + 1 == index_of(msgs, first_clock("23:42"))
     assert types(msgs).count("forecast.result") == 1
 
 
 def test_hit_adds_to_shared_total():
     session = DemoSession(TL, "ARS")
-    pick = at_clock("23:20", lambda reply: reply(session.forecast_pick("f10", "ars")))
+    pick = at_clock("23:42", lambda reply: reply(session.forecast_pick("f10", "ars")))
 
     def hook(env: dict, reply) -> None:
         if env["type"] == "call.open":  # every call right, so the call total is not zero
@@ -102,7 +102,7 @@ def test_hit_adds_to_shared_total():
     res_i = index_of(msgs, of_type("forecast.result"))
     res = msgs[res_i]["data"]
     assert res["key"] == "f10" and res["outcome"] == "ars" and res["correct"] is True
-    assert res["points"] == 1000 and res["text"] == "Forecast hit" and res["to_clock"] == "33:20"
+    assert res["points"] == 1000 and res["text"] == "Forecast hit" and res["to_clock"] == "33:42"
     calls_before = [m["data"] for m in msgs[:res_i] if m["type"] == "call.result"]
     assert res["total"] == calls_before[-1]["total"] + 1000
     after = next(m["data"] for m in msgs[res_i:] if m["type"] == "call.result")
@@ -113,10 +113,10 @@ def test_hit_adds_to_shared_total():
 
 def test_pending_settles_at_half_time():
     session = DemoSession(TL, "ARS")
-    msgs = run_with(session, at_clock("45+2:28", lambda reply: reply(
+    msgs = run_with(session, at_clock("23:56", lambda reply: reply(
         session.forecast_pick("f5", "no"))))
     locked = next(m["data"] for m in msgs if m["type"] == "forecast.locked")
-    assert locked == {"key": "f5", "pick": "no", "from_clock": "45+2:28", "to_clock": "45+2:36"}
+    assert locked == {"key": "f5", "pick": "no", "from_clock": "23:56", "to_clock": "28:56"}
     res_i = index_of(msgs, of_type("forecast.result"))
     assert msgs[res_i + 1]["type"] == "demo.half_time"
     res = msgs[res_i]["data"]
@@ -132,12 +132,12 @@ def test_final_locked_in_second_half():
         if env["type"] != "demo.clock":
             return
         clock = env["data"]["clock"]
-        if clock == "00:03" and "early" not in replies:
+        if clock == "11:37" and "early" not in replies:
             replies["early"] = session.forecast_final("che", 0, 1)
             reply(replies["early"])
             replies["saved"] = session.forecast_final("ars", 2, 1)  # change of mind
             reply(replies["saved"])
-        if clock == "59:55" and "late" not in replies:
+        if clock == "79:45" and "late" not in replies:
             replies["late"] = session.forecast_final("draw", 1, 1)
             reply(replies["late"])
 
@@ -181,7 +181,7 @@ def test_bad_forecast_messages():
 
     def hook(env: dict, reply) -> None:
         kind, data = env["type"], env["data"]
-        if kind == "demo.clock" and data["clock"] == "00:01" and "key" not in got:
+        if kind == "demo.clock" and data["clock"] == "11:35" and "key" not in got:
             rej("key", session.forecast_pick("f20", "yes"))
             rej("pick", session.forecast_pick("f5", "goal"))
             rej("nonstr", session.forecast_pick(5, None))
@@ -230,8 +230,8 @@ def test_settled_key_can_be_picked_again():
     replies: list[dict] = []
 
     def hook(env: dict, reply) -> None:
-        # the 00:00 window (0–300) settles just before the 23:20 tick, so f5 is free again
-        if env["type"] == "demo.clock" and env["data"]["clock"] in ("00:00", "23:20"):
+        # the 11:34 window (694–994) settles just before the 23:42 tick, so f5 is free again
+        if env["type"] == "demo.clock" and env["data"]["clock"] in ("11:34", "23:42"):
             replies.append(session.forecast_pick("f5", "yes"))
             reply(replies[-1])
 
@@ -247,19 +247,31 @@ def test_all_settled_by_full_time():
         for d in WINDOWS:
             reply(session.forecast_pick(d.key, d.options[0][0]))
 
-    msgs = run_with(session, at_clock("90+4:15", pick_all))
+    msgs = run_with(session, at_clock("79:52", pick_all))
     assert [m["data"]["to_clock"] for m in msgs if m["type"] == "forecast.locked"] == \
-        ["90+4:27"] * 3
+        ["84:52", "89:52", "90+4:27"]  # f15 clamped to full time
     ft = index_of(msgs, of_type("demo.full_time"))
     assert types(msgs).count("forecast.result") == 3
     tail = msgs[ft - 3:ft]
     assert [m["type"] for m in tail] == ["forecast.result"] * 3
     by_key = {m["data"]["key"]: m["data"] for m in tail}
     assert by_key["f5"]["outcome"] == "no" and by_key["f5"]["correct"] is False
-    assert by_key["f10"]["outcome"] == "none" and by_key["f10"]["points"] == 0
-    assert by_key["f10"]["text"] == "No shots in that spell. No points lost."
+    assert by_key["f10"]["outcome"] == "che" and by_key["f10"]["points"] == 0
+    assert by_key["f10"]["text"] == "Not this time"
     assert by_key["f15"]["outcome"] == "nogoal" and by_key["f15"]["text"] == "Not this time"
     assert msgs[-1]["type"] == "demo.full_time"
+
+
+def test_no_shot_window_text():
+    # 60:14 + 10 min has no shot; it settles after the jump to "The winner"
+    session = DemoSession(TL, "ARS")
+    msgs = run_with(session, at_clock("60:14", lambda reply: reply(
+        session.forecast_pick("f10", "ars"))))
+    res_i = index_of(msgs, of_type("forecast.result"))
+    res = msgs[res_i]["data"]
+    assert res["outcome"] == "none" and res["points"] == 0 and res["to_clock"] == "70:14"
+    assert res["text"] == "No shots in that spell. No points lost."
+    assert res_i + 1 == index_of(msgs, first_clock("79:40"))
 
 
 def test_demo_clock_has_t():
@@ -268,7 +280,7 @@ def test_demo_clock_has_t():
     for c in clocks:
         assert set(c.data) == {"half", "clock", "score", "t"}
         assert isinstance(c.data["t"], float) and c.data["half"] in (1, 2)
-    assert clocks[0].data == {"half": 1, "clock": "00:00", "score": [0, 0], "t": 0.0}
+    assert clocks[0].data == {"half": 1, "clock": "11:34", "score": [0, 0], "t": 694.0}
     assert TL.half_ends == {1: 2856.618, 2: 5667.866} and TL.final_score == (2, 1)
     assert TL.events
 
@@ -293,13 +305,13 @@ def test_router_routes_forecast_messages():
     with TestClient(app) as client, client.websocket_connect("/demo/ws") as ws:
         ws.send_json(START_ARS)
         assert [ws.receive_json()["type"] for _ in range(3)] == \
-            ["demo.session", "demo.clock", "demo.shape"]  # then the session stalls at 00:00
+            ["demo.session", "demo.clock", "demo.shape"]  # then the session stalls at 11:34
         ws.send_json({"type": "forecast.pick", "data": "nope"})
         assert ws.receive_json() == {"type": "forecast.rejected",
                                      "data": {"key": None, "reason": "bad_pick"}}
         ws.send_json({"type": "forecast.pick", "data": {"key": "f5", "pick": "yes"}})
         assert ws.receive_json() == {"type": "forecast.locked", "data": {
-            "key": "f5", "pick": "yes", "from_clock": "00:00", "to_clock": "05:00"}}
+            "key": "f5", "pick": "yes", "from_clock": "11:34", "to_clock": "16:34"}}
         ws.send_json({"type": "forecast.final", "data": {"result": "ars", "home": 2, "away": 1}})
         assert ws.receive_json() == {"type": "forecast.final_saved",
                                      "data": {"result": "ars", "home": 2, "away": 1}}
@@ -312,13 +324,13 @@ def test_pick_during_final_settlement_is_rejected():
     """A pick arriving while a full-time / half-time result is being sent is not left pending."""
     session = DemoSession(TL, "ARS")
     late: list[dict] = []
-    picks = {"45+2:28": "f5", "90+4:15": "f15"}
+    picks = {"23:56": "f5", "79:52": "f15"}
 
     def hook(env: dict, reply) -> None:
         kind, data = env["type"], env["data"]
         if kind == "demo.clock" and data["clock"] in picks:
             reply(session.forecast_pick(picks.pop(data["clock"]), "yes" if
-                                        data["clock"] == "45+2:28" else "goal"))
+                                        data["clock"] == "23:56" else "goal"))
         if kind == "forecast.result":  # the router may deliver a pick during this send
             late.append(session.forecast_pick(data["key"], data["pick"]))
             reply(late[-1])

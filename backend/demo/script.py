@@ -1,4 +1,4 @@
-"""Highlights timeline: the ~3-minute cut of the match as a fixed list of timed cues.
+"""Highlights timeline: the ~90-second cut of the match as a fixed list of timed cues.
 
 ``build_timeline`` turns ``SCRIPT`` (Plays and Pauses) into cues the session plays at 1x.
 Cue ``data`` is JSON-ready: the session sends it verbatim (except ``call.lock``).
@@ -9,7 +9,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 from backend.core.types import Match, MatchEvent
-from backend.demo.calls import CALL_WINDOW_S, ON_BALL, Call, find_moments, select_calls
+from backend.demo.calls import ON_BALL, Call, find_moments, select_calls
 from backend.demo.names import TEAMS, clock_label, display_name, fixed_xy
 from backend.demo.shape import load_slots, on_pitch, team_shape
 
@@ -53,10 +53,11 @@ class Timeline:
 
 
 SCRIPT: tuple[Play | Pause, ...] = (
-    Play(1, 0, 8, "Kickoff"), Play(1, 88, 115, "Opening minutes"),
-    Play(1, 1400, 1440, "Saka's goal"), Play(1, 2848, 2857, "Half time"),
-    Pause("half_time", 25), Play(2, 3595, 3620, "Chelsea hit back"),
-    Play(2, 4775, 4797, "The winner"), Play(2, 5655, 5668, "Full time"),
+    Play(1, 694, 716, "Arsenal on the attack"),
+    Play(1, 1422, 1437, "Saka's goal"),
+    Pause("half_time", 10),
+    Play(2, 3600, 3616, "Chelsea hit back"),
+    Play(2, 4780, 4793, "The winner"),
     Pause("full_time", 0),
 )
 
@@ -117,23 +118,19 @@ def _play_cues(match: Match, play: Play, at: float, goals: list[MatchEvent],
             cues.append(Cue(when, "demo.goal", {
                 "team": TEAMS[e.team]["code"], "player": display_name(e.player_id),
                 "clock": clock_label(e.half, e.t), "score": _score(goals, e.half, e.t)}))
-    prev_t = play.start_t
-    for c in calls:
+    for c in calls:  # open on the pass, lock on the receiver's action (select_calls: no overlap)
         player = display_name(c.player_id)
-        lock_real = at + (c.lock_t - play.start_t)
-        window = min(CALL_WINDOW_S, c.lock_t - prev_t)
-        cues.append(Cue(lock_real - window, "call.open", {
+        cues.append(Cue(at + (c.open_t - play.start_t), "call.open", {
             "call_id": c.call_id, "player": player, "team": TEAMS[c.team]["code"],
             "prompt": f"{player} on the ball. What's the call?", "options": list(OPTIONS)}))
-        cues.append(Cue(lock_real, "call.lock", {"call_id": c.call_id}))
-        prev_t = c.lock_t
+        cues.append(Cue(at + (c.lock_t - play.start_t), "call.lock", {"call_id": c.call_id}))
     return cues
 
 
 def build_timeline(match: Match, script: tuple = SCRIPT) -> Timeline:
     """Walk ``script`` with a real-time cursor and emit every cue, sorted by (at, rank)."""
     goals = sorted((e for e in match.events if e.type == "goal"), key=lambda e: (e.half, e.t))
-    moments = find_moments(match)
+    moments = find_moments(match.match_id)
     cues: list[Cue] = []
     calls: dict[str, Call] = {}
     cursor, first, last = 0.0, True, (1, 0.0)

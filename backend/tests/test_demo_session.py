@@ -100,12 +100,20 @@ def test_plays_to_full_time_with_results():
     msgs = run_session(session, on_open=lambda cid: session.answer(cid, "SHOOT"))
     assert msgs[0]["type"] == "demo.session" and msgs[-1]["type"] == "demo.full_time"
     res = results(msgs)
-    assert ANSWERS == ["DRIBBLE", "DRIBBLE", "PASS", "SHOOT", "PASS", "SHOOT", "SHOOT"]
-    assert len(res) == 7 and sum(r["correct"] for r in res) == 3
-    # correct at calls 4, 6, 7; streak peaks at 2, so no bonus
-    assert res[-1]["total"] == 7 * 10 + 3 * 100 == 370 == session.total
+    assert ANSWERS == ["PASS", "DRIBBLE", "SHOOT", "SHOOT", "PASS", "SHOOT"]
+    assert len(res) == 6 and sum(r["correct"] for r in res) == 3
+    # correct at calls 3, 4, 6; streak peaks at 2, so no bonus
+    assert res[-1]["total"] == 6 * 10 + 3 * 100 == 360 == session.total
     assert [r["answer"] for r in res] == ANSWERS and all(r["pick"] == "SHOOT" for r in res)
-    assert session.streak == 2 and session.open_call is None
+    assert session.streak == 1 and session.open_call is None
+
+
+def test_always_pass_scores_less_than_always_shoot():
+    session = DemoSession(TL, "ARS")
+    res = results(run_session(session, on_open=lambda cid: session.answer(cid, "PASS")))
+    # correct at calls 1 and 5 only
+    assert [r["correct"] for r in res] == [True, False, False, False, True, False]
+    assert res[-1]["total"] == 6 * 10 + 2 * 100 == 260 == session.total
 
 
 def test_session_message_and_lock_pairs():
@@ -119,7 +127,7 @@ def test_session_message_and_lock_pairs():
         if t == "call.locked":
             assert types[i + 1] == "call.result"
             assert msgs[i + 1]["data"]["call_id"] == msgs[i]["data"]["call_id"]
-    assert types.count("call.locked") == 7 and types.count("call.open") == 7
+    assert types.count("call.locked") == 6 and types.count("call.open") == 6
 
 
 def test_sleeps_sum_to_duration_and_skip_zero():
@@ -144,10 +152,10 @@ def test_double_answer_counts_once():
         second.append(session.answer(cid, TL.calls[cid].answer))
 
     res = results(run_session(session, on_open=on_open))
-    assert second == [False] * 7
+    assert second == [False] * 6
     assert all(r["correct"] for r in res)
-    # 7 correct in a row: 7 * 110 + streak bonus 50 * (1 + 2 + 3 + 4 + 5)
-    assert session.total == 7 * 110 + 50 * 15
+    # 6 correct in a row: 6 * 110 + streak bonus 50 * (1 + 2 + 3 + 4); beats always-SHOOT / PASS
+    assert session.total == 6 * 110 + 50 * 10 == 1160 > 360 > 260
 
 
 def test_answer_after_lock_ignored():
@@ -158,7 +166,7 @@ def test_answer_after_lock_ignored():
         late.append(session.answer(cid, TL.calls[cid].answer))
 
     res = results(run_session(session, on_lock=on_lock))
-    assert late == [False] * 7
+    assert late == [False] * 6
     assert all(r["too_quick"] and r["pick"] is None for r in res) and session.total == 0
 
 
@@ -171,7 +179,7 @@ def test_answer_rejects_unknown_call_and_bad_pick():
                      session.answer(cid, ["PASS"]), session.answer(None, None)])
 
     run_session(session, on_open=on_open)
-    assert seen == [False] * 28 and session.total == 0
+    assert seen == [False] * 24 and session.total == 0
 
 
 # --- /demo/ws ----------------------------------------------------------------
@@ -184,7 +192,7 @@ def test_no_answers_reaches_full_time(client):
     assert msgs[0]["type"] == "demo.session" and msgs[0]["data"]["you"] == {"team": "CHE"}
     assert msgs[-1]["type"] == "demo.full_time" and code == 1000
     res = results(msgs)
-    assert len(res) == 7 and all(r["too_quick"] for r in res) and res[-1]["total"] == 0
+    assert len(res) == 6 and all(r["too_quick"] for r in res) and res[-1]["total"] == 0
 
 
 def test_bad_messages():
