@@ -7,8 +7,9 @@ MOMENTS = find_moments(M)
 
 def test_moment_mix():
     answers = [c.answer for c in MOMENTS]
-    assert len(MOMENTS) == 247
-    assert answers.count("SHOOT") == 24 and answers.count("DRIBBLE") == 32
+    assert len(MOMENTS) == 254
+    assert answers.count("SHOOT") == 25 and answers.count("DRIBBLE") == 32
+    assert answers.count("PASS") == 197
 
 
 def test_saka_goal_call_is_shoot():
