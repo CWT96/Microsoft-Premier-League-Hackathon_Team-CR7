@@ -142,14 +142,16 @@ def test_perfect_judge_is_first_with_all_badges():
     session = DemoSession(TL, "ARS", code="K7QX")
     msgs = run(session, perfect(session))
     ht, ft = of(msgs, "demo.half_time"), of(msgs, "demo.full_time")
-    assert set(ht) == {"score", "seconds", "room", "breakdown", "you", "saved"}
+    assert set(ht) == {"score", "seconds", "room", "breakdown", "you", "saved",
+                       "players"}
     assert ht["you"] == {"rank": 1} and ht["saved"] is False and ht["room"]["code"] == "K7QX"
     assert [p["name"] for p in ht["room"]["players"]] == ["You", "Mia", "Leo", "Dan"]  # Dan 140 < Leo 240 at HT
     assert ht["room"]["players"][0] == {"name": "You", "pts": ht["breakdown"]["calls"]
                                         + ht["breakdown"]["forecasts"], "saved": False, "me": True}
     assert ht["breakdown"]["calls"] == 4 * 110 + 50 * 3
 
-    assert set(ft) == {"score", "seconds", "rows", "badges", "stamp", "room", "total", "saved"}
+    assert set(ft) == {"score", "seconds", "rows", "badges", "stamp", "room", "total", "saved",
+                       "players"}
     assert [r["key"] for r in ft["rows"]] == ["rt", "fc", "pb"]
     assert ft["rows"][0] == {"key": "rt", "label": "REAL-TIME CALLS", "points": 1160,
                              "detail": "6 correct calls · best streak of 6"}
@@ -211,7 +213,7 @@ def test_silent_judge_is_last():
     session = DemoSession(TL, "CHE", code="AB23")
     msgs = run(session)
     ht, ft = of(msgs, "demo.half_time"), of(msgs, "demo.full_time")
-    assert ht["you"] == {"rank": 4} and ht["breakdown"] == {"calls": 0, "forecasts": 0}
+    assert ht["you"] == {"rank": 4} and ht["breakdown"] == {"calls": 0, "forecasts": 0, "players": 0}
     assert ft["badges"] == [] and ft["total"] == 0
     assert ft["stamp"] == "#4 IN ROOM AB23 · TOP 100% TONIGHT"
     assert ft["room"]["players"][-1] == {"name": "You", "pts": 0, "saved": False, "me": True}

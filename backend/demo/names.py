@@ -74,3 +74,23 @@ def clock_label(half: int, t: float) -> str:
     if half == 2 and seconds >= 5400:
         return f"90+{(seconds - 5400) // 60}:{(seconds - 5400) % 60:02d}"
     return f"{seconds // 60:02d}:{seconds % 60:02d}"
+
+
+# Squads the fan can back players from: display code -> (internal code, popular id,
+# [(player id, position, starter)]), XI first then bench, in design order.
+SQUADS: dict[str, tuple[str, str, list[tuple[str, str, bool]]]] = {
+    "ARS": ("NBR", "910109", [
+        ("910101", "GK", True), ("910102", "DEF", True), ("910105", "DEF", True),
+        ("910104", "DEF", True), ("910103", "DEF", True), ("910108", "MID", True),
+        ("910106", "MID", True), ("910110", "MID", True), ("910109", "FWD", True),
+        ("910107", "FWD", True), ("910111", "FWD", True),
+        ("910122", "MID", False), ("910119", "FWD", False), ("910115", "FWD", False),
+        ("910113", "MID", False), ("910120", "DEF", False)]),
+    "CHE": ("CAL", "910210", [
+        ("910201", "GK", True), ("910202", "DEF", True), ("910204", "DEF", True),
+        ("910205", "DEF", True), ("910203", "DEF", True), ("910206", "MID", True),
+        ("910208", "MID", True), ("910210", "MID", True), ("910207", "FWD", True),
+        ("910209", "FWD", True), ("910211", "FWD", True),
+        ("910214", "FWD", False), ("910219", "FWD", False), ("910223", "MID", False),
+        ("910215", "DEF", False)]),
+}

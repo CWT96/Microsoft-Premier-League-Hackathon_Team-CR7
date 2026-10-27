@@ -1,6 +1,8 @@
 """WS /demo/ws: one DemoSession per socket, beside a reader that takes the fan's calls.
 
-Protocol: first message ``start`` {team: ARS|CHE} within 10 s, else close 1008. Then any
+``GET /demo/squads`` gives both squads and the scoring table (``bonus.squads``).
+Protocol: first message ``start`` {team: ARS|CHE, players?: [id, id]} within 10 s, else close
+1008 (bad ``players`` are sanitised, never a close). Then any
 number of ``call.answer`` {call_id, pick} (bad input ignored), ``forecast.pick`` {key, pick}
 and ``forecast.final`` {result, home, away} (each answered with the session's reply; bad shapes
 get ``forecast.rejected`` reason ``bad_pick``) and ``signup`` {email} (``signup.saved`` /
@@ -19,6 +21,7 @@ from typing import Any, Callable
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
 from backend.core.types import Match
+from backend.demo import bonus
 from backend.demo.script import Timeline, build_timeline
 from backend.demo.session import DemoSession, Sleep
 
@@ -76,13 +79,18 @@ def make_demo_router(*, sleep: Sleep = asyncio.sleep, load: Callable[[], Match] 
             cache["tl"] = await asyncio.to_thread(lambda: build_timeline(load()))
         return cache["tl"]
 
-    async def read_start(ws: WebSocket) -> str | None:
-        """Team code from a valid ``start`` within START_TIMEOUT_S, else close 1008."""
+    @router.get("/demo/squads")
+    async def demo_squads() -> dict:
+        return bonus.squads()
+
+    async def read_start(ws: WebSocket) -> tuple[str, list[str]] | None:
+        """(team code, backed player ids) from a valid ``start`` within START_TIMEOUT_S, else
+        close 1008. Bad ``players`` are sanitised to the valid ones (often none)."""
         try:
             first = await asyncio.wait_for(_recv(ws), START_TIMEOUT_S)
             team = first["data"]["team"] if first.get("type") == "start" else None
             if isinstance(team, str) and team in TEAM_CODES:
-                return team
+                return team, bonus.sanitise(team, first["data"].get("players"))
         except WebSocketDisconnect:
             return None
         except (asyncio.TimeoutError, ValueError, KeyError, TypeError, AttributeError):
@@ -91,10 +99,11 @@ def make_demo_router(*, sleep: Sleep = asyncio.sleep, load: Callable[[], Match] 
         return None
 
     async def serve(ws: WebSocket) -> None:
-        team = await read_start(ws)
-        if team is None:
+        start = await read_start(ws)
+        if start is None:
             return
-        session = DemoSession(await timeline(), team)
+        team, players = start
+        session = DemoSession(await timeline(), team, players=players)
 
         async def send(env: dict) -> None:
             await ws.send_json(env)

@@ -4,7 +4,8 @@
 ``call.lock`` becomes ``call.locked`` + ``call.result``. ``answer`` takes one pick per open call.
 Forecasts: ``forecast_pick`` / ``forecast_final`` return the reply to send; ``run`` settles due
 windows (and the final) just before the ``demo.clock`` / ``demo.half_time`` / ``demo.full_time``
-cue that ends them. Calls and forecasts share one ``total``. ``demo.half_time`` / ``demo.full_time``
+cue that ends them. Calls, forecasts and the player bonus (``bonus.py``: first half added
+before ``demo.half_time``, the rest before ``demo.full_time``) share one ``total``. ``demo.half_time`` / ``demo.full_time``
 carry the room board, breakdown, badges and stamp (``room.py``); ``signup`` adds +500 once.
 """
 
@@ -17,7 +18,7 @@ from typing import Any, Awaitable, Callable
 from backend.demo.forecasts import (EXACT_POINTS, FINAL_OPTIONS, FINAL_POINTS, WINDOWS,
                                     ForecastDef, outcome, result_of, score_final, score_window,
                                     window)
-from backend.demo import room
+from backend.demo import bonus, room
 from backend.demo.names import TEAMS, clock_label
 from backend.demo.points import score_call
 from backend.demo.script import OPTIONS, Timeline
@@ -71,9 +72,13 @@ FORECASTS_INFO = {
 class DemoSession:
     """State of one demo: running total, streak, the open call and the picks so far."""
 
-    def __init__(self, timeline: Timeline, team: str, code: str | None = None) -> None:
+    def __init__(self, timeline: Timeline, team: str, code: str | None = None,
+                 players: Any = None, stats: bonus.Stats | None = None) -> None:
         self.timeline = timeline
         self.team = team  # display code, ARS or CHE
+        self.players = bonus.sanitise(team, players)  # backed player ids, at most 2
+        self._stats = stats
+        self.bonus_points = 0  # player bonus added to the total so far
         self.code = code or room.room_code()  # this fan's demo room
         self.total = 0
         self.streak = 0
@@ -139,12 +144,31 @@ class DemoSession:
         self.total += room.SIGNUP_BONUS
         return _env("signup.saved", {"bonus": room.SIGNUP_BONUS, "total": self.total})
 
+    def _bonus(self, halves: tuple[int, ...], clean_sheet: bool) -> list[dict]:
+        """Bonus card of each backed player over ``halves`` (empty if none backed)."""
+        if not self.players:
+            return []
+        st = self._stats = self._stats or bonus.match_stats()
+        return [bonus.player_bonus(pid, halves, clean_sheet, st) for pid in self.players]
+
+    def _add_bonus(self, upto: int) -> None:
+        """Bring the bonus in the total up to the players' points so far; each point added once.
+
+        ``upto`` 1: first-half stats (half time); 2: the whole match plus clean sheet (full time).
+        """
+        cards = self._bonus((1,) if upto == 1 else (1, 2), upto == 2)
+        due = sum(c["points"] for c in cards) - self.bonus_points
+        self.total += due
+        self.bonus_points += due
+
     def _with_room(self, cue_type: str, data: dict) -> dict:
         """Cue data plus the room / result fields of half time and full time (copy, not shared)."""
         if cue_type == "demo.half_time":
             players = room.board(self.total, self.saved, room.friend_totals(self.timeline), "ht")
             return {**data, "room": {"code": self.code, "players": players},
-                    "breakdown": {"calls": self.call_points, "forecasts": self.forecast_points},
+                    "breakdown": {"calls": self.call_points, "forecasts": self.forecast_points,
+                                  "players": self.bonus_points},
+                    "players": self._bonus((1,), False),
                     "you": {"rank": room.rank_of(players)}, "saved": self.saved}
         if cue_type == "demo.full_time":
             players = room.board(self.total, self.saved, room.friend_totals(self.timeline), "ft")
@@ -152,16 +176,19 @@ class DemoSession:
             pct = room.top_pct(self.total, room.crowd_totals(self.timeline))
             fc = f"{self.window_hits} forecasts hit" + (
                 " · full-time result nailed" if self.final_right else "")
+            cards = self._bonus((1, 2), True)
+            pb = (f"Earned by the {len(cards)} player(s) you backed" if cards
+                  else "Back players next match")
             rows = [
                 {"key": "rt", "label": "REAL-TIME CALLS", "points": self.call_points,
                  "detail": f"{self.correct_calls} correct calls · best streak of {self.best_streak}"},
                 {"key": "fc", "label": "FORECAST", "detail": fc, "points": self.forecast_points},
-                {"key": "pb", "label": "PLAYER BONUS", "detail": "Back players next match",
-                 "points": 0}]
+                {"key": "pb", "label": "PLAYER BONUS", "detail": pb,
+                 "points": self.bonus_points}]
             return {**data, "rows": rows,
                     "badges": room.badges(self.final_right, self.best_streak, self.good_eye),
                     "stamp": room.stamp(rank, self.code, pct),
-                    "room": {"code": self.code, "players": players},
+                    "room": {"code": self.code, "players": players}, "players": cards,
                     "total": self.total, "saved": self.saved}
         return data
 
@@ -213,14 +240,17 @@ class DemoSession:
             self._live, self._score = data, list(data["score"])
         elif cue_type == "demo.half_time":
             await self._settle(send, lambda p: p.half == 1)
+            self._add_bonus(1)
         elif cue_type == "demo.full_time":
             await self._settle(send, lambda p: True)
             await self._settle_final(send)
+            self._add_bonus(2)
 
     async def run(self, send: Send, sleep: Sleep) -> None:
         """Send ``demo.session`` then every cue at its time, ending with ``demo.full_time``."""
         await send(_env("demo.session", {"teams": {"home": TEAMS["NBR"], "away": TEAMS["CAL"]},
-                                         "you": {"team": self.team},
+                                         "you": {"team": self.team,
+                                                 "players": [bonus.card(p) for p in self.players]},
                                          "duration": self.timeline.duration,
                                          "ai_lines": self.timeline.ai_lines,
                                          "forecasts": FORECASTS_INFO}))

@@ -126,7 +126,7 @@ def test_always_pass_scores_less_than_always_shoot():
 def test_session_message_and_lock_pairs():
     msgs = run_session(DemoSession(TL, "CHE"))
     first = msgs[0]["data"]
-    assert first["you"] == {"team": "CHE"} and first["duration"] == TL.duration
+    assert first["you"] == {"team": "CHE", "players": []} and first["duration"] == TL.duration
     assert first["teams"] == {"home": TEAMS["NBR"], "away": TEAMS["CAL"]}
     types = [m["type"] for m in msgs]
     assert "call.lock" not in types
@@ -196,7 +196,7 @@ def test_no_answers_reaches_full_time(client):
     with client.websocket_connect("/demo/ws") as ws:
         ws.send_json({"type": "start", "data": {"team": "CHE"}})
         msgs, code = drain(ws)
-    assert msgs[0]["type"] == "demo.session" and msgs[0]["data"]["you"] == {"team": "CHE"}
+    assert msgs[0]["type"] == "demo.session" and msgs[0]["data"]["you"] == {"team": "CHE", "players": []}
     assert msgs[-1]["type"] == "demo.full_time" and code == 1000
     res = results(msgs)
     assert len(res) == 6 and all(r["too_quick"] for r in res) and res[-1]["total"] == 0
