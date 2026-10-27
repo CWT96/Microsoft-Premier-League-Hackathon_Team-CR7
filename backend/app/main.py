@@ -51,6 +51,7 @@ from pydantic import BaseModel, Field, ValidationError, field_validator
 from backend.agents import llm
 from backend.app.replay import APP_SEED, MatchBundle, Room, RoomFull, Sleep, build_bundle
 from backend.core.constants import DEFAULT_MATCH_ID
+from backend.demo.router import make_demo_router
 from backend.scoring.scoring import tier_for
 from backend.social.funnel import ops_funnel
 
@@ -574,6 +575,7 @@ def create_app(source: MatchSource | None = None, *, sleep: Sleep = asyncio.slee
             except asyncio.CancelledError:
                 pass
 
+    app.include_router(make_demo_router(sleep=sleep))
     return app
 
 
