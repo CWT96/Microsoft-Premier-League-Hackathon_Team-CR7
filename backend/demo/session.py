@@ -4,7 +4,8 @@
 ``call.lock`` becomes ``call.locked`` + ``call.result``. ``answer`` takes one pick per open call.
 Forecasts: ``forecast_pick`` / ``forecast_final`` return the reply to send; ``run`` settles due
 windows (and the final) just before the ``demo.clock`` / ``demo.half_time`` / ``demo.full_time``
-cue that ends them. Calls and forecasts share one ``total``.
+cue that ends them. Calls and forecasts share one ``total``. ``demo.half_time`` / ``demo.full_time``
+carry the room board, breakdown, badges and stamp (``room.py``); ``signup`` adds +500 once.
 """
 
 from __future__ import annotations
@@ -16,6 +17,7 @@ from typing import Any, Awaitable, Callable
 from backend.demo.forecasts import (EXACT_POINTS, FINAL_OPTIONS, FINAL_POINTS, WINDOWS,
                                     ForecastDef, outcome, result_of, score_final, score_window,
                                     window)
+from backend.demo import room
 from backend.demo.names import TEAMS, clock_label
 from backend.demo.points import score_call
 from backend.demo.script import OPTIONS, Timeline
@@ -69,11 +71,20 @@ FORECASTS_INFO = {
 class DemoSession:
     """State of one demo: running total, streak, the open call and the picks so far."""
 
-    def __init__(self, timeline: Timeline, team: str) -> None:
+    def __init__(self, timeline: Timeline, team: str, code: str | None = None) -> None:
         self.timeline = timeline
         self.team = team  # display code, ARS or CHE
+        self.code = code or room.room_code()  # this fan's demo room
         self.total = 0
         self.streak = 0
+        self.best_streak = 0
+        self.call_points = 0
+        self.forecast_points = 0  # windows and the final; the signup bonus is in neither
+        self.correct_calls = 0
+        self.window_hits = 0
+        self.final_right = False
+        self.good_eye: str | None = None  # scorer of the first goal the fan called
+        self.saved = False  # signed up (the email itself is never kept)
         self.open_call: str | None = None
         self._picks: dict[str, str] = {}
         self._live: dict | None = None  # latest demo.clock data of the running Play, else None
@@ -118,6 +129,42 @@ class DemoSession:
         self._final = {"result": result, "home": home, "away": away}
         return _env("forecast.final_saved", dict(self._final))
 
+    def signup(self, email: Any) -> dict:
+        """Save progress once: +500. The email is only validated, never kept or echoed."""
+        if self.saved:
+            return _env("signup.rejected", {"reason": "already"})
+        if not room.valid_email(email):
+            return _env("signup.rejected", {"reason": "bad_email"})
+        self.saved = True
+        self.total += room.SIGNUP_BONUS
+        return _env("signup.saved", {"bonus": room.SIGNUP_BONUS, "total": self.total})
+
+    def _with_room(self, cue_type: str, data: dict) -> dict:
+        """Cue data plus the room / result fields of half time and full time (copy, not shared)."""
+        if cue_type == "demo.half_time":
+            players = room.board(self.total, self.saved, room.friend_totals(self.timeline), "ht")
+            return {**data, "room": {"code": self.code, "players": players},
+                    "breakdown": {"calls": self.call_points, "forecasts": self.forecast_points},
+                    "you": {"rank": room.rank_of(players)}, "saved": self.saved}
+        if cue_type == "demo.full_time":
+            players = room.board(self.total, self.saved, room.friend_totals(self.timeline), "ft")
+            rank = room.rank_of(players)
+            pct = room.top_pct(self.total, room.crowd_totals(self.timeline))
+            fc = f"{self.window_hits} forecasts hit" + (
+                " · full-time result nailed" if self.final_right else "")
+            rows = [
+                {"key": "rt", "label": "REAL-TIME CALLS", "points": self.call_points,
+                 "detail": f"{self.correct_calls} correct calls · best streak of {self.best_streak}"},
+                {"key": "fc", "label": "FORECAST", "detail": fc, "points": self.forecast_points},
+                {"key": "pb", "label": "PLAYER BONUS", "detail": "Back players next match",
+                 "points": 0}]
+            return {**data, "rows": rows,
+                    "badges": room.badges(self.final_right, self.best_streak, self.good_eye),
+                    "stamp": room.stamp(rank, self.code, pct),
+                    "room": {"code": self.code, "players": players},
+                    "total": self.total, "saved": self.saved}
+        return data
+
     async def _settle(self, send: Send, due: Callable[[_Pending], bool]) -> None:
         """Score and send ``forecast.result`` for every pending window that ``due`` accepts."""
         for key, p in [(k, p) for k, p in self._pending.items() if due(p)]:
@@ -125,6 +172,8 @@ class DemoSession:
             got = outcome(self.timeline.events, key, p.half, p.t0, p.t1)
             points = score_window(p.defn, p.pick, got)
             self.total += points
+            self.forecast_points += points
+            self.window_hits += points > 0
             text = ("Forecast hit" if points else
                     "Not this time" if got != "none" else
                     "Even split. No points lost." if key == "f5" else
@@ -141,6 +190,8 @@ class DemoSession:
         f = self._final
         result_points, exact_points = score_final(f["result"], f["home"], f["away"], final)
         self.total += result_points + exact_points
+        self.forecast_points += result_points + exact_points
+        self.final_right = result_points > 0
         await send(_env("forecast.final_result", {
             **f, "final": list(final), "result_points": result_points,
             "exact_points": exact_points, "points": result_points + exact_points,
@@ -185,7 +236,7 @@ class DemoSession:
             if cue.type == "call.open":
                 self.open_call = cue.data["call_id"]
             await self._before(cue.type, cue.data, send)
-            await send(_env(cue.type, cue.data))
+            await send(_env(cue.type, self._with_room(cue.type, cue.data)))
 
     async def _lock(self, call_id: str, send: Send) -> None:
         """Close the call, score the pick and send ``call.locked`` + ``call.result``."""
@@ -196,7 +247,13 @@ class DemoSession:
         pick = self._picks.get(call_id)
         score = score_call(pick, answer, self.streak)
         self.total += score.points
+        self.call_points += score.points
         self.streak = score.streak
+        self.best_streak = max(self.best_streak, score.streak)
+        if score.correct:
+            self.correct_calls += 1
+            if self.good_eye is None:
+                self.good_eye = room.goal_scorer(self.timeline.calls[call_id], self.timeline)
         await send(_env("call.locked", {"call_id": call_id}))
         await send(_env("call.result", {
             "call_id": call_id, "answer": answer, "pick": pick, "too_quick": score.too_quick,

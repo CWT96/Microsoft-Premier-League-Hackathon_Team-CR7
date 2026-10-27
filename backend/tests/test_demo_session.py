@@ -92,6 +92,13 @@ def client():
 START_ARS = {"type": "start", "data": {"team": "ARS"}}
 
 
+@pytest.fixture(autouse=True)
+def short_post_match(monkeypatch):
+    """The socket stays open POST_MATCH_S after full time; keep drains to full time quick."""
+    import backend.demo.router as router_module
+    monkeypatch.setattr(router_module, "POST_MATCH_S", 0.05)
+
+
 # --- DemoSession -------------------------------------------------------------
 
 
