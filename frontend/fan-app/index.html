@@ -56,6 +56,20 @@
           <button class="team-btn" data-team="CHE" aria-pressed="false"><span class="crest-sm"><img src="assets/che.svg" alt=""></span>Chelsea</button>
         </div>
       </div>
+      <!-- Players to back (design Pick.dc.html); stays hidden if GET /demo/squads fails -->
+      <div id="pp" class="pp" hidden>
+        <div class="row-between"><div class="label">BACK YOUR FAVOURITES</div><div id="pp-count" class="pp-count">0/2</div></div>
+        <div id="pp-intro" class="pp-box">
+          <div class="pp-intro-title">Back a player. <span class="lilac">Earn while you watch.</span></div>
+          <div class="pp-intro-line">Pick up to 2 players you like. Every goal, save or tackle they make earns you bonus points. No predictions, just cheer.</div>
+          <div id="pp-pos" class="pp-grid"></div>
+          <button id="pp-quick" type="button" class="pp-quick"><span class="muted">Most backed:</span> <b id="pp-quick-name"></b> <span class="lilac">+ Back</span></button>
+        </div>
+        <div id="pp-cards" class="pp-cards"></div>
+        <div id="pp-more" class="small muted" hidden>You can back one more player (optional).</div>
+        <div class="row-between"><b id="pp-squad-title" class="pp-squad-title"></b><span class="tiny muted">Official team sheet</span></div>
+        <div id="pp-groups" class="pp-groups"></div>
+      </div>
     </div>
     <div class="pick-foot">
       <div id="pick-summary" class="muted small center">Tap the team you want to back.</div>
@@ -208,6 +222,7 @@
           <div class="perk"><svg viewBox="0 0 24 24" style="stroke:#C9A2FF" aria-hidden="true"><rect x="3" y="8" width="18" height="13" rx="2"/><path d="M12 8v13M3 12h18M12 8c-2-4-6-4-6-1.5S10 8 12 8c2 0 6 1 6-1.5S14 4 12 8z"/></svg><span>+500 welcome bonus</span></div>
         </div>
         <div id="sheet-fc" class="label-sm hl rise" style="--d:790ms"></div>
+        <div id="sheet-pb" class="sheet-pb label-sm rise" style="--d:820ms" hidden></div>
         <div class="field rise" style="--d:840ms">
           <label for="email">Email</label>
           <input id="email" type="email" autocomplete="email" maxlength="254" placeholder="you@example.com">
@@ -270,6 +285,7 @@
               <span class="ft-val">—</span>
             </div>
             <div class="ft-bar"><i></i></div>
+            <div id="ft-players" class="ft-players" hidden></div>
           </div>
           <div class="ft-row" data-key="wb" style="--c:#00FF85" hidden>
             <div class="ft-row-top">

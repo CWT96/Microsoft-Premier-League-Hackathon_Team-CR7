@@ -17,6 +17,9 @@ const SIGNUP_WAIT_MS = 6000; // no signup reply by then = let the user try again
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 let team = null;          // ARS or CHE, picked on screen 2
+let backed = [];          // up to 2 player ids from GET /demo/squads; kept for Play again
+let squads = null;        // GET /demo/squads reply; null = not loaded (team-only pick)
+let squadsBusy = false;
 let ws = null;            // current socket; messages from older sockets are ignored
 let s = null;             // live state of the current run
 const timers = {};
@@ -41,20 +44,138 @@ function scoreText(score) {
 
 // ............................................................ screens 1 and 2
 
-$("go-pick").onclick = () => show("pick");
+$("go-pick").onclick = () => { show("pick"); loadSquads(); };
 $("back").onclick = () => show("landing");
 document.querySelectorAll(".team-btn").forEach((btn) => {
   btn.onclick = () => {
+    if (team !== btn.dataset.team) backed = []; // players belong to one side
     team = btn.dataset.team;
     document.querySelectorAll(".team-btn").forEach((b) => {
       b.setAttribute("aria-pressed", String(b === btn));
     });
-    $("pick-summary").textContent = "You're backing " + TEAM_NAMES[team] + ". Starts as soon as you tap.";
     $("start").disabled = false;
+    renderPick();
   };
 });
 $("start").onclick = () => { if (team) startRun(); };
 $("again").onclick = $("ft-again").onclick = () => startRun();
+
+// ............................................................ players (design Pick.dc.html)
+
+const POS_LABEL = { GK: "Goalkeeper", DEF: "Defender", MID: "Midfielder", FWD: "Forward" };
+
+// The squads never block the pick: if this fails, the team-only pick still starts.
+function loadSquads() {
+  if (squads || squadsBusy || typeof fetch !== "function") return;
+  squadsBusy = true;
+  fetch("/demo/squads")
+    .then((r) => (r.ok ? r.json() : null))
+    .then((d) => { if (d && d.teams && typeof d.teams === "object") squads = d; })
+    .catch(() => { /* team-only pick */ })
+    .then(() => { squadsBusy = false; renderPick(); });
+}
+
+function posLabel(pos) {
+  const sc = squads && squads.scoring && squads.scoring[pos];
+  return (sc && typeof sc.label === "string" && sc.label) || POS_LABEL[pos] || "";
+}
+
+function squadOf(code) {
+  const t = squads && squads.teams && squads.teams[code];
+  if (!t || !Array.isArray(t.players)) return [];
+  return t.players.filter((p) => p && p.id != null && typeof p.name === "string");
+}
+
+const sameId = (a, b) => String(a) === String(b);
+const isBacked = (id) => backed.some((b) => sameId(b, id));
+
+function toggleBacked(id) {
+  if (isBacked(id)) backed = backed.filter((b) => !sameId(b, id));
+  else if (backed.length < 2) backed.push(id);
+  renderPick();
+}
+
+function backedPlayers() {
+  const list = squadOf(team);
+  return backed.map((id) => list.find((p) => sameId(p.id, id))).filter(Boolean);
+}
+
+function numBadge(cls, num) {
+  return el("span", cls, num == null ? "" : String(num));
+}
+
+function renderPick() {
+  if (!team) return;
+  const list = squadOf(team), chosen = backedPlayers();
+  backed = chosen.map((p) => p.id); // drop ids the squad does not know
+  const names = chosen.map((p) => p.name);
+  $("pick-summary").textContent = list.length
+    ? "Playing as " + TEAM_NAMES[team] + " · " + (names.length ? "backing " + names.join(" & ") : "no players backed yet")
+    : "You're backing " + TEAM_NAMES[team] + ". Starts as soon as you tap.";
+  $("pp").hidden = !list.length;
+  if (!list.length) return;
+  $("pp-count").textContent = chosen.length + "/2";
+  $("pp-intro").hidden = chosen.length > 0;
+  $("pp-more").hidden = chosen.length !== 1;
+  const scoring = squads.scoring || {};
+  $("pp-pos").textContent = "";
+  ["GK", "DEF", "MID", "FWD"].forEach((k) => {
+    const sc = scoring[k];
+    if (!sc) return;
+    const box = el("div", "pp-pos");
+    box.append(el("b", "", posLabel(k).toUpperCase()), el("span", "", "Earns from " + String(sc.earns || "")));
+    $("pp-pos").append(box);
+  });
+  const popId = squads.teams[team].popular;
+  const pop = list.find((p) => sameId(p.id, popId));
+  $("pp-quick").hidden = !pop;
+  if (pop) {
+    $("pp-quick-name").textContent = (pop.num != null ? "#" + pop.num + " " : "") + pop.name;
+    $("pp-quick").onclick = () => toggleBacked(pop.id);
+  }
+  $("pp-cards").textContent = "";
+  chosen.forEach((p) => {
+    const card = el("div", "pp-card");
+    const head = el("div", "pp-card-head"), who = el("div", "pp-who");
+    who.append(el("b", "", p.name), el("span", "", posLabel(p.pos) + " · how " + p.name + " earns for you"));
+    head.append(numBadge("pp-num on", p.num), who);
+    const rules = el("div", "pp-rules");
+    const sc = scoring[p.pos];
+    (sc && Array.isArray(sc.rules) ? sc.rules : []).forEach((r) => {
+      if (!Array.isArray(r)) return;
+      const row = el("div", "pp-rule");
+      row.append(el("span", "", String(r[0])), el("b", "", "+" + fmt(r[1])));
+      rules.append(row);
+    });
+    card.append(head, rules);
+    $("pp-cards").append(card);
+  });
+  $("pp-squad-title").textContent = TEAM_NAMES[team] + " · matchday squad";
+  $("pp-groups").textContent = "";
+  [["STARTING XI", true], ["BENCH", false]].forEach(([label, starter]) => {
+    const group = list.filter((p) => Boolean(p.starter) === starter);
+    if (!group.length) return;
+    $("pp-groups").append(el("div", "pp-group", label));
+    group.forEach((p) => {
+      const on = isBacked(p.id);
+      const b = el("button", "pp-player" + (on ? " on" : ""));
+      b.type = "button";
+      b.disabled = !on && chosen.length >= 2;
+      b.setAttribute("aria-pressed", String(on));
+      const who = el("span", "pp-who");
+      const sc = scoring[p.pos];
+      who.append(el("b", "", p.name), el("span", "", posLabel(p.pos) + (sc && sc.earns ? " · earns from " + sc.earns : "")));
+      b.append(numBadge("pp-num" + (on ? " on" : ""), p.num), who, el("span", "pp-check", on ? "✓" : ""));
+      b.onclick = () => toggleBacked(p.id);
+      $("pp-groups").append(b);
+    });
+  });
+}
+
+// HUD line under the total: "Backing Saka & Rice", else "Backing Arsenal".
+function setBacking(names) {
+  $("backing").textContent = "Backing " + (names.length ? names.join(" & ") : TEAM_NAMES[team] || "");
+}
 
 // ............................................................ socket
 
@@ -78,7 +199,7 @@ function startRun() {
   const url = (location.protocol === "https:" ? "wss://" : "ws://") + location.host + "/demo/ws";
   const sock = new WebSocket(url);
   ws = sock;
-  sock.onopen = () => send({ type: "start", data: { team: team } });
+  sock.onopen = () => send({ type: "start", data: { team: team, players: backed.slice(0, 2) } });
   later("silence", SILENCE_MS, () => dropSocket(sock));
   sock.onmessage = (ev) => {
     if (sock !== ws) return;
@@ -139,7 +260,7 @@ function resetLiveUi() {
   $("clock").textContent = "KICK-OFF";
   $("score").textContent = "0 – 0";
   $("total").textContent = "0";
-  $("backing").textContent = "Backing " + TEAM_NAMES[team];
+  setBacking(backedPlayers().map((p) => p.name));
   ["gain", "jump", "goal", "pop", "modal", "ai-caption", "sheet", "sheet-dim", "save-chip", "ft"].forEach((id) => { $(id).hidden = true; });
   $("email").value = "";
   $("done-line").textContent = "";
@@ -158,8 +279,9 @@ function resetLiveUi() {
 }
 
 function onSession(d) {
-  const you = d.you && TEAM_NAMES[d.you.team];
-  if (you) $("backing").textContent = "Backing " + you;
+  if (d.you && Array.isArray(d.you.players)) { // what the server kept is what scores
+    setBacking(d.you.players.filter((p) => p && typeof p.name === "string").map((p) => p.name));
+  }
   $("ai-caption").hidden = d.ai_lines !== true;
   buildForecasts(d.forecasts);
 }
@@ -801,6 +923,10 @@ function openSheet(kind) {
   $("sheet-fc").textContent = (typeof b.calls === "number" ? "Calls: +" + fmt(b.calls) + " · " : "")
     + "Forecasts: +" + fmt(typeof b.forecasts === "number" ? b.forecasts : s.fc.points);
   $("sheet-fc").hidden = !half;
+  const pb = half ? playerList(d.players) : [];
+  $("sheet-pb").textContent = "";
+  pb.forEach((p) => $("sheet-pb").append(el("div", "", p.name + "'s bonus +" + fmt(p.points))));
+  $("sheet-pb").hidden = !pb.length;
   $("ht-pick").hidden = !half || s.fc.final.locked; // the full-time pick stays open until half 2
   $("save-btn").textContent = half ? "SAVE MY PROGRESS" : "SAVE MY POINTS";
   $("sheet-later").textContent = kind === "full" ? "Not now" : "Maybe later";
@@ -936,6 +1062,7 @@ function onFullTime(d) {
     node.querySelector(".ft-val").textContent = "—";
     node.querySelector(".ft-bar i").style.width = "0";
   });
+  buildFtPlayers(d.players);
   const sum = rows.reduce((a, r) => a + r.points, 0);
   s.ft = { stage: "idle", rows: rows, raf: 0, total: typeof d.total === "number" ? d.total : sum, me: null };
   addBonusRow(s.ft);
@@ -947,6 +1074,40 @@ function onFullTime(d) {
   $("ft-scroll").scrollTop = 0;
   setFtStage("idle");
   $("ft").hidden = false;
+}
+
+function playerList(list) {
+  return (Array.isArray(list) ? list : []).filter((p) => p && typeof p.name === "string");
+}
+
+// "Goal +300 · 2 shots on target +100" (design Result.dc.html)
+const PLURAL = { "Goal": "goals", "Assist": "assists", "Shot on target": "shots on target", "Key pass": "key passes",
+  "Big chance made": "big chances made", "Dribble past": "dribbles past", "Won a foul": "fouls won",
+  "Tackle won": "tackles won", "Interception": "interceptions", "Clearance": "clearances", "Blocked shot": "blocked shots",
+  "Save": "saves", "Penalty save": "penalty saves", "Claimed cross": "claimed crosses", "Clean sheet": "clean sheets" };
+
+function statsText(stats) {
+  const parts = (Array.isArray(stats) ? stats : []).filter((x) => x && typeof x.what === "string" && Number(x.count) > 0)
+    .map((x) => {
+      const n = Number(x.count);
+      const what = n === 1 ? x.what : n + " " + (PLURAL[x.what] || x.what + " ×");
+      return what + " +" + fmt(x.pts);
+    });
+  return parts.length ? parts.join(" · ") : "No bonus actions this match";
+}
+
+// Lines under the PLAYER BONUS row; they show once the row lands.
+function buildFtPlayers(list) {
+  const box = $("ft-players");
+  box.textContent = "";
+  playerList(list).forEach((p) => {
+    const row = el("div", "ft-player"), text = el("div", "ft-player-text"), name = el("b", "", p.name + " ");
+    name.append(el("span", "", "· " + posLabel(p.pos)));
+    text.append(name, el("span", "", statsText(p.stats)));
+    row.append(numBadge("ft-player-num", p.num), text, el("span", "ft-player-pts", "+" + fmt(p.points)));
+    box.append(row);
+  });
+  box.hidden = !box.children.length;
 }
 
 function buildBadges(badges) {
