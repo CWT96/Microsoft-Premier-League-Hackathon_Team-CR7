@@ -137,6 +137,25 @@ def friend_totals(timeline: Timeline) -> list[dict]:
     return rows
 
 
+def friend_progress(timeline: Timeline) -> list[dict]:
+    """[{name, saved, calls: {call_id: running call points}}]: the friends' totals during play.
+
+    Same picks as ``friend_totals``; forecasts are left out (they land in the half-time and
+    full-time boards), so the app can rank the fan in the room after every call.
+    """
+    rows = []
+    for f in FRIENDS:
+        run = streak = 0
+        after: dict[str, int] = {}
+        for c in _ordered_calls(timeline):
+            pick = _pick(random.Random(f"{f.name}-{c.call_id}"), f.accuracy, c.answer, OPTIONS)
+            s = score_call(pick, c.answer, streak)
+            streak, run = s.streak, run + s.points
+            after[c.call_id] = run
+        rows.append({"name": f.name, "saved": f.saved, "calls": after})
+    return rows
+
+
 _CROWD_CACHE: dict[int, tuple[Timeline, list[int]]] = {}
 
 

@@ -99,6 +99,23 @@ def test_f15_one_pending_window():
     assert len(room.play_starts(TL)) == 5
 
 
+def test_friend_progress_matches_the_call_part_of_the_totals():
+    prog = room.friend_progress(TL)
+    assert [f["name"] for f in prog] == ["Mia", "Dan", "Leo"]
+    order = [c.call_id for c in sorted(TL.calls.values(), key=lambda c: (c.half, c.open_t))]
+    for f in prog:
+        assert list(f["calls"]) == order
+        pts = list(f["calls"].values())
+        assert pts == sorted(pts) and pts[0] in (10, 110)  # every friend answers every call
+
+
+def test_session_message_has_the_room():
+    session = DemoSession(TL, "ARS", code="K7QX")
+    data = run(session)[0]["data"]
+    assert data["room"]["code"] == "K7QX"
+    assert data["room"]["friends"] == room.friend_progress(TL)
+
+
 def test_friend_pick_rule():
     call = next(iter(TL.calls.values()))
     rng = random.Random(f"Mia-{call.call_id}")

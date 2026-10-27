@@ -254,7 +254,9 @@ class DemoSession:
                                                  "players": [bonus.card(p) for p in self.players]},
                                          "duration": self.timeline.duration,
                                          "ai_lines": self.timeline.ai_lines,
-                                         "forecasts": FORECASTS_INFO}))
+                                         "forecasts": FORECASTS_INFO,
+                                         "room": {"code": self.code,
+                                                  "friends": room.friend_progress(self.timeline)}}))
         elapsed = 0.0
         for cue in self.timeline.cues:
             delay = cue.at - elapsed

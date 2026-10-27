@@ -1,6 +1,6 @@
 # contracts/: WebSocket and REST contract
 
-> **Judged demo:** the Matchday Call fan app (served at `/`) uses `WS /demo/ws` and `GET /demo/squads`, documented in [Demo mode](#demo-mode-demows-and-demosquads) below. The original yes/no Room flow (`/ws`, `/api/*`) described in the other sections still exists unchanged.
+> **Judged demo:** The Premier X fan app (served at `/`) uses `WS /demo/ws` and `GET /demo/squads`, documented in [Demo mode](#demo-mode-demows-and-demosquads) below. The original yes/no Room flow (`/ws`, `/api/*`) described in the other sections still exists unchanged.
 
 **Owners:** all three. This folder plus the `*.schema.json` files are the only agreement between `backend/` and `frontend/`. Change them through a PR that is approved by one backend owner **and** the frontend owner. Freeze target: **10/25 morning**. After that, additive changes only (new optional fields).
 
@@ -193,7 +193,7 @@ During the match the UI shows only ✓/coin animations. It never shows point num
 
 ## Demo mode: /demo/ws and /demo/squads
 
-This is the protocol of the judged Matchday Call fan app (`frontend/fan-app/`). Code: `backend/demo/router.py` (socket, close codes) and `backend/demo/session.py` (messages, scoring). One socket plays one fan's ~93 s highlights run of `nbr-cal-seed42`, shown as Arsenal (`ARS`, home) vs Chelsea (`CHE`, away). Every run is private to that socket; there is no shared room state. The examples below are real payloads from a local cache-mode run, trimmed with `…`. They are prose, not schema-validated.
+This is the protocol of the judged fan app, The Premier X (`frontend/premier-x/`, served at `/`; the earlier `frontend/fan-app/` is at `/classic/`). Code: `backend/demo/router.py` (socket, close codes) and `backend/demo/session.py` (messages, scoring). One socket plays one fan's ~93 s highlights run of `nbr-cal-seed42`, shown as Arsenal (`ARS`, home) vs Chelsea (`CHE`, away). Every run is private to that socket; there is no shared room state. The examples below are real payloads from a local cache-mode run, trimmed with `…`. They are prose, not schema-validated.
 
 Endpoint: `GET /demo/ws` (`wss://` on the deployed https site). Same envelope as `/ws`: `{"type": "...", "data": {...}}`. Frames over 4096 bytes or that are not JSON are skipped (before `start` they close the socket with 1008).
 
@@ -228,7 +228,7 @@ Clock values: `t` is match seconds (same convention as `/ws`), `clock` is the di
 
 | `type` | `data` | When |
 |---|---|---|
-| `demo.session` | `{teams: {home, away}, you: {team, players: [card]}, duration, ai_lines, forecasts}` | Once, right after `start`. `ai_lines` is true when every call line came from the LLM cache and passed the guards. `forecasts` lists the three windows and the final-result options with their points. |
+| `demo.session` | `{teams: {home, away}, you: {team, players: [card]}, duration, ai_lines, forecasts, room: {code, friends: [{name, saved, calls: {call_id: points}}]}}` | Once, right after `start`. `ai_lines` is true when every call line came from the LLM cache and passed the guards. `forecasts` lists the three windows and the final-result options with their points. `room.friends` gives each simulated friend's running call points after each call, so the app can rank the fan in the room during play (forecasts land in the half-time and full-time boards). |
 | `demo.jump` | `{title, clock}` | A 2 s title card before each highlight clip (the first one is the intro). |
 | `demo.clock` | `{half, clock, score, t}` | Once per real second while a clip plays. |
 | `demo.event` | `{type, team, player, xy, end_xy}` | Each on-ball event in a clip. `type` ∈ `pass`, `carry`, `shot`, `goal`, `save`, `kickoff`, `dribble`. `xy`/`end_xy` may be null. |
