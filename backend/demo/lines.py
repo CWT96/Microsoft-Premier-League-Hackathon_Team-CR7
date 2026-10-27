@@ -5,8 +5,10 @@ Code decides the facts (player, team, minute, score, zone, answer, outcome); the
 ``llm.safe_text`` / ``llm.number_guard``, falls back to the template. ``build_timeline`` calls
 ``build_lines`` with a cache-only client, so a running demo never touches the network.
 
-Generate the committed cache (controller only, never in tests):
-    LLM_MODE=live GITHUB_TOKEN=$(gh auth token) .venv/bin/python -m backend.demo.lines
+Generate the committed cache (controller only, never in tests). The cache was generated with
+Azure OpenAI; see infra/README.md, "AI call lines (Azure OpenAI)", for the regenerate command
+(AZURE_AI_ENDPOINT / AZURE_AI_API_KEY / AZURE_AI_DEPLOYMENT, LLM_MODE=live). GitHub Models
+(GITHUB_TOKEN) also works when reachable.
 A rejected reply is still cached (llm.py caches any schema-valid reply); ``--drop-rejected``
 deletes those cache files so the next live run asks again.
 """

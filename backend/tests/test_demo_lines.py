@@ -121,6 +121,11 @@ def test_default_timeline_never_goes_live(monkeypatch):
     assert len(tl.lines) == 6
 
 
+def test_committed_cache_is_used_by_default():
+    # pins backend/llm_cache/demo_lines: the default timeline reads it and gets AI lines
+    assert build_timeline(load_match("nbr-cal-seed42")).ai_lines is True
+
+
 def test_cached_lines_are_used(tmp_path):
     client = llm.LLMClient(mode="cache", cache_dir=tmp_path)
     probe = build_timeline(M, client=client)
