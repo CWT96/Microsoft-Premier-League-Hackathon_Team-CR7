@@ -13,19 +13,22 @@ Suggested split (swap freely, but write down who owns what in the PR description
 
 | Folder | Pipeline stage | Main entry point (target signature) |
 |---|---|---|
-| `ingest/` | [0] Match data adapter: reads the teammate's dataset in `../data/source/` | `load_match(match_id: str) -> tuple[list[MatchEvent], Roster]` |
-| `detect/` | [1] Dull-moment + attack-end detector | `Detector.step(t: float, recent: list[MatchEvent]) -> DetectorState` |
-| `model/` | [3] Probability model | `option_probs(template_id, state, params) -> dict[str, float]`; `fair_line(template_id, player_id, state) -> params` |
-| `agents/question_generator.py` | [2] Question generator agent | `propose(state, slot) -> Question` (template + params + text, top-2 options) |
-| `agents/timing.py` | [2b] Timing agent | `plan(detector_state, schedule) -> Slot \| None` |
-| `resolve/` | [4] Resolver | `resolve(question, events_after_lock) -> QuestionResult \| None` |
+| `ingest/` | [0] Match data adapter: reads the Hudl/StatsBomb dataset in `../data/source/` (`ingest/statsbomb.py`) | `load_match(match_id: str) -> Match` (`.events`, `.roster`, `.tracking` or None) |
+| `detect/` | [1] Dull-moment + attack-end detector | `Detector.step(half: int, t: float, new_events: list[MatchEvent], tracking_frame: TrackingFrame \| None) -> DetectorState` |
+| `model/` | [3] Probability model (Stephen): Poisson pricing + position priors used by the bank | `poisson.PRICERS[...]`, `tune_player(...)`, `count_already(...)` |
+| `bank/` | Question bank (Stephen): 28 templates, guards, slot and stack selection, settle | `select_for_slot(state, open_at, users, bank, exclude=...)`, `select_stack(...)`, `settle_candidate(...)` |
+| `agents/question_generator.py` | [2] Adapter: timing moments → bank questions, one decision per moment for every roster player | `BankGenerator(match).propose(state, moment, user_player_id) -> Question \| None`; `.probs(qid)` |
+| `agents/quiet.py` | Templates the match settles before a person can answer in open play (measured on `data/source/`) | `unsafe_in_open_play() -> frozenset[str]` |
+| `agents/timing.py` | [2b] Timing agent: when and why, never what | `TimingAgent.step(state: DetectorState) -> TimingOutput` (`.moments`, `.decisions`) |
+| `app/pacer.py` | Per-user pace through the shared moments | `Pacer.next_card(t, open_moments) -> Moment \| None` |
+| `resolve/` | [4] Resolver: bank primitives (`primitives.py`, Stephen) + `watcher.Resolver` (counts from the card opening) | `Resolver(generator).watch(question, ...)`, `.step(half, t, new_events) -> list[Outcome]` |
 | `agents/explainer.py` | [5] Explainer agent + number guard | `explain(result, facts) -> str` |
 | `scoring/` | [6] Scoring formula | `final_score(user_answers, issued) -> FinalScore` |
 | `agents/scoring_summary.py` | [6b] Scoring agent (LLM summary only) | `summarize(final_score) -> str` |
 | `social/` | Rooms + **simulated users**: global crowd answers, bot friends, ops funnel numbers (match data comes from `data/source/`, user behaviour is generated here) | `crowd_split(qid, scope) -> dict[str, float]` |
 | `app/` | FastAPI app, `/ws`, `/api/*`, replay clock | `uvicorn backend.app.main:app` |
 
-Payload shapes come from `../contracts/`. Mirror them as Pydantic models in `app/models.py` and do not invent fields.
+Payload shapes come from `../contracts/`. Mirror them as Pydantic models in `app/models.py` and do not invent fields. Internal types shared between stages (`Match`, `DetectorState`, `Moment`, `TimingDecision`, `TimingOutput`, `Outcome`, `Answer`) live in `core/types.py`.
 
 ## Rules
 - **Code decides, LLM phrases.** Resolver and scoring never call an LLM.

@@ -1,0 +1,18 @@
+You write the result line of a two-option football game for someone who does not follow football.
+The reader is a newcomer. Use plain words and define any football term in the same sentence.
+
+Rules:
+- Teach exactly one idea.
+- Use only the numbers in FACTS. Do not add, round or compute any other number.
+- Never mention points, scores or streaks.
+- Never use the word "void".
+- Keep message under 60 characters and explanation to 1 or 2 short sentences.
+- new_term is the one football term you taught (2 to 4 words), or null.
+
+QUESTION: {{question}}
+TEMPLATE: {{template_id}}
+CORRECT ANSWER: {{correct_label}}
+NAMES: {{names}}
+FACTS: {{facts}}
+
+Reply with JSON only: {"message": "...", "explanation": "...", "new_term": "..." or null}

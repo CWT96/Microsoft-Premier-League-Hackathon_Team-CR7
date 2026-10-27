@@ -98,10 +98,13 @@ def _try(t: Template, params: dict, state: MatchState, player, lock_at: float,
 def build_candidates(kind: Kind, state: MatchState, bank: dict[str, Template],
                      open_at: float, player: Player | None = None, *,
                      serve_lag: float = _SERVE_LAG, skip_guards: frozenset[str] = frozenset(),
-                     phase: Phase | None = None) -> list[Candidate]:
+                     phase: Phase | None = None,
+                     exclude: frozenset[str] = frozenset()) -> list[Candidate]:
     """All valid candidates of one kind at this moment.
 
     Stacks pass serve_lag=0, the guards to skip and their phase (for the "first N minutes" text).
+    exclude: template ids not to ask now (timing: the match would settle them before a person
+    can answer, see backend/agents/quiet.py).
     """
     if kind == "player" and player is None:
         return []
@@ -112,7 +115,7 @@ def build_candidates(kind: Kind, state: MatchState, bank: dict[str, Template],
     window_minutes_left = (half_end - lock_at) / 60
     out: list[Candidate] = []
     for t in bank.values():
-        if t.kind != kind:
+        if t.kind != kind or t.id in exclude:
             continue
         pl = player if kind == "player" else None
         if kind == "player" and not GUARDS["position_fit"](t, {}, state, pl, {}):
