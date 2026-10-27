@@ -15,6 +15,7 @@ RUN pip install --no-cache-dir -r backend/requirements.txt
 COPY contracts/ contracts/
 COPY data/source/ data/source/
 COPY backend/ backend/
+COPY frontend/fan-app/ frontend/fan-app/
 
 EXPOSE 8000
 

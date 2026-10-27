@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1A0020">
+<title>Matchday Call</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,600;0,700;0,800;1,800&amp;family=Inter:wght@400;500;600;700&amp;display=swap">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<main class="app">
+
+  <!-- 1. Landing -->
+  <section id="landing" class="screen">
+    <header class="top"><div class="brand">MATCHDAY <span class="hl">CALL</span></div></header>
+    <div class="card match-card">
+      <div class="row-between">
+        <div class="live-tag"><span class="dot live-dot"></span><span>LIVE · 3-MIN HIGHLIGHTS</span></div>
+        <div class="muted small">Matchweek 9</div>
+      </div>
+      <div class="teams3">
+        <div class="team-col"><span class="crest-lg"><img src="assets/ars.svg" alt="Arsenal"></span><div>Arsenal</div></div>
+        <div class="vs">vs</div>
+        <div class="team-col"><span class="crest-lg"><img src="assets/che.svg" alt="Chelsea"></span><div>Chelsea</div></div>
+      </div>
+    </div>
+    <div class="pitch-copy">
+      <h1>Watching the game? <span class="hl">Call the next play.</span></h1>
+      <p>Guess what happens next and stack up points. No football knowledge needed. Free, and no sign-up to start.</p>
+    </div>
+    <div class="pad"><button id="go-pick" class="cta">PLAY THIS MATCH <span class="arrow">→</span></button></div>
+    <div class="steps">
+      <div class="step"><b>01</b><span>Pick a side</span></div>
+      <div class="step"><b>02</b><span>Call plays as they happen</span></div>
+      <div class="step"><b>03</b><span>Stack up points</span></div>
+    </div>
+    <div class="foot muted small">Points only. No money, no betting.</div>
+  </section>
+
+  <!-- 2. Pick team -->
+  <section id="pick" class="screen" hidden>
+    <header class="top bar">
+      <button id="back" class="icon-btn" aria-label="Back">‹</button>
+      <div><div class="title">PICK YOUR SIDE</div><div class="muted small">Takes 10 seconds.</div></div>
+    </header>
+    <div class="pick-body">
+      <div class="row-between"><div class="label">CHOOSE A TEAM</div><div class="muted small">Live now</div></div>
+      <div class="card pick-card">
+        <div class="row-between label-sm"><span class="pink">● LIVE</span><span class="muted">Matchweek 9</span></div>
+        <div class="pick-row">
+          <button class="team-btn" data-team="ARS" aria-pressed="false"><span class="crest-sm"><img src="assets/ars.svg" alt=""></span>Arsenal</button>
+          <div class="vs-sm">vs</div>
+          <button class="team-btn" data-team="CHE" aria-pressed="false"><span class="crest-sm"><img src="assets/che.svg" alt=""></span>Chelsea</button>
+        </div>
+      </div>
+    </div>
+    <div class="pick-foot">
+      <div id="pick-summary" class="muted small center">Tap the team you want to back.</div>
+      <button id="start" class="cta" disabled>START PLAYING <span class="arrow">→</span></button>
+    </div>
+  </section>
+
+  <!-- 3. Live -->
+  <section id="live" class="screen" hidden>
+    <header class="live-head">
+      <div>
+        <div class="live-tag"><span class="dot live-dot"></span><span id="clock">LIVE 00:00</span></div>
+        <div class="scoreline">
+          <span class="crest-xs"><img src="assets/ars.svg" alt="Arsenal"></span>
+          <span>ARS</span><span id="score">0 – 0</span><span>CHE</span>
+          <span class="crest-xs"><img src="assets/che.svg" alt="Chelsea"></span>
+        </div>
+      </div>
+      <div class="pts-box">
+        <div id="gain" class="gain" hidden></div>
+        <div id="total-wrap" class="total"><span id="total">0</span><small>PTS</small></div>
+        <div id="backing" class="muted tiny"></div>
+      </div>
+    </header>
+
+    <div class="pitch">
+      <svg viewBox="0 0 105 68" aria-label="Pitch">
+        <rect x="0" y="0" width="105" height="68" class="grass"/>
+        <g class="lines">
+          <rect x="1.5" y="1.5" width="102" height="65"/>
+          <line x1="52.5" y1="1.5" x2="52.5" y2="66.5"/>
+          <circle cx="52.5" cy="34" r="9.15"/>
+          <rect x="1.5" y="13.85" width="16.5" height="40.3"/>
+          <rect x="87" y="13.85" width="16.5" height="40.3"/>
+          <rect x="1.5" y="24.85" width="5.5" height="18.3"/>
+          <rect x="98" y="24.85" width="5.5" height="18.3"/>
+        </g>
+        <g id="ball" class="ball-g" style="transform: translate(52.5px, 34px)">
+          <circle r="3" class="ring"/>
+          <circle r="1.1" class="ball"/>
+          <g id="tag" class="tag" hidden><rect id="tag-bg" rx="1" height="4.4"/><text id="tag-text" y="-4.4"></text></g>
+        </g>
+      </svg>
+      <div class="pitch-note tiny">Arsenal attack → </div>
+      <div id="jump" class="overlay dim" hidden>
+        <div class="label-sm muted">SKIPPING AHEAD TO</div>
+        <div id="jump-title" class="big-title"></div>
+        <div id="jump-clock" class="ribbon"></div>
+      </div>
+      <div id="goal" class="overlay dim" hidden>
+        <div class="goal-word pop">GOAL!</div>
+        <div id="goal-line" class="ribbon rib1"></div>
+      </div>
+      <div id="pop" class="overlay dim" hidden>
+        <div id="pop-pts" class="pop-pts pop"></div>
+        <div id="pop-label" class="pop-label"></div>
+        <div id="pop-ribbons" class="ribbons"></div>
+      </div>
+    </div>
+
+    <div class="card call">
+      <div id="standby" class="standby">
+        <div class="cyan label"><span class="dot live-dot cyan-bg"></span> READING THE PLAY</div>
+        <div class="muted">The next call pops up when a player gets the ball and has a choice to make.</div>
+        <div class="muted small">Keep watching.</div>
+      </div>
+      <div id="ask" hidden>
+        <div class="row-between">
+          <div class="badges"><span class="badge cyan-badge">LIVE CALL</span><span id="call-team" class="badge"></span></div>
+          <div class="muted small">+100 if you're right</div>
+        </div>
+        <div>
+          <div id="call-ctx" class="muted"></div>
+          <div id="call-q" class="call-q"></div>
+        </div>
+        <div id="call-status" class="call-status"></div>
+        <div class="options">
+          <button class="opt" data-pick="PASS"><svg viewBox="0 0 24 24"><circle cx="5" cy="17" r="2.2"/><circle cx="19" cy="7" r="2.2"/><path d="M7 15.5L16.8 8.5M13 8h4v4"/></svg><b>PASS</b><small>to a teammate</small></button>
+          <button class="opt" data-pick="SHOOT"><svg viewBox="0 0 24 24"><path d="M14 4h7v16h-7"/><path d="M3 12h11M10 8l4 4-4 4"/></svg><b>SHOOT</b><small>at goal</small></button>
+          <button class="opt" data-pick="DRIBBLE"><svg viewBox="0 0 24 24"><path d="M3 18c3 0 3-6 6-6s3 6 6 6 3-6 6-6"/><circle cx="20" cy="6" r="2"/></svg><b>DRIBBLE</b><small>run with it</small></button>
+        </div>
+        <div id="call-line" class="call-line muted"></div>
+      </div>
+    </div>
+
+    <footer class="streak-row">
+      <span class="label muted">STREAK</span>
+      <span id="pips" class="pips"><i></i><i></i><i></i><i></i><i></i></span>
+      <span id="streak-hint" class="muted tiny">3 right in a row = bonus</span>
+    </footer>
+
+    <!-- 4. Half time / full time / connection lost -->
+    <div id="modal" class="modal" hidden>
+      <div class="card modal-card">
+        <div id="modal-kicker" class="label muted"></div>
+        <div class="scoreline big">
+          <span class="crest-xs"><img src="assets/ars.svg" alt="Arsenal"></span>
+          <span>ARS</span><span id="modal-score">0 – 0</span><span>CHE</span>
+          <span class="crest-xs"><img src="assets/che.svg" alt="Chelsea"></span>
+        </div>
+        <div class="label-sm muted">YOUR POINTS</div>
+        <div id="modal-total" class="modal-total">0</div>
+        <div id="modal-line" class="muted center"></div>
+        <button id="again" class="cta" hidden>PLAY AGAIN <span class="arrow">→</span></button>
+      </div>
+    </div>
+  </section>
+
+</main>
+<script src="app.js"></script>
+</body>
+</html>
