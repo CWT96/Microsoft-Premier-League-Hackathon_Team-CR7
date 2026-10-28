@@ -585,6 +585,16 @@ def create_app(source: MatchSource | None = None, *, sleep: Sleep = asyncio.slee
         app.mount("/classic", StaticFiles(directory=frontend / "fan-app", html=True), name="fan-app")
     if (frontend / "premier-x").is_dir():
         app.mount("/", StaticFiles(directory=frontend / "premier-x", html=True), name="premier-x")
+
+    @app.middleware("http")
+    async def revalidate_frontend(request, call_next):
+        # Browsers must check the app files on every load (a cheap 304 via ETag), so a fresh
+        # deploy never runs next to a stale cached pitch.js or screen; fonts and crests may cache.
+        response = await call_next(request)
+        path = request.url.path
+        if not path.startswith(("/api/", "/demo/", "/ws", "/healthz", "/assets/")):
+            response.headers.setdefault("Cache-Control", "no-cache")
+        return response
     return app
 
 
