@@ -1,30 +1,50 @@
-# Team CR7: Matchday Call
+# Team CR7: The Premier X
 
 Microsoft × Premier League *Inside the Game* Developer Hackathon. Submission deadline **2026-10-27 23:59 PT**.
 
 **Live demo (open on a phone, or a narrow browser window):**
 https://matchday-call.livelyforest-089ca771.eastus.azurecontainerapps.io
 
+| Path | What |
+|---|---|
+| `/` | **The Premier X**, the judged phone app |
+| `/ops/` | Partner report: what a club or league marketing team sees after the match |
+| `/classic/` | The earlier fan app, kept for reference |
+
+The web address still says `matchday-call`, the product's name before 2026-10-27. Renaming the Azure resources would break the deploy, so they keep the old name.
+
 ## What it is
 
-Matchday Call is a second-screen game for your phone while a football match is on the TV. It is built for the friend who came for the company, not the football. Every few seconds the phone asks one simple thing about what is happening right now: a player has just received the ball, so will he **pass** it, **shoot**, or **dribble** (run past an opponent with it)? You tap a guess before he acts, and you see straight away whether you were right. Alongside that, you can make bigger, slower predictions ("Will anyone score in the next 15 minutes?") and back up to two players who earn you points for what they do. At full time you get a score, badges and your rank among friends. No football knowledge needed: the questions explain themselves, and every result comes with one plain sentence on what happened.
+The Premier X is a second-screen game (an app you play on your phone while the match is on the TV) for the friend who came for the company, not the football. You scan a QR code, pick a side and play. No download, no account, no football knowledge needed.
 
-## What you'll see (about 90 seconds)
+The match drives the game. Whenever the ball is played to a player, an **AI call** pops up: what's his next move, **PASS**, **SHOOT** or **DRIBBLE** (run past an opponent with the ball)? You tap before he acts. The call locks the moment he plays it, and the points land as it happens. There is no countdown and no "next" button. On a second tab you make bigger, slower **forecasts** ("Will anyone score in the next 15 minutes?", the full-time result). You can also **back up to two players**, who earn you bonus points for what they really do. Your points, your streak and your friends' scores run live at the top of the screen.
 
-The demo plays a ~93-second highlights cut of one match, shown as **Arsenal 2–1 Chelsea**.
+**Points only ever go up.** A wrong call still earns points, a slow tap shows "Too quick!" and keeps your streak, and nothing is staked: no money, no betting.
 
-1. **Pick a side** (Arsenal or Chelsea), then optionally **back up to 2 players**. Each position earns from different things (a goalkeeper from saves and clean sheets, a forward from goals and shots); the table is on screen.
-2. **Kick off.** A small pitch shows 22 player dots and the ball. A score bar and clock run at the top.
-3. **Live calls.** When the ball is passed to a player, a card pops up: *PASS / SHOOT / DRIBBLE*. It locks the moment he acts. Then you see the answer, a one-line explanation and your points.
-   - +10 for answering, +100 more if right, and a streak bonus (+50 per step from the 3rd correct call in a row).
-   - No answer in time shows "Too quick!" and scores 0. Nothing is ever taken away.
-4. **Forecast tab.** Bigger predictions that settle from what really happens in the match, including minutes the highlights skip:
+**Why the Premier League would want it.** People who watch without following the game leave at full time with nothing to come back for, and the league never learns they were there. The Premier X asks for an email at two moments when the player has something to keep: at half time ("save your progress", +500 points) and after the full-time count ("save my points", +500 welcome bonus). The partner report then shows a club or league marketing team how many people played and signed up, and when.
+
+## What you'll see (about 2 minutes)
+
+The demo plays a ~93-second highlights cut of one match, shown as **Arsenal 2–1 Chelsea**. Best on a phone, or a browser window about 390 px wide.
+
+1. **Landing** (what you see after scanning the QR code). The live match card, how many people are calling this match, **PLAY THIS MATCH**, and a box to join a friend's room by code. "Points only. No money, no betting."
+2. **Pick your side.** Choose a match and a team, then optionally **back up to 2 players** from the matchday squad, grouped into starting XI and bench. Backing a player is not a prediction: each one earns from real match stats by position, and the card shows how.
+   - Goalkeeper: penalty save, clean sheet, saves, claimed crosses.
+   - Defender: goal, clean sheet, blocked shots, tackles won, interceptions, clearances.
+   - Midfielder: goal, assist, shots on target, key passes, tackles won, interceptions.
+   - Forward: goal, assist, big chances made, shots on target, dribbles past, fouls won.
+3. **Live, Real time tab.** A 2D pitch with 22 players who run at football speed (never faster than a sprint, so nobody jumps) and a ball that flies on passes and shots. The score bar, your points, your rank and your friends Mia and Dan sit on top. When the ball reaches a player, the AI call card opens with one line on the situation. Tap PASS, SHOOT or DRIBBLE before he plays it. Then the answer, a one-sentence explanation and the points pop up, and the call history fades after a few seconds.
+   - +10 for any call, +100 more if you're right, and +50 per step from the 3rd correct call in a row.
+   - Too slow: "Too quick!", 0 points, streak kept. Nothing is ever taken away.
+4. **Live, Forecast tab.** Bigger calls for bigger points, settled from what really happens in the match (including minutes the highlights skip):
    - next 5 minutes, "Who has more of the ball?" +500
    - next 10 minutes, "Who takes the next shot?" +1,000
    - next 15 minutes, "Will anyone score?" +1,500
-   - full-time result +3,000, plus +2,000 for the exact score (locks when the second half starts)
-5. **Half time.** Your points so far, your backed players' first-half bonus, the room table, and a "save your progress" sheet (email, +500 once).
-6. **Full time.** Your total counts up row by row (calls, forecasts, player bonus), then badges (ORACLE for the right result, ON FIRE for 3+ calls in a row, GOOD EYE for calling a goal), a stamp such as "#1 IN ROOM · TOP 19%" against a simulated crowd of 1,000 players, and the room leaderboard with three simulated friends (Mia, Dan and Leo).
+   - full-time result +3,000, and the exact score +2,000 more. The result and the score are linked: change one and the other follows.
+5. **Half time.** The whistle shows on the pitch, then the half-time screen: your first half split into calls, forecasts and player bonus, the room table, and a countdown to the second half. A sheet asks you to **save your progress** with just an email (+500). "Maybe later" closes it.
+6. **Full time.** Your total counts up row by row (real-time calls, forecasts, player bonus), with your backed players' stats. Then come the badges (ORACLE for the right result, ON FIRE for 3+ calls in a row, GOOD EYE when a player you backed scores), a stamp with your place in the room and against a simulated crowd of 1,000 players (for example "TOP 19% TONIGHT"), and the room leaderboard with Mia, Dan and Leo.
+7. **Save my points.** Email only, no password. +500 welcome bonus, your season total and your team's next fixture.
+8. **Partner report** (`/ops/`). Open it after the phone flow: QR scans, players, calls and sign-ups, a minute-by-minute replay of the match with goals and half time marked, sign-ups per minute (a peak at the half-time save, a bigger one after full time), the funnel from scan to sign-up, and a table per QR channel.
 
 ## How it works
 
@@ -46,7 +66,10 @@ match events ─► decision moments (code) ─► live calls ─────┐
 
 - **One FastAPI process** (Python 3.11). In-memory state; each phone gets its own private run, so many judges can play at once (up to 50 sockets by default).
 - **`WS /demo/ws`** streams the run to the phone: clock, events, player dots, calls, forecasts, results. **`GET /demo/squads`** lists both squads and the scoring table. Full protocol: [`contracts/README.md`](contracts/README.md#demo-mode-demows-and-demosquads).
-- **Static frontend** (`frontend/fan-app/`, plain HTML/CSS/JS) served by the same process at `/`.
+- **Static frontends**, plain HTML/CSS/JS with no build step, served by the same process:
+  - `frontend/premier-x/` at `/`: the judged app. Its screens are the design canvas artboards, with live data bound in.
+  - `frontend/ops-dashboard/` at `/ops/`: the partner report.
+  - `frontend/fan-app/` at `/classic/`: the earlier fan app.
 - **Azure Container Apps**, one container, `LLM_MODE=cache`: the deployed app only reads the committed cache, holds no API key and makes no LLM calls.
 
 ## Honest notes
@@ -55,6 +78,9 @@ match events ─► decision moments (code) ─► live calls ─────┐
 - **Off-ball player positions are estimated.** The dataset has no tracking data, so the 22 dots are placed from each team's formation and the ball position. Only the ball and the player on it come from the events.
 - **The email save is a mock.** The address is checked for shape and dropped. Nothing is sent or stored.
 - **The friends and the crowd are simulated** in code (fixed seeds), so every run is reproducible.
+- **The partner report runs on simulated users.** `frontend/ops-dashboard/sim/simulate.js` is a seeded model of about 19,500 people (scan time and channel, calls, forecasts, leaving early, signing up). It is not wired to the backend yet.
+- **Two controls are drawn but not working yet:** the screen-sync chip (TV, streaming or stadium) and the room-code box on the landing screen.
+- **Only Arsenal v Chelsea has match data.** The Pick screen shows three matches from the design; starting another one plays the Arsenal v Chelsea data.
 
 ## Run locally
 
@@ -76,11 +102,13 @@ See [`infra/README.md`](infra/README.md): build the image from `infra/Dockerfile
 
 | Path | What |
 |---|---|
-| `frontend/fan-app/` | The judged phone app (static HTML/CSS/JS) |
+| `frontend/premier-x/` | The judged phone app, The Premier X (static HTML/CSS/JS), served at `/` |
+| `frontend/ops-dashboard/` | Partner report on simulated users, served at `/ops/` |
+| `frontend/fan-app/` | The earlier fan app, served at `/classic/` |
 | `backend/demo/` | Demo mode: calls, timeline, forecasts, player bonus, room and result, `/demo/ws` + `/demo/squads` |
 | `backend/llm_cache/demo_lines/` | Committed AI call lines (Azure OpenAI, `gpt-4.1-mini`) |
 | `backend/agents/llm.py` | The one LLM client: cache / live modes, safety and number guards |
-| `backend/app/` | FastAPI app: mounts the fan app and `/demo/ws`; also the earlier `/ws` Room flow and `/api/*` |
+| `backend/app/` | FastAPI app: mounts the three frontends and `/demo/ws`; also the earlier `/ws` Room flow and `/api/*` |
 | `backend/ingest/`, `detect/`, `bank/`, `model/`, `resolve/`, `scoring/`, `social/` | Earlier prototype pipeline (see below) |
 | `backend/tests/` | pytest suite |
 | `contracts/` | WebSocket and REST payloads, including demo mode |
@@ -90,9 +118,16 @@ See [`infra/README.md`](infra/README.md): build the image from `infra/Dockerfile
 | `infra/` | Dockerfile and Azure Container Apps notes |
 | `CLAUDE.md` | Folder rules, invariants and git workflow for contributors |
 
+## What's next
+
+- **Screen sync:** hold each call back by the viewer's delay (TV about 6 s, streaming about 30 s, stadium none), so the phone never spoils a moment.
+- **A licensed live data feed** in place of the replayed dataset.
+- **Real rooms**, so friends play the same match together, and a real email save.
+- **The partner report on live data**, from the backend's funnel endpoint instead of the simulation.
+
 ## Earlier prototype
 
-Before Matchday Call, the team built a "Room" flow: two-option yes/no questions during dull spells, catch-up cards after attacks, and a 0–1000 score card shown only at full time. Its backend (`/ws`, `/api/*`, `backend/app/replay.py` and the pipeline folders above) is still in the repo, unchanged, and documented in `docs/pipeline.md` and the first sections of `contracts/README.md`. The judged demo does not use it.
+Before The Premier X (called Matchday Call until 2026-10-27), the team built a "Room" flow: two-option yes/no questions during dull spells, catch-up cards after attacks, and a 0–1000 score card shown only at full time. Its backend (`/ws`, `/api/*`, `backend/app/replay.py` and the pipeline folders above) is still in the repo, unchanged, and documented in `docs/pipeline.md` and the first sections of `contracts/README.md`. The judged demo does not use it.
 
 ## Team
 
