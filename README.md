@@ -1,4 +1,4 @@
-# Team CR7: Matchday Call
+# Team CR7: The Premier X
 
 Microsoft × Premier League *Inside the Game* Developer Hackathon. Submission deadline **2026-10-27 23:59 PT**.
 
@@ -7,7 +7,7 @@ https://matchday-call.livelyforest-089ca771.eastus.azurecontainerapps.io
 
 ## What it is
 
-Matchday Call is a second-screen game for your phone while a football match is on the TV. It is built for the friend who came for the company, not the football. Every few seconds the phone asks one simple thing about what is happening right now: a player has just received the ball, so will he **pass** it, **shoot**, or **dribble** (run past an opponent with it)? You tap a guess before he acts, and you see straight away whether you were right. Alongside that, you can make bigger, slower predictions ("Will anyone score in the next 15 minutes?") and back up to two players who earn you points for what they do. At full time you get a score, badges and your rank among friends. No football knowledge needed: the questions explain themselves, and every result comes with one plain sentence on what happened.
+The Premier X is a second-screen game for your phone while a football match is on the TV. It is built for the friend who came for the company, not the football. Every few seconds the phone asks one simple thing about what is happening right now: a player has just received the ball, so will he **pass** it, **shoot**, or **dribble** (run past an opponent with it)? You tap a guess before he acts, and you see straight away whether you were right. Alongside that, you can make bigger, slower predictions ("Will anyone score in the next 15 minutes?") and back up to two players who earn you points for what they do. At full time you get a score, badges and your rank among friends. No football knowledge needed: the questions explain themselves, and every result comes with one plain sentence on what happened.
 
 ## What you'll see (about 90 seconds)
 
@@ -46,7 +46,7 @@ match events ─► decision moments (code) ─► live calls ─────┐
 
 - **One FastAPI process** (Python 3.11). In-memory state; each phone gets its own private run, so many judges can play at once (up to 50 sockets by default).
 - **`WS /demo/ws`** streams the run to the phone: clock, events, player dots, calls, forecasts, results. **`GET /demo/squads`** lists both squads and the scoring table. Full protocol: [`contracts/README.md`](contracts/README.md#demo-mode-demows-and-demosquads).
-- **Static frontend** (`frontend/fan-app/`, plain HTML/CSS/JS) served by the same process at `/`.
+- **Static frontend** (`frontend/premier-x/`, plain HTML/CSS/JS, no build step) served by the same process at `/`. The earlier fan app (`frontend/fan-app/`) is still served at `/classic/`.
 - **Azure Container Apps**, one container, `LLM_MODE=cache`: the deployed app only reads the committed cache, holds no API key and makes no LLM calls.
 
 ## Honest notes
@@ -76,7 +76,8 @@ See [`infra/README.md`](infra/README.md): build the image from `infra/Dockerfile
 
 | Path | What |
 |---|---|
-| `frontend/fan-app/` | The judged phone app (static HTML/CSS/JS) |
+| `frontend/premier-x/` | The judged phone app, The Premier X (static HTML/CSS/JS), served at `/` |
+| `frontend/fan-app/` | The earlier fan app, served at `/classic/` |
 | `backend/demo/` | Demo mode: calls, timeline, forecasts, player bonus, room and result, `/demo/ws` + `/demo/squads` |
 | `backend/llm_cache/demo_lines/` | Committed AI call lines (Azure OpenAI, `gpt-4.1-mini`) |
 | `backend/agents/llm.py` | The one LLM client: cache / live modes, safety and number guards |
@@ -92,7 +93,7 @@ See [`infra/README.md`](infra/README.md): build the image from `infra/Dockerfile
 
 ## Earlier prototype
 
-Before Matchday Call, the team built a "Room" flow: two-option yes/no questions during dull spells, catch-up cards after attacks, and a 0–1000 score card shown only at full time. Its backend (`/ws`, `/api/*`, `backend/app/replay.py` and the pipeline folders above) is still in the repo, unchanged, and documented in `docs/pipeline.md` and the first sections of `contracts/README.md`. The judged demo does not use it.
+Before The Premier X, the team built a "Room" flow: two-option yes/no questions during dull spells, catch-up cards after attacks, and a 0–1000 score card shown only at full time. Its backend (`/ws`, `/api/*`, `backend/app/replay.py` and the pipeline folders above) is still in the repo, unchanged, and documented in `docs/pipeline.md` and the first sections of `contracts/README.md`. The judged demo does not use it.
 
 ## Team
 
