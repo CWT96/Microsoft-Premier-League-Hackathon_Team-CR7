@@ -67,7 +67,7 @@ body { margin: 0; background: var(--bg); color: var(--ink); }
 .chart .ht { fill: #e2e2e5; }
 .chart .ht-label { fill: #77777c; }
 .chart .att-ARS { fill: rgba(240, 140, 46, 0.30); }
-.chart .att-CHE { fill: rgba(240, 180, 46, 0.30); }
+.chart .att-CHE { fill: rgba(139, 92, 246, 0.26); }
 .chart .win { fill: rgba(47, 168, 79, 0.35); }
 .chart .hold { fill: rgba(142, 142, 147, 0.35); }
 .chart .move { fill: none; stroke: var(--blue); stroke-width: 2; stroke-linejoin: round; }
@@ -88,7 +88,7 @@ body { margin: 0; background: var(--bg); color: var(--ink); }
 .sym { font-weight: 700; }
 .sym.pick { color: var(--green); } .sym.block { color: var(--red); } .sym.short { color: var(--orange); } .sym.other { color: var(--grey); }
 .sw { width: 14px; height: 12px; border-radius: 2px; display: inline-block; }
-.sw.green { background: rgba(47, 168, 79, 0.6); } .sw.grey { background: rgba(142, 142, 147, 0.6); } .sw.orange { background: rgba(240, 140, 46, 0.6); }
+.sw.green { background: rgba(47, 168, 79, 0.6); } .sw.grey { background: rgba(142, 142, 147, 0.6); } .sw.att-ars { background: rgba(240, 140, 46, 0.6); } .sw.att-che { background: rgba(139, 92, 246, 0.55); }
 .ln { width: 16px; height: 2px; display: inline-block; }
 .ln.blue { background: var(--blue); }
 

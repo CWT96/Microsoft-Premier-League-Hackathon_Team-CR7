@@ -62,12 +62,21 @@
     var lastAt = cues.length ? cues[cues.length - 1].at : 0;
     var duration = num(raw.duration) !== null && raw.duration > 0 ? raw.duration : lastAt;
 
+    // when each picked call's card really shows on the phone: its call.open cue (the pass's
+    // arrival can be earlier; the card is held back so it is up at least 2.5 s before lock)
+    var cardAt = {};
+    of("call.open").forEach(function (c) {
+      var id = str(c.data.call_id);
+      if (id && !(id in cardAt)) { cardAt[id] = c.at; }
+    });
     var moments = arr(raw.moments).filter(function (m) {
       return m && num(m.at_open) !== null;
     }).map(function (m) {
       var lock = num(m.at_lock) !== null && m.at_lock >= m.at_open ? m.at_lock : m.at_open;
+      var id = str(m.call_id), card = num(cardAt[id]);
       return {
-        id: str(m.call_id), atOpen: m.at_open, atLock: lock,
+        id: id, atOpen: m.at_open, atLock: lock,
+        atCard: card !== null && card <= lock ? card : m.at_open,
         clockOpen: str(m.clock_open), clockLock: str(m.clock_lock),
         player: str(m.player) || "Unknown player", team: str(m.team), answer: str(m.answer),
         status: STATUS_LABEL[m.status] ? m.status : "blocked", reason: str(m.reason), against: str(m.against)
@@ -114,8 +123,13 @@
 
   function dataUrl(team) {
     var q = new URLSearchParams(location.search).get("data");
-    // a local stand-in file for offline checks: relative paths only, "{team}" is replaced
-    if (q && !/[:\\]|^\/\//.test(q)) { return q.replace("{team}", team); }
+    // a local stand-in file for offline checks: same origin only, "{team}" is replaced
+    if (q) {
+      try {
+        var u = new URL(q.replace("{team}", team), location.href);
+        if (u.origin === location.origin) { return u.href; }
+      } catch (e) { /* bad URL: fall through to the endpoint */ }
+    }
     return "/demo/director?team=" + encodeURIComponent(team);
   }
 
@@ -252,7 +266,7 @@
     if (m) { return m; }
     var best = null, bestD = Infinity;
     D.moments.forEach(function (x) {
-      var d = t < x.atOpen ? x.atOpen - t : t > x.atLock ? t - x.atLock : 0;
+      var d = t < x.atCard ? x.atCard - t : t > x.atLock ? t - x.atLock : 0;
       if (d < bestD || (d === bestD && x.status === "picked" && best && best.status !== "picked")) { best = x; bestD = d; }
     });
     return best;
@@ -349,7 +363,7 @@
       else if (ph.kind === "half") { view = { key: "half:" + Math.ceil(ph.left), left: Math.ceil(ph.left) }; }
       else if (ph.kind === "card") { view = { key: "card:" + ph.title, title: ph.title, clock: ph.clock }; }
       else {
-        var open = D.picked.filter(function (m) { return t >= m.atOpen && t < m.atLock; })[0];
+        var open = D.picked.filter(function (m) { return t >= m.atCard && t < m.atLock; })[0];
         var done = D.picked.filter(function (m) { return t >= m.atLock && t < m.atLock + RESULT_S; }).pop();
         if (open) { view = { key: "open:" + open.id, m: open }; }
         else if (done) { view = { key: "done:" + done.id, m: done, done: true }; }
@@ -420,8 +434,13 @@
       var other = D.moments.filter(function (x) { return x.id === m.against; })[0];
       if (other) { box.appendChild(el("div", "row k", "Lost to " + other.player + "'s call" + (other.clockOpen ? " at " + other.clockOpen : ""))); }
     }
-    box.appendChild(el("div", "row k", "Open " + m.atOpen.toFixed(1) + " s → lock " + m.atLock.toFixed(1) +
-      " s (" + (m.atLock - m.atOpen).toFixed(1) + " s to answer)"));
+    if (m.status === "picked") {
+      box.appendChild(el("div", "row k", "Card on the phone " + m.atCard.toFixed(1) + " s → lock " + m.atLock.toFixed(1) +
+        " s (" + (m.atLock - m.atCard).toFixed(1) + " s to answer)"));
+    } else {
+      box.appendChild(el("div", "row k", "Ball reaches him " + m.atOpen.toFixed(1) + " s → he plays it " + m.atLock.toFixed(1) +
+        " s (" + (m.atLock - m.atOpen).toFixed(1) + " s)"));
+    }
 
     var ln = D.lines[m.id];
     if (!ln || typeof ln !== "object") {
@@ -479,7 +498,7 @@
     };
     D.attack.forEach(function (a) { band(a.at_start, a.at_end, "att-" + (a.team === "CHE" ? "CHE" : "ARS")); });
     D.picked.forEach(function (m) {
-      band(m.atOpen, m.atLock, "win");
+      band(m.atCard, m.atLock, "win");
       band(m.atLock, m.atLock + D.resultHold, "hold");
     });
     if (D.ht) {
@@ -497,7 +516,7 @@
       var label = (j && str(j.data.clock)) || (c && str(c.data.clock)) || "";
       if (label) { svg.appendChild(sv("text", { "class": "seg-label", x: x + 3, y: C.bot + 18 }, label)); }
     });
-    if (D.ft) { svg.appendChild(sv("text", { x: W - C.padR, y: C.bot + 18, "text-anchor": "end" }, "Full time")); }
+    if (D.ft) { svg.appendChild(sv("text", { "class": "seg-label", x: W - C.padR, y: C.bot + 18, "text-anchor": "end" }, "Full time")); }
 
     // movement: ball speed, one line per clip so the gaps between clips stay empty
     var vmax = Math.max(1, Math.max.apply(null, D.movement.map(function (p) { return p.v; }).concat([0]))) * 1.1;
@@ -514,7 +533,7 @@
 
     // decision markers: three lanes so picked calls never hide under the others
     D.moments.forEach(function (m) {
-      var x = cx(D, m.atOpen), y = LANE[m.status];
+      var x = cx(D, m.atCard), y = LANE[m.status];
       var g = sv("g", { tabindex: "0", role: "button", "aria-label": m.player + ": " + STATUS_LABEL[m.status] });
       g.appendChild(sv("rect", { "class": "hit", x: x - 9, y: y - 9, width: 18, height: 18 }));
       var mk = sv("text", { "class": "mk " + m.status, x: x, y: y }, GLYPH[m.status]);
@@ -523,7 +542,7 @@
       g.addEventListener("mouseleave", function () { S.hovered = null; hideTip(); render(); });
       g.addEventListener("focus", function () { S.hovered = m.id; showTip(m, x, y); render(); });
       g.addEventListener("blur", function () { S.hovered = null; hideTip(); render(); });
-      function pick() { S.pinned = m.id; S.playing = false; seek(m.atOpen); }
+      function pick() { S.pinned = m.id; S.playing = false; seek(m.atCard); }
       g.addEventListener("click", function (ev) { ev.stopPropagation(); pick(); });
       g.addEventListener("keydown", function (ev) { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); pick(); } });
       svg.appendChild(g);

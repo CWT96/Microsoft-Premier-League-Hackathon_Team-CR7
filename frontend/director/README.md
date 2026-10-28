@@ -18,7 +18,7 @@ URL options:
 |---|---|
 | `?team=CHE` | Start on the Chelsea fan's cut (default Arsenal) |
 | `?t=47.5` | Start with the playhead at that real second of the cut |
-| `?data=director-{team}.json` | Read a local stand-in JSON instead of the endpoint (relative paths only; `{team}` is replaced) |
+| `?data=director-{team}.json` | Read a stand-in JSON instead of the endpoint (same origin only; `{team}` is replaced) |
 
 ## What is on the page
 
