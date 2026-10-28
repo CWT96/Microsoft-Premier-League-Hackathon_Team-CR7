@@ -20,9 +20,9 @@ a{color:#04F5FF}a:hover{color:#8AFAFF}
 
   <div style="display: flex; align-items: center; justify-content: space-between; padding: 20px 20px 0">
     <div style="font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-style: italic; font-size: 26px; letter-spacing: 0.5px; line-height: 1; white-space: nowrap">THE PREMIER <span style="color: #00FF85">X</span></div>
-    <div style="display: flex; align-items: center; gap: 6px; padding: 6px 10px; border: 1px solid #5C2A63; border-radius: 999px; font-size: 12px; color: #CDB8D1">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect><path d="M14 14h3v3h-3zM20 14v.01M14 20h.01M17 20h4v-3"></path></svg>
-      <span>Scanned at {{venue}}</span>
+    <div style="display: flex; align-items: center; gap: 6px; min-width: 0; max-width: 168px; margin-left: 10px; padding: 6px 10px; border: 1px solid #5C2A63; border-radius: 999px; font-size: 12px; color: #CDB8D1">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: none"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect><path d="M14 14h3v3h-3zM20 14v.01M14 20h.01M17 20h4v-3"></path></svg>
+      <span style="min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap" title="Scanned at {{venue}}">{{venue}}</span>
     </div>
   </div>
 

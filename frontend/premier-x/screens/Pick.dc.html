@@ -44,13 +44,13 @@ a{color:#04F5FF}a:hover{color:#8AFAFF}
         </div>
         <div style="display: flex; align-items: center; gap: 8px">
           <button class="mc-team" onClick="{{m.pickHome}}" aria-pressed="{{m.homeOn}}" style="{{m.homeStyle}}">
-            <span style="width: 32px; height: 32px; border-radius: 9px; background: #FFFFFF; display: flex; align-items: center; justify-content: center; flex: none"><img src="{{m.homeLogo}}" alt="" style="width: 24px; height: 24px; object-fit: contain"></span>
-            <span style="font-size: 14px; font-weight: 600; text-align: left">{{m.home}}</span>
+            <span style="width: 26px; height: 26px; border-radius: 8px; background: #FFFFFF; display: flex; align-items: center; justify-content: center; flex: none"><img src="{{m.homeLogo}}" alt="" style="width: 20px; height: 20px; object-fit: contain"></span>
+            <span style="min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; font-weight: 600; letter-spacing: -0.1px; text-align: left" title="{{m.home}}">{{m.home}}</span>
           </button>
-          <div style="width: 44px; flex: none; text-align: center; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 22px">{{m.score}}</div>
+          <div style="width: 40px; flex: none; text-align: center; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 20px; white-space: nowrap">{{m.score}}</div>
           <button class="mc-team" onClick="{{m.pickAway}}" aria-pressed="{{m.awayOn}}" style="{{m.awayStyle}}">
-            <span style="width: 32px; height: 32px; border-radius: 9px; background: #FFFFFF; display: flex; align-items: center; justify-content: center; flex: none"><img src="{{m.awayLogo}}" alt="" style="width: 24px; height: 24px; object-fit: contain"></span>
-            <span style="font-size: 14px; font-weight: 600; text-align: left">{{m.away}}</span>
+            <span style="width: 26px; height: 26px; border-radius: 8px; background: #FFFFFF; display: flex; align-items: center; justify-content: center; flex: none"><img src="{{m.awayLogo}}" alt="" style="width: 20px; height: 20px; object-fit: contain"></span>
+            <span style="min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; font-weight: 600; letter-spacing: -0.1px; text-align: left" title="{{m.away}}">{{m.away}}</span>
           </button>
         </div>
       </div>
@@ -73,10 +73,10 @@ a{color:#04F5FF}a:hover{color:#8AFAFF}
             </div>
           </sc-for>
         </div>
-        <button class="mc-quick" onClick="{{quickPick}}" style="height: 44px; border-radius: 10px; border: 1px solid #C9A2FF; background: transparent; color: #F3F6F9; display: flex; align-items: center; justify-content: center; gap: 8px; font-family: inherit; font-size: 13px; font-weight: 600">
-          <span style="color: #CDB8D1">Most backed in your room:</span>
-          <span style="font-weight: 700">#{{popular.num}} {{popular.name}}</span>
-          <span style="color: #C9A2FF; font-weight: 700">+ Back</span>
+        <button class="mc-quick" onClick="{{quickPick}}" style="height: 44px; border-radius: 10px; border: 1px solid #C9A2FF; background: transparent; color: #F3F6F9; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 0 12px; min-width: 0; font-family: inherit; font-size: 13px; font-weight: 600">
+          <span style="min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #CDB8D1">Most backed in your room:</span>
+          <span style="flex: none; white-space: nowrap; font-weight: 700">#{{popular.num}} {{popular.name}}</span>
+          <span style="flex: none; white-space: nowrap; color: #C9A2FF; font-weight: 700">+ Back</span>
         </button>
       </div>
     </sc-if>
@@ -152,7 +152,7 @@ class Component extends DCLogic {
     var sq = app.squads;
     function crest(code) { return "assets/crests/" + code.toLowerCase() + ".svg"; }  // relative to the app page
     function teamOf(code) { return sq ? (sq.teams[code] || (sq.other_teams || {})[code]) : null; }
-    var base = "flex: 1; min-width: 0; height: 52px; padding: 0 10px; border-radius: 12px; display: flex; align-items: center; gap: 8px; font-family: inherit; color: #F3F6F9; ";
+    var base = "flex: 1; min-width: 0; height: 52px; padding: 0 8px; border-radius: 12px; display: flex; align-items: center; gap: 6px; overflow: hidden; font-family: inherit; color: #F3F6F9; ";
     var on = base + "background: rgba(0,255,133,0.14); border: 2px solid #00FF85;";
     var off = base + "background: #4A0E52; border: 2px solid #4A0E52;";
     // Northbridge v Calder is the playable demo; the other two are the design's matchday, browsable

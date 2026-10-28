@@ -194,8 +194,8 @@ a{color:#04F5FF}a:hover{color:#8AFAFF}
 
       <div style="display: flex; align-items: center; gap: 8px; height: 22px; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 14px; letter-spacing: 1px">
         <sc-if value="{{isAsk}}" hint-placeholder-val="{{ true }}">
-          <span class="mc-glow" style="width: 10px; height: 10px; border-radius: 50%; background: #04F5FF; display: inline-block"></span>
-          <span style="color: #04F5FF">OPEN · LOCKS THE MOMENT {{prompt.who}} PLAYS IT</span>
+          <span class="mc-glow" style="flex: none; width: 10px; height: 10px; border-radius: 50%; background: #04F5FF; display: inline-block"></span>
+          <span style="min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #04F5FF">OPEN · LOCKS WHEN {{prompt.who}} PLAYS IT</span>
         </sc-if>
         <sc-if value="{{isLocked}}" hint-placeholder-val="{{ false }}">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#04F5FF" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg>
