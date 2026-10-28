@@ -19,8 +19,8 @@ from backend.demo.names import TEAMS, clock_label, display_name, fixed_xy
 from backend.demo.script import JUMP_CARD_S, SCRIPTS, Play, build_timeline
 
 SMOOTH_S = 3  # movement: centred moving average over this many one-second samples
-ATTACK_X = {"ARS": 70.0, "CHE": 35.0}  # final third in the fixed frame (ARS attacks to the right)
-_SIDE = {v["code"]: k for k, v in TEAMS.items()}  # ARS -> NBR
+ATTACK_X = {"NBR": 70.0, "CAL": 35.0}  # final third in the fixed frame (NBR attacks to the right)
+_SIDE = {v["code"]: k for k, v in TEAMS.items()}  # display code -> internal key (the same since the rename)
 
 
 def _plays(script: tuple, cues: list) -> list[dict]:
@@ -110,8 +110,8 @@ def _movement_attack(match: Match, plays: list[dict]) -> tuple[list[dict], list[
             movement.append({"at": p["at_start"] + k, "v": round(sum(win) / len(win), 2)})
         for k in range(n):
             x = _x_at(ball, p["start_t"] + k + 0.5)
-            side = None if x is None else ("ARS" if x > ATTACK_X["ARS"]
-                                           else "CHE" if x < ATTACK_X["CHE"] else None)
+            side = None if x is None else ("NBR" if x > ATTACK_X["NBR"]
+                                           else "CAL" if x < ATTACK_X["CAL"] else None)
             if side is None:
                 continue
             at0, at1 = p["at_start"] + k, min(p["at_start"] + k + 1, p["at_end"])
@@ -123,8 +123,8 @@ def _movement_attack(match: Match, plays: list[dict]) -> tuple[list[dict], list[
     return movement, attack
 
 
-def build_director(match: Match, team: str = "ARS", client: LLMClient | None = None) -> dict:
-    """The director JSON for the fan's side ``team`` (ARS / CHE)."""
+def build_director(match: Match, team: str = "NBR", client: LLMClient | None = None) -> dict:
+    """The director JSON for the fan's side ``team`` (NBR / CAL)."""
     tl = build_timeline(match, client=client, team=team)
     plays = _plays(SCRIPTS[team], list(tl.cues))
     movement, attack = _movement_attack(match, plays)

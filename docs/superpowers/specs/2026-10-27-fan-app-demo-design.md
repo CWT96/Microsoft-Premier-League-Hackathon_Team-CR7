@@ -16,7 +16,7 @@ Judges pick up a phone, play one match from kickoff, and in about 3 minutes see 
 ## Non-goals
 
 - A real, production-grade app: no accounts, no persistence, no real email, no scaling.
-- Several judges in one room, or other matches (the design's Liverpool/Man City and Newcastle/Tottenham cards may show but are not playable).
+- Several judges in one room, or other matches (the design's Wexmoor/Harrowgate and Ashford/Kingsmere cards may show but are not playable).
 - The backend's yes/no question stream, player questions, hint button, catch-up cards and crowd split.
 
 ## Anti-goals (failure even if it works)
@@ -35,7 +35,7 @@ Judges pick up a phone, play one match from kickoff, and in about 3 minutes see 
 | 3 | Points | The design's fixed table (below), shown live as pop-ups, with the design's full-time count-up. |
 | 4 | Forecasts | A separate Forecast tab the user opens any time: next 5 / 10 / 15 minutes, full-time result, linked exact score. The backend settles them. |
 | 5 | Players | Back up to 2 players from the matchday squad; they earn a passive bonus from how they actually play. No player questions. |
-| 6 | Teams | Match 9000001 is relabelled: Northbridge FC → Arsenal, Calder Town → Chelsea, with the design's crests and squads (`frontend/demo-ux/screens/Pick.dc.html`, `squads()` "m1-home"/"m1-away"). The 23' goal is scored by Saka. |
+| 6 | Teams | Match 9000001 is relabelled: Northbridge FC → Northbridge, Calder Town → Calder, with the design's crests and squads (`frontend/demo-ux/screens/Pick.dc.html`, `squads()` "m1-home"/"m1-away"). The 23' goal is scored by Mensah. |
 | 7 | Extras | Hint, catch-up cards and crowd split stay out. Follow the design. |
 | 8 | Flow | Judge plays from kickoff. The match is a 3-minute highlights cut (below). Jumps are automatic. |
 | 9 | Room | One judge per room, with the backend's simulated bot friends. |
@@ -62,9 +62,9 @@ Each segment plays at 1×; the match clock visibly jumps between segments.
 | Real time | Plays | The judge |
 |---|---|---|
 | 0:00–0:40 | Kickoff and the opening minutes | First calls; can open a forecast |
-| 0:40–1:20 | Build-up to Saka's goal (23') | Calls during the attack; goal; points pop |
+| 0:40–1:20 | Build-up to Mensah's goal (23') | Calls during the attack; goal; points pop |
 | 1:20–1:50 | Half time | The "save your points" sheet slides up |
-| 1:50–2:30 | Chelsea's equaliser (60') and Arsenal's winner (79') | More calls; forecasts settle |
+| 1:50–2:30 | Calder's equaliser (60') and Northbridge's winner (79') | More calls; forecasts settle |
 | 2:30–3:00 | Full time | Count-up, rank stamp, badges, room leaderboard |
 
 Segment boundaries are a fixed script for match 9000001. Times are targets, not exact.
@@ -73,7 +73,7 @@ Segment boundaries are a fixed script for match 9000001. Times are targets, not 
 
 - **Choosing decision moments.** Built from the synthetic events (each match has ~220–310 final-third passes/carries and ~60 shots/dribbles). Prefer moments where the outcome is genuinely uncertain, so a fixed +100 does not reward always picking PASS. Aim for a call every ~15–20 s of real time inside each segment.
 - **Settling a call.** From the on-ball player's next action: pass, shot, or dribble/carry. The lock is that action.
-- **Scorers.** 23' → Saka (Saka takes the synthetic centre-forward's slot; Gyökeres takes the synthetic right winger's). 60' → João Pedro. 79' (synthetic right centre-back) → Saliba. Everyone else maps by position onto the design's squads; spare synthetic substitutes take leftover names or stay off the sheet.
+- **Scorers.** 23' → Mensah (Mensah takes the synthetic centre-forward's slot; Quintero takes the synthetic right winger's). 60' → Doyle. 79' (synthetic right centre-back) → Hale. Everyone else maps by position onto the design's squads; spare synthetic substitutes take leftover names or stay off the sheet.
 - **Partner report alignment.** Shift the partner report's goal minutes from 18'/54'/77' to 23'/60'/79', rather than regenerating the match data (which is calibrated to the question bank).
 - **Frontend stack.** Plain HTML, CSS and JavaScript, no build step (like `frontend/ops-dashboard`), in `frontend/fan-app/`, served by the FastAPI app.
 - **Sign-up.** Half-time and full-time email saves use the existing mock `POST /api/signup`; nothing is emailed or stored beyond memory.
@@ -106,7 +106,7 @@ These decisions break rules in the repo's `CLAUDE.md`, `README.md` and `docs/pip
 
 | Decision | Team rule it breaks |
 |---|---|
-| 6: Arsenal vs Chelsea, real player names | "Synthetic data and fictional clubs only" (`CLAUDE.md` invariants); "the clubs and players are fictional" (`README.md`); "Branding: clubs and players are fictional" (`docs/pipeline.md`); PR checklist "no real people's data" |
+| 6: Northbridge vs Calder, real player names | "Synthetic data and fictional clubs only" (`CLAUDE.md` invariants); "the clubs and players are fictional" (`README.md`); "Branding: clubs and players are fictional" (`docs/pipeline.md`); PR checklist "no real people's data" |
 | 1: 3-option calls | "Every question has exactly 2 options" (`CLAUDE.md` invariants) |
 | 3: live points | "No point numbers or running total on screen during the match" (`CLAUDE.md` invariants, `contracts/README.md`) |
 | Contract changes | Contracts frozen since 10/25; changes additive only, approved by a backend owner and CWT96 |

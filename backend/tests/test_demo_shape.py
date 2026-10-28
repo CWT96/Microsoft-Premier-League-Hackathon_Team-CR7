@@ -12,7 +12,7 @@ def test_every_shape_has_eleven_a_side():
     assert SHAPES
     for c in SHAPES:
         teams = [p["team"] for p in c.data["players"]]
-        assert teams.count("ARS") == 11 and teams.count("CHE") == 11
+        assert teams.count("NBR") == 11 and teams.count("CAL") == 11
 
 
 def test_all_inside_pitch():
@@ -21,19 +21,19 @@ def test_all_inside_pitch():
 
 
 def test_holder_is_on_the_ball():
-    # a shape is where everyone is at the next beat: the one before Saka's shot has him on the ball
+    # a shape is where everyone is at the next beat: the one before Mensah's shot has him on the ball
     events = [c for c in TL.cues if c.type == "demo.event" and c.data["xy"]]
-    saka = next(e for e in events if e.data["player"] == "Saka" and e.data["type"] == "shot")
+    saka = next(e for e in events if e.data["player"] == "Mensah" and e.data["type"] == "shot")
     before = [c for c in SHAPES if c.at < saka.at][-1]
-    dot = next(p for p in before.data["players"] if p["num"] == 7 and p["team"] == "ARS")
+    dot = next(p for p in before.data["players"] if p["num"] == 7 and p["team"] == "NBR")
     assert [dot["x"], dot["y"]] == saka.data["xy"] == before.data["ball"]
-    assert before.data["holder"] == "Saka"
+    assert before.data["holder"] == "Mensah"
 
 
 def test_goalkeepers_stay_home():
     for c in SHAPES:
         gks = {p["team"]: p for p in c.data["players"] if p["num"] == 1}
-        assert gks["ARS"]["x"] < 20 and gks["CHE"]["x"] > 85
+        assert gks["NBR"]["x"] < 20 and gks["CAL"]["x"] > 85
 
 
 def test_substitute_replaces_player():

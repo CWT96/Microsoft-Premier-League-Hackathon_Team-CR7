@@ -11,12 +11,12 @@ def test_calls_and_mix():
     assert len(TL.calls) == 6
     answers = [c.answer for c in TL.calls.values()]
     assert answers == ["PASS", "DRIBBLE", "SHOOT", "SHOOT", "DRIBBLE", "SHOOT"]
-    assert all(c.team == "NBR" for c in TL.calls.values())  # an Arsenal fan is asked about Arsenal
+    assert all(c.team == "NBR" for c in TL.calls.values())  # a Northbridge fan is asked about Northbridge
     assert [c.player_id for c in TL.calls.values()][:3] == ["910104", "910106", "910108"]
 
 def test_goals_and_final_score():
     goals = [c.data for c in TL.cues if c.type == "demo.goal"]
-    assert [g["player"] for g in goals] == ["Saka", "João Pedro", "Saliba"]
+    assert [g["player"] for g in goals] == ["Mensah", "Doyle", "Hale"]
     assert goals[-1]["score"] == [2, 1]
     assert [c for c in TL.cues if c.type == "demo.full_time"][0].data["score"] == [2, 1]
 
@@ -31,10 +31,10 @@ def test_cues_sorted_and_jumps():
     assert types.count("demo.jump") == 6 and types[-1] == "demo.full_time"
     jumps = [c for c in TL.cues if c.type == "demo.jump"]
     assert jumps[0].at == 0 and TL.cues[0] is jumps[0]
-    assert jumps[0].data == {"title": "Arsenal on the attack", "clock": "11:34"}
+    assert jumps[0].data == {"title": "Northbridge on the attack", "clock": "11:34"}
     assert [j.data["title"] for j in jumps] == [
-        "Arsenal on the attack", "Arsenal keep pushing", "Arsenal in the box",
-        "Chelsea on the break", "Arsenal go again", "Late pressure"]
+        "Northbridge on the attack", "Northbridge keep pushing", "Northbridge in the box",
+        "Calder on the break", "Northbridge go again", "Late pressure"]
 
 def test_windows_do_not_overlap():
     opens = [c for c in TL.cues if c.type == "call.open"]
@@ -53,22 +53,22 @@ def test_calls_unchanged_by_the_cut():
 
 
 def test_chelsea_fan_gets_chelsea_calls():
-    che = build_timeline(load_match("nbr-cal-seed42"), team="CHE")
+    che = build_timeline(load_match("nbr-cal-seed42"), team="CAL")
     assert len(che.calls) == 6 and all(c.team == "CAL" for c in che.calls.values())
     assert sorted({c.answer for c in che.calls.values()}) == ["DRIBBLE", "PASS", "SHOOT"]
     goals = [c.data["player"] for c in che.cues if c.type == "demo.goal"]
-    assert goals == ["Saka", "João Pedro", "Saliba"]  # every goal of the match is still shown
-    assert 90 <= che.duration <= 105 and che.team == "CHE"
+    assert goals == ["Mensah", "Doyle", "Hale"]  # every goal of the match is still shown
+    assert 90 <= che.duration <= 105 and che.team == "CAL"
 
 
 def test_dribble_is_visible_at_its_lock():
     dribble = next(c for c in TL.calls.values() if c.answer == "DRIBBLE")
     lock = next(c for c in TL.cues if c.type == "call.lock" and c.data["call_id"] == dribble.call_id)
     events = [c for c in TL.cues if c.type == "demo.event" and c.data["type"] == "dribble"
-              and c.data["player"] == "Zubimendi"]
+              and c.data["player"] == "Pryce"]
     assert len(events) == 1 and events[0].at == lock.at
     ev = events[0].data
-    assert ev["team"] == "ARS" and ev["player"] == "Zubimendi" and ev["end_xy"] is None
+    assert ev["team"] == "NBR" and ev["player"] == "Pryce" and ev["end_xy"] is None
     x, y = ev["xy"]
     assert 0 <= x <= 105 and 0 <= y <= 68
     # the take-on starts DRIBBLE_LEAD before the lock: he runs at a defender standing on the
@@ -78,11 +78,11 @@ def test_dribble_is_visible_at_its_lock():
     burst = next(c for c in TL.cues if c.type == "demo.shape" and c.at > step.at + 1e-6)
     after = next(c for c in TL.cues if c.type == "demo.shape" and c.at == lock.at)
     before = [c for c in TL.cues if c.type == "demo.shape" and c.at < step.at - 1e-6][-1]
-    assert step.data["holder"] == burst.data["holder"] == "Zubimendi"
+    assert step.data["holder"] == burst.data["holder"] == "Pryce"
     assert round(step.data["dur"] + burst.data["dur"], 3) == DRIBBLE_LEAD
-    them = lambda c: {p["num"]: (p["x"], p["y"]) for p in c.data["players"] if p["team"] == "CHE"}
+    them = lambda c: {p["num"]: (p["x"], p["y"]) for p in c.data["players"] if p["team"] == "CAL"}
     me = lambda c: next((p["x"], p["y"]) for p in c.data["players"]
-                        if p["team"] == "ARS" and p["num"] == 36)
+                        if p["team"] == "NBR" and p["num"] == 36)
     dist = lambda a, b: ((a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2) ** 0.5
     assert me(before)[0] < ev["xy"][0]  # runs at his man from behind the spot
     defender = min(them(before), key=lambda n: dist(them(before)[n], ev["xy"]))
@@ -102,8 +102,8 @@ def test_motion_lands_on_the_next_beat():
         shape = [c for c in TL.cues if c.type == "demo.shape" and abs(c.at - e.at) < 1e-6][-1]
         assert shape.data["dur"] == e.data["dur"] and 0 <= e.data["flight"] <= e.data["dur"]
     passes = [e.data for e in evs if e.data["type"] == "pass" and e.data["to"]]
-    assert ("Calafiori", "Zubimendi") in [(p["player"], p["to"]) for p in passes]
-    long_ball = next(p for p in passes if p["player"] == "Calafiori" and p["to"] == "Zubimendi")
+    assert ("Fairbanks", "Pryce") in [(p["player"], p["to"]) for p in passes]
+    long_ball = next(p for p in passes if p["player"] == "Fairbanks" and p["to"] == "Pryce")
     assert 3.0 < long_ball["flight"] < long_ball["dur"]  # about 18 m/s over 59 m
 
 

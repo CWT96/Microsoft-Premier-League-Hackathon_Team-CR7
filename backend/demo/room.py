@@ -202,7 +202,7 @@ def rank_of(players: list[dict]) -> int:
 
 
 def good_eye(cards: list[dict]) -> str | None:
-    """Name of the first backed player who scored (design: "Your pick Saka scored"), else None."""
+    """Name of the first backed player who scored (design: "Your pick Mensah scored"), else None."""
     for card in cards:
         if any(row["what"] == "Goal" for row in card.get("stats", [])):
             return card["name"]

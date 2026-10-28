@@ -1,4 +1,4 @@
-// app.js: Director view. Loads GET /demo/director?team=ARS|CHE once per side and draws the
+// app.js: Director view. Loads GET /demo/director?team=NBR|CAL once per side and draws the
 // pitch, the fan's phone, the detail panel and the decision timeline for one playhead time t.
 //
 // Everything on screen is derived from the cues with `at <= t` (latest shape, clock, score,
@@ -88,8 +88,8 @@
     var ht = of("demo.half_time")[0] || null;
     return {
       team: str(raw.team),
-      home: str(obj(teams.home).code) || "ARS",
-      away: str(obj(teams.away).code) || "CHE",
+      home: str(obj(teams.home).code) || "NBR",
+      away: str(obj(teams.away).code) || "CAL",
       duration: duration,
       plays: arr(raw.plays).filter(function (p) {
         return p && num(p.at_start) !== null && num(p.at_end) !== null;
@@ -117,7 +117,7 @@
 
   // ---------- state ----------
   var S = {
-    team: "ARS", data: null, t: 0, playing: false, last: 0, token: 0,
+    team: "NBR", data: null, t: 0, playing: false, last: 0, token: 0,
     pinned: null, hovered: null, dotEls: {}, keys: {}, chartW: 0
   };
 
@@ -207,7 +207,7 @@
     function targets(s) {
       var out = {};
       arr(s.data.players).forEach(function (p) {
-        if (p && num(p.x) !== null && num(p.y) !== null && (p.team === "ARS" || p.team === "CHE")) {
+        if (p && num(p.x) !== null && num(p.y) !== null && (p.team === "NBR" || p.team === "CAL")) {
           out[p.team + ":" + str(p.num)] = { team: p.team, num: str(p.num), x: p.x, y: p.y };
         }
       });
@@ -294,11 +294,11 @@
   }
 
   function renderPitch(D, t) {
-    var fan = (D && D.team === "CHE") || (!(D && D.team) && S.team === "CHE") ? "CHE" : "ARS";
+    var fan = (D && D.team === "CAL") || (!(D && D.team) && S.team === "CAL") ? "CAL" : "NBR";
     var third = $("third"), label = $("third-label");
-    third.setAttribute("x", fan === "CHE" ? "0" : "70");
-    label.setAttribute("x", fan === "CHE" ? "2" : "103");
-    label.setAttribute("text-anchor", fan === "CHE" ? "start" : "end");
+    third.setAttribute("x", fan === "CAL" ? "0" : "70");
+    label.setAttribute("x", fan === "CAL" ? "2" : "103");
+    label.setAttribute("text-anchor", fan === "CAL" ? "start" : "end");
 
     var players = D ? playersAt(D, t) : null;
     var seen = {};
@@ -325,7 +325,7 @@
       hEl.setAttribute("x", clamp(bx, 6, 99).toFixed(2));
       hEl.setAttribute("y", (by < 6 ? by + 5 : by - 3.6).toFixed(2));
       hEl.style.display = ball.holder ? "" : "none";
-      var hot = fan === "CHE" ? ball.x < 35 : ball.x > 70;
+      var hot = fan === "CAL" ? ball.x < 35 : ball.x > 70;
       third.classList.toggle("hot", hot);
     } else {
       bEl.style.display = "none"; hEl.style.display = "none";
@@ -343,7 +343,7 @@
 
   function renderPhone(D, t, clock) {
     var sc = D ? scoreAt(D, t) : [0, 0];
-    $("score").textContent = (D ? D.home : "ARS") + " " + sc[0] + "–" + sc[1] + " " + (D ? D.away : "CHE");
+    $("score").textContent = (D ? D.home : "NBR") + " " + sc[0] + "–" + sc[1] + " " + (D ? D.away : "CAL");
     $("clock").textContent = clock || "--:--";
 
     var goal = D ? D.goals[latest(D.goals, t)] : null;
@@ -496,7 +496,7 @@
       if (x1 - x0 < 0.5) { return; }
       svg.appendChild(sv("rect", { "class": cls, x: x0, y: C.top, width: x1 - x0, height: C.bot - C.top, "pointer-events": "none" }));
     };
-    D.attack.forEach(function (a) { band(a.at_start, a.at_end, "att-" + (a.team === "CHE" ? "CHE" : "ARS")); });
+    D.attack.forEach(function (a) { band(a.at_start, a.at_end, "att-" + (a.team === "CAL" ? "CAL" : "NBR")); });
     D.picked.forEach(function (m) {
       band(m.atCard, m.atLock, "win");
       band(m.atLock, m.atLock + D.resultHold, "hold");
@@ -624,7 +624,7 @@
   var params = new URLSearchParams(location.search);
   S.startT = num(parseFloat(params.get("t")));
   var first = params.get("team");
-  load(first === "CHE" ? "CHE" : "ARS");
+  load(first === "CAL" ? "CAL" : "NBR");
   requestAnimationFrame(frame);
 
   // exposed for headless checks only

@@ -48,9 +48,9 @@ a{color:#04F5FF}a:hover{color:#8AFAFF}
         <span>{{liveLabel}}</span>
       </div>
       <div style="display: flex; align-items: center; gap: 6px; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 22px; line-height: 1">
-        <span style="width: 24px; height: 24px; border-radius: 7px; background: #FFFFFF; display: flex; align-items: center; justify-content: center; flex: none"><img src="../assets/crests/ars.svg" alt="Arsenal" style="width: 18px; height: 18px; object-fit: contain"></span>
-        <span>ARS</span><span>{{scoreLine}}</span><span>CHE</span>
-        <span style="width: 24px; height: 24px; border-radius: 7px; background: #FFFFFF; display: flex; align-items: center; justify-content: center; flex: none"><img src="../assets/crests/che.svg" alt="Chelsea" style="width: 18px; height: 18px; object-fit: contain"></span>
+        <span style="width: 24px; height: 24px; border-radius: 7px; background: #FFFFFF; display: flex; align-items: center; justify-content: center; flex: none"><img src="../assets/crests/nbr.svg" alt="Northbridge" style="width: 18px; height: 18px; object-fit: contain"></span>
+        <span>NBR</span><span>{{scoreLine}}</span><span>CAL</span>
+        <span style="width: 24px; height: 24px; border-radius: 7px; background: #FFFFFF; display: flex; align-items: center; justify-content: center; flex: none"><img src="../assets/crests/cal.svg" alt="Calder" style="width: 18px; height: 18px; object-fit: contain"></span>
       </div>
     </div>
     <div style="position: relative; display: flex; flex-direction: column; align-items: flex-end">
@@ -266,7 +266,7 @@ class Component extends DCLogic {
   }
   componentDidMount() { app.refresh(); }
   split(prompt) {
-    // the AI line "Saka has the ball in the box. What will he do next?" -> context + question
+    // the AI line "Mensah has the ball in the box. What will he do next?" -> context + question
     var m = /^(.*?[.!])\s+([^.!?]*\?)\s*$/.exec(prompt || "");
     return m ? { ctx: m[1], q: m[2] } : { ctx: prompt || "", q: "What's his next move?" };
   }
@@ -316,7 +316,7 @@ class Component extends DCLogic {
     var parts = this.split(call ? call.prompt : "");
     var prompt = { kind: "OPEN PLAY", ctx: parts.ctx, q: parts.q, who: call ? String(call.player).toUpperCase() : "" };
 
-    // pitch: metres (105 x 68, Arsenal attack left to right) -> % of the pitch box
+    // pitch: metres (105 x 68, Northbridge attack left to right) -> % of the pitch box
     // the pitch moves in pitch.js (every frame, written straight to these nodes); a render
     // just draws everyone where they are right now, with no CSS transition of its own
     var holderKey = Pitch.holder;
@@ -324,7 +324,7 @@ class Component extends DCLogic {
     var players = [];
     Object.keys(Pitch.dots).sort().forEach(function (k) {
       var d = Pitch.dots[k];
-      var home = d.team === "ARS", isH = k === holderKey;
+      var home = d.team === "NBR", isH = k === holderKey;
       players.push({ k: k, z: isH ? 2 : 1, n: d.num, l: Pitch.css(d.x, 105), t: Pitch.css(d.y, 68), dur: 0,
         bg: home ? "#FF8A7A" : "#2F5BFF", ink: home ? "#1F0A07" : "#FFFFFF",
         edge: isH ? "#00FF85" : (home ? "#3A120D" : "#DCE5FF") });

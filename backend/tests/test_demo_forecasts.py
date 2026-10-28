@@ -8,15 +8,15 @@ def test_defs():
     assert [(d.key, d.minutes, d.points) for d in WINDOWS] == [("f5",5,500),("f10",10,1000),("f15",15,1500)]
     assert [o for o, _ in F10.options] == ["ars", "che"]
     assert (F5.label, F5.question, F5.options) == (
-        "NEXT 5 MIN", "Who has more of the ball?", (("ars", "ARSENAL"), ("che", "CHELSEA")))
+        "NEXT 5 MIN", "Who has more of the ball?", (("ars", "NORTHBRIDGE"), ("che", "CALDER")))
 
 def test_window_clamped_to_half():
     assert window(F15, 1, 2500.0, M.first_half_end_t) == (2500.0, M.first_half_end_t)
     assert window(F5, 1, 100.0, M.first_half_end_t) == (100.0, 400.0)
 
 def test_outcomes_from_events():
-    assert outcome(M.events, "f15", 1, 1420.0, 2320.0) == "goal"        # Saka 23:54
-    assert outcome(M.events, "f10", 1, 1420.0, 2020.0) == "ars"         # Saka's shot first
+    assert outcome(M.events, "f15", 1, 1420.0, 2320.0) == "goal"        # Mensah 23:54
+    assert outcome(M.events, "f10", 1, 1420.0, 2020.0) == "ars"         # Mensah's shot first
     assert outcome(M.events, "f10", 1, 100.0, 700.0) == "che"           # first shot CAL at ~345
     assert outcome(M.events, "f15", 1, 100.0, 1000.0) == "nogoal"
     assert outcome(M.events, "f10", 1, 2850.0, M.first_half_end_t) == "none"

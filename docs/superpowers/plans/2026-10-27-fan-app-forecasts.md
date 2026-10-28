@@ -15,9 +15,9 @@
 - Points (spec table, never minus): next 5 / 10 / 15 min forecast **+500 / +1,000 / +1,500** if right; full-time result **+3,000**; exact score **+2,000 extra** (only together with the right result). Wrong = 0.
 - Questions and options (design copy, exact):
   - `f5` "NEXT 5 MIN" — "Will there be a corner?" — options `yes` "YES" / `no` "NO"; settles from any `corner` event (either team) in the window.
-  - `f10` "NEXT 10 MIN" — "Who takes the next shot?" — options `ars` "ARSENAL" / `che` "CHELSEA"; settles from the team of the first `shot` event in the window; no shot → outcome `none` (0 points, copy "No shots in that spell. No points lost.").
+  - `f10` "NEXT 10 MIN" — "Who takes the next shot?" — options `ars` "NORTHBRIDGE" / `che` "CALDER"; settles from the team of the first `shot` event in the window; no shot → outcome `none` (0 points, copy "No shots in that spell. No points lost.").
   - `f15` "NEXT 15 MIN" — "Will anyone score?" — options `goal` "GOAL" / `nogoal` "NO GOAL"; settles from any `goal` event in the window.
-  - `final` "FULL TIME" — "How does it end?" — options `ars` "ARSENAL" / `draw` "DRAW" / `che` "CHELSEA" + exact score (home, away), each 0–9, never below the live score; result and score are linked (picking a result adjusts the score to match; changing the score updates the result).
+  - `final` "FULL TIME" — "How does it end?" — options `ars` "NORTHBRIDGE" / `draw` "DRAW" / `che` "CALDER" + exact score (home, away), each 0–9, never below the live score; result and score are linked (picking a result adjusts the score to match; changing the score updates the result).
 - Window = `[t0, min(t0 + minutes*60, half_end)]` in the half where it was picked; `t0` = match time of the latest `demo.clock` tick. `half_end` = `match.first_half_end_t` (half 1) / `match.full_end_t` (half 2). Picks only while a Play is running (after a `demo.clock` and before `demo.half_time` / `demo.full_time` / the next `demo.jump`… simplest rule: accepted only if the latest cue sent was not `demo.jump`, `demo.half_time` or `demo.full_time`). One pending pick per key; a settled key can be picked again.
 - `final` can be set or changed any time before the first `demo.clock` of half 2; after that it is locked. Settles at `demo.full_time` with the final score from the timeline (2–1).
 - Shared total: forecast points add to the same `total` that `call.result` reports (one running total in `DemoSession`).
@@ -42,7 +42,7 @@
 **Interfaces (Produces):**
 - `@dataclass(frozen=True) class ForecastDef: key: str; label: str; minutes: int; points: int; question: str; options: tuple[tuple[str, str], ...]` (option id, display label).
 - `WINDOWS: tuple[ForecastDef, ...]` — f5, f10, f15 exactly as in Global Constraints.
-- `FINAL_POINTS = 3000`, `EXACT_POINTS = 2000`, `FINAL_OPTIONS = (("ars","ARSENAL"),("draw","DRAW"),("che","CHELSEA"))`.
+- `FINAL_POINTS = 3000`, `EXACT_POINTS = 2000`, `FINAL_OPTIONS = (("ars","NORTHBRIDGE"),("draw","DRAW"),("che","CALDER"))`.
 - `window(defn: ForecastDef, half: int, t0: float, half_end: float) -> tuple[float, float]`.
 - `outcome(events: Sequence[MatchEvent], key: str, half: int, t0: float, t1: float) -> str` — `"yes"/"no"`, `"ars"/"che"/"none"`, `"goal"/"nogoal"`; window inclusive `t0 <= e.t <= t1`, same half; team mapping NBR → `ars`, CAL → `che`.
 - `score_window(defn, pick, outcome) -> int` — `defn.points` if pick == outcome else 0.
@@ -67,8 +67,8 @@ def test_window_clamped_to_half():
     assert window(F5, 1, 100.0, M.first_half_end_t) == (100.0, 400.0)
 
 def test_outcomes_from_events():
-    assert outcome(M.events, "f15", 1, 1420.0, 2320.0) == "goal"        # Saka 23:54
-    assert outcome(M.events, "f10", 1, 1420.0, 2020.0) == "ars"         # Saka's shot first
+    assert outcome(M.events, "f15", 1, 1420.0, 2320.0) == "goal"        # Mensah 23:54
+    assert outcome(M.events, "f10", 1, 1420.0, 2020.0) == "ars"         # Mensah's shot first
     assert outcome(M.events, "f10", 1, 100.0, 700.0) == "che"           # first shot CAL at ~345
     assert outcome(M.events, "f15", 1, 100.0, 1000.0) == "nogoal"
     assert outcome(M.events, "f10", 1, 2850.0, M.first_half_end_t) == "none"
@@ -110,9 +110,9 @@ def test_scores():
 def test_window_settles_after_jump(): ...
     # pick f15 "goal" right after the first demo.clock of the "Opening minutes" Play (t≈88):
     # window 88–988 has no goal → forecast.result {key:"f15", outcome:"nogoal", correct: False, points: 0}
-    # arrives before the first demo.clock of the "Saka's goal" Play, and after that Play's demo.jump
+    # arrives before the first demo.clock of the "Mensah's goal" Play, and after that Play's demo.jump
 def test_hit_adds_to_shared_total(): ...
-    # pick f10 "ars" at the first tick of "Saka's goal" (t=1400) → result correct, points 1000,
+    # pick f10 "ars" at the first tick of "Mensah's goal" (t=1400) → result correct, points 1000,
     # and the next call.result's total includes the 1000
 def test_pending_settles_at_half_time(): ...
     # pick f5 at the first tick of the "Half time" Play (t=2848) → settles before demo.half_time
@@ -139,7 +139,7 @@ Write each test fully (exact assertions) from the comments; they encode the requ
 
 - Tabs under the scoreboard: "REAL TIME" / "FORECAST" (design `Forecast.dc.html`). The pitch stays visible on both; the call card area swaps with the forecast panel.
 - Forecast panel (render from `demo.session.forecasts`): header "BIGGER CALL, BIGGER POINTS" / "Look further ahead, earn more"; three window cards (window label, `+points`, question, two option buttons); tapping sends `forecast.pick`; on `forecast.locked` the card shows "LOCKED IN · SCORED AT {to_clock}" with the pick highlighted; on `forecast.result` show the outcome on the card for ~4 s ("Forecast hit +500" / "Not this time" / no-shot text), pop the points like a call result, update total, then the card re-opens for a new pick. On `forecast.rejected` "not_live" show a short "Opens when play resumes" note.
-- Full-time card: "How does it end?" ARSENAL / DRAW / CHELSEA + exact score steppers (+/−, linked per the design's `pickResult`/`bump` logic, never below the live score); every change sends `forecast.final` (debounce ~300 ms); show "LINKED TO YOUR RESULT"; after `forecast.final_locked` disable with "LOCKED AT HALF TIME"; `forecast.final_result` shows on the full-time card and pops points.
+- Full-time card: "How does it end?" NORTHBRIDGE / DRAW / CALDER + exact score steppers (+/−, linked per the design's `pickResult`/`bump` logic, never below the live score); every change sends `forecast.final` (debounce ~300 ms); show "LINKED TO YOUR RESULT"; after `forecast.final_locked` disable with "LOCKED AT HALF TIME"; `forecast.final_result` shows on the full-time card and pops points.
 - "Riding on your forecasts +{potential}" = sum of points of pending picks (+ final if saved and not settled).
 - On `call.open` while on FORECAST: switch to REAL TIME automatically (don't let the judge miss a call). A small dot on the FORECAST tab when a forecast settles while on REAL TIME.
 - Full-time card adds a line: "Forecasts: +X" (sum of forecast points).

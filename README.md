@@ -25,7 +25,7 @@ The match drives the game. Whenever the ball is played to a player, an **AI call
 
 ## What you'll see (about 2 minutes)
 
-The demo plays a ~93-second highlights cut of one match, shown as **Arsenal 2–1 Chelsea**. Best on a phone, or a browser window about 390 px wide.
+The demo plays a ~93-second highlights cut of one match, shown as **Northbridge 2–1 Calder**. Best on a phone, or a browser window about 390 px wide.
 
 1. **Landing** (what you see after scanning the QR code). The live match card, how many people are calling this match, **PLAY THIS MATCH**, and a box to join a friend's room by code. "Points only. No money, no betting."
 2. **Pick your side.** Choose a match and a team, then optionally **back up to 2 players** from the matchday squad, grouped into starting XI and bench. Backing a player is not a prediction: each one earns from real match stats by position, and the card shows how.
@@ -59,7 +59,7 @@ match events ─► decision moments (code) ─► live calls ─────┐
 - **Decision moments.** Code scans the events for each time the ball reaches a player, and takes the answer from what that player does next (pass, shot or dribble). Calls open on the pass to him and lock on his action, so the answer cannot be known when you tap.
 - **Forecasts and player bonus.** Code settles each forecast window from the events in that span, and counts each backed player's stats (saves, tackles, key passes, goals…) against the position's scoring table.
 - **Points.** Pure functions in code. The total is shown live during the match.
-- **AI call lines.** For each call, an LLM writes a short setup line ("Gabriel has the ball in his own half for Arsenal. What will he do next?") and a one-sentence explanation after it locks. They were generated once, offline, with `gpt-4.1-mini` on **Azure OpenAI**, through `backend/agents/llm.py`, and committed to `backend/llm_cache/demo_lines/`. Guards reject any setup that hints at the answer and any line with a number that is not in the facts; a rejected line falls back to a template.
+- **AI call lines.** For each call, an LLM writes a short setup line ("Duarte has the ball in his own half for Northbridge. What will he do next?") and a one-sentence explanation after it locks. They were generated once, offline, with `gpt-4.1-mini` on **Azure OpenAI**, through `backend/agents/llm.py`, and committed to `backend/llm_cache/demo_lines/`. Guards reject any setup that hints at the answer and any line with a number that is not in the facts; a rejected line falls back to a template.
 - **Core rule: code decides, the LLM phrases.** The LLM never picks an answer or a number.
 
 ## Architecture
@@ -74,13 +74,13 @@ match events ─► decision moments (code) ─► live calls ─────┐
 
 ## Honest notes
 
-- **The data is synthetic.** The match is a generated dataset (`nbr-cal-seed42`) between two fictional clubs, relabelled for the demo as Arsenal vs Chelsea with real player names. The events did not happen in a real match.
+- **The data is synthetic.** The match is a generated dataset (`nbr-cal-seed42`) between two fictional clubs, Northbridge vs Calder; every club, crest and player name in the app is fictional. The events did not happen in a real match.
 - **Off-ball player positions are estimated.** The dataset has no tracking data, so the 22 dots are placed from each team's formation and the ball position. Only the ball and the player on it come from the events.
 - **The email save is a mock.** The address is checked for shape and dropped. Nothing is sent or stored.
 - **The friends and the crowd are simulated** in code (fixed seeds), so every run is reproducible.
 - **The partner report runs on simulated users.** `frontend/ops-dashboard/sim/simulate.js` is a seeded model of about 19,500 people (scan time and channel, calls, forecasts, leaving early, signing up). It is not wired to the backend yet.
 - **Two controls are drawn but not working yet:** the screen-sync chip (TV, streaming or stadium) and the room-code box on the landing screen.
-- **Only Arsenal v Chelsea has match data.** The Pick screen shows three matches from the design; starting another one plays the Arsenal v Chelsea data.
+- **Only Northbridge v Calder has match data.** The Pick screen shows three matches from the design; starting another one plays the Northbridge v Calder data.
 
 ## Run locally
 

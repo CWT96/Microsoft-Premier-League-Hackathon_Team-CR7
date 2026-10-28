@@ -6,7 +6,7 @@ Plain HTML, CSS and JavaScript. No build step, no framework, no external network
 
 ## Run
 
-Served by the backend at `/director/` (it reads `GET /demo/director?team=ARS|CHE`):
+Served by the backend at `/picker/` (it reads `GET /demo/director?team=NBR|CAL`):
 
 ```bash
 uvicorn backend.app.main:app --reload    # http://localhost:8000/picker/
@@ -16,7 +16,7 @@ URL options:
 
 | Option | Effect |
 |---|---|
-| `?team=CHE` | Start on the Chelsea fan's cut (default Arsenal) |
+| `?team=CAL` | Start on the Calder fan's cut (default Northbridge) |
 | `?t=47.5` | Start with the playhead at that real second of the cut |
 | `?data=picker-{team}.json` | Read a stand-in JSON instead of the endpoint (same origin only; `{team}` is replaced) |
 

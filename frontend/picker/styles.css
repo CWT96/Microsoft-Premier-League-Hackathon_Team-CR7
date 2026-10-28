@@ -6,8 +6,8 @@
   --ink-2: #b4b4b8;
   --ink-3: #85858a;
   --line: #3a3a3e;
-  --ars: #e5383b;
-  --che: #2f6fe0;
+  --nbr: #e5383b;
+  --cal: #2f6fe0;
   --green: #2fa84f;
   --blue: #4c8dff;
   --orange: #f08c2e;
@@ -47,8 +47,8 @@ body { margin: 0; background: var(--bg); color: var(--ink); }
 .lines rect, .lines line, .lines circle { fill: none; stroke: rgba(255, 255, 255, 0.85); stroke-width: 0.3; }
 .lines .spot { fill: rgba(255, 255, 255, 0.85); }
 .dot { stroke: #fff; stroke-width: 0.25; }
-.dot.ARS { fill: var(--ars); }
-.dot.CHE { fill: var(--che); }
+.dot.NBR { fill: var(--nbr); }
+.dot.CAL { fill: var(--cal); }
 .num { fill: #fff; font-size: 1.5px; font-weight: 700; text-anchor: middle; dominant-baseline: central; pointer-events: none; }
 .ball { fill: #ffe14d; stroke: #222; stroke-width: 0.25; }
 .holder { fill: #fff; font-size: 2.4px; font-weight: 700; text-anchor: middle; paint-order: stroke;
@@ -66,8 +66,8 @@ body { margin: 0; background: var(--bg); color: var(--ink); }
 .chart .base { stroke: #c8c8cc; stroke-width: 1; }
 .chart .ht { fill: #e2e2e5; }
 .chart .ht-label { fill: #77777c; }
-.chart .att-ARS { fill: rgba(240, 140, 46, 0.30); }
-.chart .att-CHE { fill: rgba(139, 92, 246, 0.26); }
+.chart .att-NBR { fill: rgba(240, 140, 46, 0.30); }
+.chart .att-CAL { fill: rgba(139, 92, 246, 0.26); }
 .chart .win { fill: rgba(47, 168, 79, 0.35); }
 .chart .hold { fill: rgba(142, 142, 147, 0.35); }
 .chart .move { fill: none; stroke: var(--blue); stroke-width: 2; stroke-linejoin: round; }
@@ -88,7 +88,7 @@ body { margin: 0; background: var(--bg); color: var(--ink); }
 .sym { font-weight: 700; }
 .sym.pick { color: var(--green); } .sym.block { color: var(--red); } .sym.short { color: var(--orange); } .sym.other { color: var(--grey); }
 .sw { width: 14px; height: 12px; border-radius: 2px; display: inline-block; }
-.sw.green { background: rgba(47, 168, 79, 0.6); } .sw.grey { background: rgba(142, 142, 147, 0.6); } .sw.att-ars { background: rgba(240, 140, 46, 0.6); } .sw.att-che { background: rgba(139, 92, 246, 0.55); }
+.sw.green { background: rgba(47, 168, 79, 0.6); } .sw.grey { background: rgba(142, 142, 147, 0.6); } .sw.att-nbr { background: rgba(240, 140, 46, 0.6); } .sw.att-cal { background: rgba(139, 92, 246, 0.55); }
 .ln { width: 16px; height: 2px; display: inline-block; }
 .ln.blue { background: var(--blue); }
 

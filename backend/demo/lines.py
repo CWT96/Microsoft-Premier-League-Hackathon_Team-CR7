@@ -172,7 +172,7 @@ def main() -> None:
     print(f"LLM_MODE={client.mode}  cache={client.cache_dir / AGENT}")
     match = load_match("nbr-cal-seed42")
     drop = "--drop-rejected" in sys.argv[1:]
-    for team in ("ARS", "CHE"):  # each side has its own cut, so its own calls
+    for team in ("NBR", "CAL"):  # each side has its own cut, so its own calls
         tl = build_timeline(match, client=client, team=team)
         print(f"\n=== {team}")
         for cid, ln in tl.lines.items():

@@ -1,0 +1,8 @@
+{
+  "match_id": "nbr-cal-seed42",
+  "qid": "c-63f6079c-637b-4a39-96d2-875ff484bf01",
+  "response": {
+    "setup": "Doyle has the ball close to the goal inside the box. What will he do next?",
+    "explain": "Doyle tried to kick the ball towards the goal, but it missed and no goal was scored."
+  }
+}

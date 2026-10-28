@@ -1,0 +1,8 @@
+{
+  "match_id": "nbr-cal-seed42",
+  "qid": "c-7323eab3-0554-4144-97f1-480a546bc509",
+  "response": {
+    "setup": "Ortega has the ball near the opponent's goal. What will he do next?",
+    "explain": "Ortega passed the ball, leading to Doyle scoring a goal for Calder."
+  }
+}

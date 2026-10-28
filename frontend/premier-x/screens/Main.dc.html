@@ -36,13 +36,13 @@ a{color:#04F5FF}a:hover{color:#8AFAFF}
     </div>
     <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: center; gap: 8px">
       <div style="display: flex; flex-direction: column; align-items: center; gap: 6px">
-        <span style="width: 58px; height: 58px; border-radius: 16px; background: #FFFFFF; display: flex; align-items: center; justify-content: center; flex: none"><img src="../assets/crests/ars.svg" alt="Arsenal" style="width: 46px; height: 46px; object-fit: contain"></span>
-        <div style="font-size: 14px; font-weight: 600">Arsenal</div>
+        <span style="width: 58px; height: 58px; border-radius: 16px; background: #FFFFFF; display: flex; align-items: center; justify-content: center; flex: none"><img src="../assets/crests/nbr.svg" alt="Northbridge" style="width: 46px; height: 46px; object-fit: contain"></span>
+        <div style="font-size: 14px; font-weight: 600">Northbridge</div>
       </div>
       <div style="text-align: center; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 46px; line-height: 1">{{score}}</div>
       <div style="display: flex; flex-direction: column; align-items: center; gap: 6px">
-        <span style="width: 58px; height: 58px; border-radius: 16px; background: #FFFFFF; display: flex; align-items: center; justify-content: center; flex: none"><img src="../assets/crests/che.svg" alt="Chelsea" style="width: 46px; height: 46px; object-fit: contain"></span>
-        <div style="font-size: 14px; font-weight: 600">Chelsea</div>
+        <span style="width: 58px; height: 58px; border-radius: 16px; background: #FFFFFF; display: flex; align-items: center; justify-content: center; flex: none"><img src="../assets/crests/cal.svg" alt="Calder" style="width: 46px; height: 46px; object-fit: contain"></span>
+        <div style="font-size: 14px; font-weight: 600">Calder</div>
       </div>
     </div>
     <div style="display: flex; align-items: center; gap: 8px; padding-top: 10px; border-top: 1px solid #5C2A63; font-size: 13px; color: #CDB8D1">
@@ -100,9 +100,9 @@ a{color:#04F5FF}a:hover{color:#8AFAFF}
 <script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
 class Component extends DCLogic {
   renderVals() {
-    // the match card: Arsenal v Chelsea from GET /demo/squads (the run opens at 11:34, 0-0)
+    // the match card: Northbridge v Calder from GET /demo/squads (the run opens at 11:34, 0-0)
     var m = app.squads && app.squads.matches ? app.squads.matches[0] : null;
-    return { venue: "the Emirates", liveLabel: "LIVE 12'", score: "0 – 0",
+    return { venue: "Northbridge Park", liveLabel: "LIVE 12'", score: "0 – 0",
              matchday: m ? m.meta : "Matchday 9", crowd: app.fmt(m ? m.fans : 128406) };
   }
 }

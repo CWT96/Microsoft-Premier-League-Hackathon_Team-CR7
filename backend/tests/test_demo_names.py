@@ -10,9 +10,9 @@ from backend.demo.names import TEAMS, PLAYERS, display_name, fixed_xy, clock_lab
 
 
 def test_scorers_relabelled():
-    assert display_name("910109") == "Saka"
-    assert display_name("910209") == "João Pedro"
-    assert display_name("910105") == "Saliba"
+    assert display_name("910109") == "Mensah"
+    assert display_name("910209") == "Doyle"
+    assert display_name("910105") == "Hale"
 
 
 def test_unknown_player_is_blank():
@@ -20,7 +20,7 @@ def test_unknown_player_is_blank():
 
 
 def test_teams():
-    assert TEAMS["NBR"]["name"] == "Arsenal" and TEAMS["CAL"]["code"] == "CHE"
+    assert TEAMS["NBR"]["name"] == "Northbridge" and TEAMS["CAL"]["code"] == "CAL"
 
 
 def test_every_mapped_number_unique_per_team():
