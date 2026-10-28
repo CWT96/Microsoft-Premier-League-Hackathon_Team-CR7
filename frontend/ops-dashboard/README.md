@@ -52,8 +52,8 @@ This rewrites, deterministically (same seed, same output):
 | File | What |
 |---|---|
 | `data/data.js` | Aggregates the page loads (`window.SIM`) |
-| `data/matchday_call_minute_by_minute.csv` | One row per match minute: scans, games started, players online, calls opened, calls answered, sign-ups |
-| `data/matchday_call_users.csv` | One row per simulated person (20,097 rows) |
+| `data/premier_x_minute_by_minute.csv` | One row per match minute: scans, games started, players online, calls opened, calls answered, sign-ups |
+| `data/premier_x_users.csv` | One row per simulated person (20,097 rows) |
 
 The project rule is that user data is generated in `backend/social/` and served at `GET /api/ops/funnel`. This page uses its own simulation for now. If the backend endpoint lands, the funnel can be switched to it; note its stages differ (`scanned → answered_5plus → signed_up → redeemed`).
 
@@ -61,4 +61,4 @@ The project rule is that user data is generated in `backend/social/` and served 
 
 - Same relabel as the fan app (approved in `CLAUDE.md`): the synthetic match is shown as Arsenal vs Chelsea with real player names and crests (`assets/`). The data stays synthetic.
 - `backend/social/funnel.py` (`GET /api/ops/funnel`) belongs to the earlier Room prototype. This page does not use it; its stages also differ (`scanned → answered_5plus → signed_up → redeemed`).
-- Not served by the deployed app yet: the Dockerfile copies only `frontend/fan-app/`. Open `index.html` locally.
+- Not served by the deployed app yet: the image ships `frontend/fan-app/` (at `/classic/`) and `frontend/premier-x/` (at `/`). Open `index.html` locally, or move this folder to `frontend/premier-x/ops/` to serve it at `/ops/`.

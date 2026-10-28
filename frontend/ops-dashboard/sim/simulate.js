@@ -1,4 +1,4 @@
-// Matchday Call ops dashboard: seeded per-user simulation of the demo match.
+// The Premier X ops dashboard: seeded per-user simulation of the demo match.
 // Run: node frontend/ops-dashboard/sim/simulate.js
 // Writes ../data/data.js (loaded by index.html) and two CSVs. Same seed -> same numbers every run.
 //
@@ -207,10 +207,10 @@ fs.writeFileSync(path.join(OUT, "data.js"),
 // CSVs
 var csv = ["minute_index,match_clock,phase,qr_scans,games_started,players_online,calls_opened,calls_answered,signups"];
 per.forEach(function (p) { csv.push([p.idx, p.clock, p.phase, p.scans, p.started, p.live, opened[p.idx], p.calls, p.signups].join(",")); });
-fs.writeFileSync(path.join(OUT, "matchday_call_minute_by_minute.csv"), csv.join("\n") + "\n");
+fs.writeFileSync(path.join(OUT, "premier_x_minute_by_minute.csv"), csv.join("\n") + "\n");
 var uc = ["user_id,channel,scan_clock,started_game,start_clock,left_clock,calls,forecasts,forecast_hits,saw_halftime_prompt,stayed_to_full_time,signed_up,signup_clock,signup_trigger,new_to_pl_account"];
 users.forEach(function (u) { uc.push([u.id, u.channel, T[u.scan].clock, u.started, u.started ? T[u.start].clock : "", u.started ? T[Math.min(u.end, N - 1)].clock : "", u.calls, u.forecasts, u.forecastHits, u.sawHT, u.sawFT, u.signup !== null, u.signup !== null ? T[u.signup].clock : "", u.signupTrigger, u.newToPL].join(",")); });
-fs.writeFileSync(path.join(OUT, "matchday_call_users.csv"), uc.join("\n") + "\n");
+fs.writeFileSync(path.join(OUT, "premier_x_users.csv"), uc.join("\n") + "\n");
 
 // report
 var mx = 0, mi = 0; per.forEach(function (p) { if (p.live > mx) { mx = p.live; mi = p.idx; } });
