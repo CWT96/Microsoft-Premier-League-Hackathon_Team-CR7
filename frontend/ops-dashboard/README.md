@@ -35,10 +35,10 @@ A light, report-style layout: the audience is a club or league marketing team, s
 
 ## Data (simulated)
 
-**Match facts come from the same match the fan app plays.** `sim/simulate.js` reads `data/source/events/9000001.json` (`nbr-cal-seed42`, shown as Arsenal 2–1 Chelsea, names from `backend/demo/names.py`):
+**Match facts come from the same match the fan app plays.** `sim/simulate.js` reads `data/source/events/9000001.json` (`nbr-cal-seed42`, Northbridge 2–1 Calder; player names are the dataset's own fictional names, as in the fan app):
 
 - the minute timeline, including stoppage time (first half to 45+2, second half to 90+4);
-- the goals and scorers: Saka 23', João Pedro 60', Saliba 79';
+- the goals and scorers: Mensah 23', Doyle 60', Hale 79';
 - how many live calls can open each minute, using the fan app's rules from `backend/demo/calls.py` (a call opens on a completed pass, locks on the receiver's pass, shot or dribble, needs a window of at least 3 s, and calls are at least 6 s apart; shots first, then dribbles, then passes). That gives 347 calls over the match.
 
 **User behaviour is simulated** by a seeded per-user model: each simulated person has a scan time and channel, may start a game, answers some of the calls that open while they are online (more right after a goal), makes forecasts, may leave early, and may sign up. Sign-ups come from two moments in the phone flow: the **half-time save window** (a sheet opens at the break for everyone who played some of the first half; "Maybe later" leaves a chip that a few people tap during the second half) and the **full-time "save your points" screen**. Anyone who saved at half-time is not counted again at full time.
@@ -59,6 +59,6 @@ The project rule is that user data is generated in `backend/social/` and served 
 
 ## Notes
 
-- Same relabel as the fan app (approved in `CLAUDE.md`): the synthetic match is shown as Arsenal vs Chelsea with real player names and crests (`assets/`). The data stays synthetic.
+- Every club, crest and player name is fictional, the same as the fan app: Northbridge (NBR) vs Calder (CAL), with the dataset's own player names and simple fictional crests (`assets/nbr.svg`, `assets/cal.svg`).
 - `backend/social/funnel.py` (`GET /api/ops/funnel`) belongs to the earlier Room prototype. This page does not use it; its stages also differ (`scanned → answered_5plus → signed_up → redeemed`).
-- Not served by the deployed app yet: the image ships `frontend/fan-app/` (at `/classic/`) and `frontend/premier-x/` (at `/`). Open `index.html` locally, or move this folder to `frontend/premier-x/ops/` to serve it at `/ops/`.
+- Served by the deployed app at `/ops/` (mounted in `backend/app/main.py`, copied by `infra/Dockerfile`).
