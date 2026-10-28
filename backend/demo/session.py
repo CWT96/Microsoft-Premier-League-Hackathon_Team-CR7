@@ -175,7 +175,8 @@ class DemoSession:
             players = room.board(self.total, self.saved, room.friend_totals(self.timeline), "ft")
             rank = room.rank_of(players)
             pct = room.top_pct(self.total, room.crowd_totals(self.timeline))
-            fc = f"{self.window_hits} forecasts hit" + (
+            hits = self.window_hits + self.final_right  # the full-time result is a forecast too
+            fc = (f"{hits} forecast{'' if hits == 1 else 's'} hit" if hits else "Forecasts open every match") + (
                 " · full-time result nailed" if self.final_right else "")
             cards = self._bonus((1, 2), True)
             pb = ("Back players next match" if not cards else

@@ -187,6 +187,11 @@ class Component extends DCLogic {
       return d;
     });
   }
+  componentDidMount() {
+    // the screen settles in first, then the count starts on its own (the button still starts it sooner)
+    var self = this;
+    this.later(1300, function () { if (self.state.stage === "idle") { self.spin(); } });
+  }
   componentWillUnmount() { this.clear(); }
   clear() { this.timers.forEach(function (t) { clearTimeout(t); }); this.timers = []; if (this.raf) { cancelAnimationFrame(this.raf); this.raf = null; } }
   later(ms, fn) { this.timers.push(setTimeout(fn, ms)); }

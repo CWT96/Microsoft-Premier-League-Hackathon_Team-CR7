@@ -109,19 +109,19 @@ a{color:#04F5FF}a:hover{color:#8AFAFF}
     <div style="position: absolute; right: 8px; top: 28%; height: 44%; width: 46px; border: 1.5px solid rgba(255,255,255,0.38); border-right: none"></div>
 
     <sc-for list="{{players}}" as="p" hint-placeholder-count="22">
-      <div key="{{p.k}}" style="position: absolute; left: {{p.l}}; top: {{p.t}}; width: 15px; height: 15px; margin: -7.5px 0 0 -7.5px; box-sizing: border-box; border-radius: 50%; background: {{p.bg}}; border: 1.5px solid {{p.edge}}; color: {{p.ink}}; display: flex; align-items: center; justify-content: center; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 8.5px; line-height: 1; transition: left {{p.dur}}ms linear, top {{p.dur}}ms linear">{{p.n}}</div>
+      <div key="{{p.k}}" style="position: absolute; left: {{p.l}}; top: {{p.t}}; width: 15px; height: 15px; margin: -7.5px 0 0 -7.5px; box-sizing: border-box; border-radius: 50%; background: {{p.bg}}; border: 1.5px solid {{p.edge}}; color: {{p.ink}}; display: flex; align-items: center; justify-content: center; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 8.5px; line-height: 1; transition: left {{p.dur}}ms linear, top {{p.dur}}ms linear; z-index: {{p.z}}">{{p.n}}</div>
     </sc-for>
 
     <sc-if value="{{hasHolder}}" hint-placeholder-val="{{ true }}">
-    <div style="position: absolute; left: {{hl.l}}; top: {{hl.t}}; width: 0; height: 0; transition: left {{hl.dur}}ms {{hl.ease}}, top {{hl.dur}}ms {{hl.ease}}">
+    <div style="position: absolute; left: {{hl.l}}; top: {{hl.t}}; width: 0; height: 0; transition: left {{hl.dur}}ms {{hl.ease}}, top {{hl.dur}}ms {{hl.ease}}; z-index: 3">
       <div class="mc-ring2" style="position: absolute; left: -11px; top: -11px; width: 22px; height: 22px; box-sizing: border-box; border-radius: 50%; border: 2px solid #00FF85"></div>
       <div style="position: absolute; left: 0; top: -27px; transform: translateX(-50%); padding: 1px 5px; border-radius: 5px; background: #00FF85; color: #1A0020; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 12px; white-space: nowrap">{{hl.tag}}</div>
     </div>
     </sc-if>
-    <div style="position: absolute; left: {{ball.l}}; top: {{ball.t}}; width: 7px; height: 7px; margin: -3.5px 0 0 -3.5px; border-radius: 50%; background: #FFFFFF; box-shadow: 0 0 0 1.5px #1A0020, 0 0 6px rgba(255,255,255,0.7); transition: left {{ball.dur}}ms {{ball.ease}}, top {{ball.dur}}ms {{ball.ease}}"></div>
+    <div style="position: absolute; left: {{ball.l}}; top: {{ball.t}}; width: 7px; height: 7px; margin: -3.5px 0 0 -3.5px; border-radius: 50%; background: #FFFFFF; box-shadow: 0 0 0 1.5px #1A0020, 0 0 6px rgba(255,255,255,0.7); transition: left {{ball.dur}}ms {{ball.ease}}, top {{ball.dur}}ms {{ball.ease}}; z-index: 3"></div>
 
     <sc-if value="{{feedOn}}" hint-placeholder-val="{{ false }}">
-    <div key="{{feedKey}}" style="position: absolute; left: 12px; top: 12px; display: flex; flex-direction: column; gap: 4px">
+    <div key="{{feedKey}}" style="position: absolute; left: 12px; top: 12px; z-index: 4; display: flex; flex-direction: column; gap: 4px">
       <sc-for list="{{feed}}" as="f" hint-placeholder-count="2">
         <div style="display: flex; align-items: center; gap: 6px; padding: 3px 7px; border-radius: 6px; background: rgba(26,0,32,0.8); font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 12px; letter-spacing: 0.5px; animation: mcFeed 3600ms ease-out {{f.delay}} both">
           <span style="color: {{f.color}}">{{f.pts}}</span><span style="color: #EEDFF0">{{f.label}}</span>
@@ -129,10 +129,10 @@ a{color:#04F5FF}a:hover{color:#8AFAFF}
       </sc-for>
     </div>
     </sc-if>
-    <div style="position: absolute; right: 12px; bottom: 10px; font-size: 10px; color: rgba(255,255,255,0.8)">Live positions · {{syncShort}}</div>
+    <div style="position: absolute; right: 12px; bottom: 10px; font-size: 10px; color: rgba(255,255,255,0.8); z-index: 4">Live positions · {{syncShort}}</div>
 
     <sc-if value="{{hasJump}}" hint-placeholder-val="{{ false }}">
-      <div class="mc-dim" style="position: absolute; left: 0; top: 0; right: 0; bottom: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px">
+      <div class="mc-dim" style="position: absolute; left: 0; top: 0; right: 0; bottom: 0; z-index: 5; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px">
         <div class="mc-pop" style="font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-style: italic; font-size: 40px; line-height: 0.95; color: #FFFFFF; text-align: center; text-transform: uppercase; padding: 0 16px">{{jumpTitle}}</div>
         <div class="mc-rib1" style="display: flex; align-items: center; gap: 8px; padding: 4px 10px; border-radius: 6px; background: rgba(26,0,32,0.88); font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 14px; letter-spacing: 1px">
           <span style="color: #04F5FF">{{jumpMinute}}</span><span>{{jumpLabel}}</span>
@@ -141,7 +141,7 @@ a{color:#04F5FF}a:hover{color:#8AFAFF}
     </sc-if>
 
     <sc-if value="{{isReveal}}" hint-placeholder-val="{{ false }}">
-      <div class="mc-dim" style="position: absolute; left: 0; top: 0; right: 0; bottom: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px">
+      <div class="mc-dim" style="position: absolute; left: 0; top: 0; right: 0; bottom: 0; z-index: 5; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px">
         <div class="mc-pop" style="display: flex; flex-direction: column; align-items: center; gap: 2px">
           <div style="font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-style: italic; font-size: 70px; line-height: 0.9; color: {{popColor}}; text-shadow: 0 0 22px {{popGlow}}">+{{gained}}</div>
           <div style="font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 20px; letter-spacing: 3px; color: #FFFFFF">{{popLabel}}</div>
@@ -157,7 +157,7 @@ a{color:#04F5FF}a:hover{color:#8AFAFF}
       </div>
     </sc-if>
     <sc-if value="{{isMissed}}" hint-placeholder-val="{{ false }}">
-      <div class="mc-dim" style="position: absolute; left: 0; top: 0; right: 0; bottom: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px">
+      <div class="mc-dim" style="position: absolute; left: 0; top: 0; right: 0; bottom: 0; z-index: 5; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px">
         <div class="mc-pop" style="font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-style: italic; font-size: 52px; line-height: 0.9; color: #FFFFFF">TOO QUICK!</div>
         <div class="mc-rib1" style="padding: 4px 10px; border-radius: 6px; background: rgba(26,0,32,0.88); font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 14px; letter-spacing: 1px">IT WAS A {{answerLabel}} · STREAK SAFE</div>
       </div>
@@ -329,7 +329,7 @@ class Component extends DCLogic {
       var d = A.dots[k];
       var xy = pos(d.x, d.y);
       var home = d.team === "ARS", isH = k === holderKey;
-      players.push({ k: k, n: d.num, l: xy[0] + "%", t: xy[1] + "%", dur: d.dur,
+      players.push({ k: k, z: isH ? 2 : 1, n: d.num, l: xy[0] + "%", t: xy[1] + "%", dur: d.dur,
         bg: home ? "#FF8A7A" : "#2F5BFF", ink: home ? "#1F0A07" : "#FFFFFF",
         edge: isH ? "#00FF85" : (home ? "#3A120D" : "#DCE5FF") });
     });
@@ -382,8 +382,11 @@ class Component extends DCLogic {
       players: players, hl: hl, ball: ball, hasHolder: !!A.holder,
       feed: A.feed.map(function (f, i) { return Object.assign({}, f, { delay: (250 + i * 120) + "ms" }); }),
       feedOn: A.feed.length > 0, feedKey: A.feedKey,
-      hasJump: !!jump, jumpTitle: jump ? jump.title : "", jumpMinute: jump ? app.minute(jump.clock) : "",
-      jumpLabel: jump && A.live === null ? "KICK-OFF OF THE HIGHLIGHTS" : "NEXT HIGHLIGHT",
+      // a cut in play, or the half-time / full-time whistle: one card style for all three
+      hasJump: !!(jump || A.endCard),
+      jumpTitle: A.endCard ? A.endCard.title : jump ? jump.title : "",
+      jumpMinute: A.endCard ? A.endCard.label : jump ? app.minute(jump.clock) : "",
+      jumpLabel: A.endCard ? "" : "LIVE",
       pips: pips,
       streakHint: streak >= 3 ? "On fire: +50 bonus per call" : "3 in a row = bonus",
       syncOpen: s.syncOpen, sources: sources, syncLabel: syncLabel,

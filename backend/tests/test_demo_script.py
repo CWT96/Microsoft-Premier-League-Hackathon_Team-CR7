@@ -1,5 +1,5 @@
 from backend.ingest.loader import load_match
-from backend.demo.script import build_timeline
+from backend.demo.script import DRIBBLE_LEAD, build_timeline
 
 TL = build_timeline(load_match("nbr-cal-seed42"))
 types = [c.type for c in TL.cues]
@@ -33,8 +33,8 @@ def test_cues_sorted_and_jumps():
     assert jumps[0].at == 0 and TL.cues[0] is jumps[0]
     assert jumps[0].data == {"title": "Arsenal on the attack", "clock": "11:34"}
     assert [j.data["title"] for j in jumps] == [
-        "Arsenal on the attack", "Arsenal keep pushing", "Saka's goal", "Chelsea hit back",
-        "Arsenal go again", "The winner"]
+        "Arsenal on the attack", "Arsenal keep pushing", "Arsenal in the box",
+        "Chelsea on the break", "Arsenal go again", "Late pressure"]
 
 def test_windows_do_not_overlap():
     opens = [c for c in TL.cues if c.type == "call.open"]
@@ -71,21 +71,37 @@ def test_dribble_is_visible_at_its_lock():
     assert ev["team"] == "ARS" and ev["player"] == "Zubimendi" and ev["end_xy"] is None
     x, y = ev["xy"]
     assert 0 <= x <= 105 and 0 <= y <= 68
-    shape = next(c for c in TL.cues if c.type == "demo.shape" and c.at == lock.at
-                 and TL.cues.index(c) > TL.cues.index(events[0]))
-    # the shape sent with the dribble is where Zubimendi is at the next beat (his pass)
+    # the take-on starts DRIBBLE_LEAD before the lock: he squares up to a defender, goes round
+    # him (the defender lunges) and is past him at the lock; then on to his pass
+    start = round(lock.at - DRIBBLE_LEAD, 3)
+    take_on = next(c for c in TL.cues if c.type == "demo.shape" and round(c.at, 3) == start)
+    assert take_on.data["holder"] == "Zubimendi" and take_on.data["dur"] < DRIBBLE_LEAD
+    burst = next(c for c in TL.cues if c.type == "demo.shape" and c.at > take_on.at + 1e-6)
+    assert round(take_on.data["dur"] + burst.data["dur"], 3) == DRIBBLE_LEAD
+    before = [c for c in TL.cues if c.type == "demo.shape" and c.at < take_on.at - 1e-6][-1]
+    them = lambda c: {p["num"]: (p["x"], p["y"]) for p in c.data["players"] if p["team"] == "CHE"}
+    me = lambda c: next((p["x"], p["y"]) for p in c.data["players"]
+                        if p["team"] == "ARS" and p["num"] == 36)
+    assert list(me(before)) == ev["xy"]
+    facing = [n for n, xy in them(before).items() if 2.8 < ((xy[0] - ev["xy"][0]) ** 2
+                                                          + (xy[1] - ev["xy"][1]) ** 2) ** 0.5 < 3.2]
+    assert len(facing) >= 1
+    defender = min(facing, key=lambda n: abs(them(before)[n][1] - ev["xy"][1]))
+    side, past = me(take_on), me(burst)
+    gap = ((side[0] - them(take_on)[defender][0]) ** 2 + (side[1] - them(take_on)[defender][1]) ** 2) ** 0.5
+    assert gap > 4.4  # a dot is ~4 m wide on the phone: the two never overlap
+    assert past[0] > them(burst)[defender][0] + 3  # Arsenal attack left to right: he is past him
+    after = next(c for c in TL.cues if c.type == "demo.shape" and c.at == lock.at)
     nxt = next(c for c in TL.cues if c.type == "demo.event" and c.at > lock.at)
-    holder = [p for p in shape.data["players"] if p["team"] == "ARS" and p["num"] == 36]
-    assert len(holder) == 1 and [holder[0]["x"], holder[0]["y"]] == nxt.data["xy"]
-    assert shape.data["holder"] == "Zubimendi" and shape.data["dur"] == events[0].data["dur"]
-    assert round(nxt.at - lock.at, 3) == events[0].data["dur"]
+    assert list(me(after)) == nxt.data["xy"] and after.data["dur"] == events[0].data["dur"]
+    assert them(after)[defender] == them(burst)[defender]  # beaten, he stays where he lunged
 
 
 def test_motion_lands_on_the_next_beat():
     # every located event says how long until the next one, and its shape gets there in that time
     evs = [c for c in TL.cues if c.type == "demo.event" and c.data["xy"] and c.data["type"] != "goal"]
     for e in evs:
-        shape = next(c for c in TL.cues if c.type == "demo.shape" and c.at == e.at)
+        shape = [c for c in TL.cues if c.type == "demo.shape" and abs(c.at - e.at) < 1e-6][-1]
         assert shape.data["dur"] == e.data["dur"] and 0 <= e.data["flight"] <= e.data["dur"]
     passes = [e.data for e in evs if e.data["type"] == "pass" and e.data["to"]]
     assert ("Calafiori", "Zubimendi") in [(p["player"], p["to"]) for p in passes]

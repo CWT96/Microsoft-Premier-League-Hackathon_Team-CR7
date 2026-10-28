@@ -208,7 +208,7 @@ def test_always_shoot_judge():
     ft = of(run(session, shooter(session)), "demo.full_time")
     assert ft["total"] == 360
     assert ft["rows"][0]["detail"] == "3 correct calls · best streak of 2"
-    assert ft["rows"][1] == {"key": "fc", "label": "FORECAST", "detail": "0 forecasts hit",
+    assert ft["rows"][1] == {"key": "fc", "label": "FORECAST", "detail": "Forecasts open every match",
                              "points": 0}
     assert ft["badges"] == []  # no players backed, so no GOOD EYE
     assert ft["stamp"] == "#4 IN ROOM K7QX · TOP 94% TONIGHT"  # below Leo (1910) and Dan (3060)
@@ -232,7 +232,7 @@ def test_calls_and_f15_and_final_judge_leads():
     assert of(msgs, "demo.half_time")["you"] == {"rank": 1}
     ft = of(msgs, "demo.full_time")
     assert ft["total"] == 1160 + 3 * 1500 + 5000 == 10660
-    assert ft["rows"][1]["detail"] == "3 forecasts hit · full-time result nailed"
+    assert ft["rows"][1]["detail"] == "4 forecasts hit · full-time result nailed"  # 3 windows + the result
     assert ft["stamp"] == "#1 IN ROOM K7QX · TOP 1% TONIGHT"
 
 

@@ -102,6 +102,13 @@
         var screen = new DC.Screen(mod.tpl, mod.Component, { app: app }, host);
         app.current = { name: name, screen: screen };
         screen.mount();
+        // screens cross in with a short fade and lift, never a hard cut
+        if (host.animate) {
+          var k = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--k")) || 1;
+          host.animate([{ opacity: 0, transform: "scale(" + k + ") translateY(10px)" },
+                        { opacity: 1, transform: "scale(" + k + ") translateY(0)" }],
+                       { duration: 380, easing: "cubic-bezier(0.05, 0.7, 0.1, 1)" });
+        }
       }).catch(function (e) { console.error(e); });
     },
 
@@ -190,14 +197,14 @@
           break;
         case "demo.jump":
           if (s.phase === "half") { app.go("Live"); }
-          app.set({ jump: d, phase: "live", clockLabel: d.clock });
+          app.set({ jump: d, phase: "live", clockLabel: d.clock, endCard: null });
           break;
         case "demo.clock":
           app.set({ live: d, jump: null, clockLabel: d.clock, score: d.score, phase: "live" });
           break;
         case "demo.event":
-          app.state.lastEvent = d;  // read by the demo.shape that follows it
-          if (d.type === "goal" && d.xy) { app.set({ ball: { x: d.xy[0], y: d.xy[1], dur: 0, ease: "linear", feet: false } }); }
+          // read by the demo.shape that follows it; a goal leaves the shot's flight alone
+          if (d.type !== "goal") { app.state.lastEvent = d; }
           break;
         case "demo.shape":
           app.pitch(d);
@@ -228,13 +235,16 @@
           });
           break;
         case "demo.half_time":
+          // the whistle shows on the pitch first, then the half-time screen fades in
           app.set({ phase: "half", ht: d, total: d.total, score: d.score, htBoard: d.room.players,
-                    callsAtHalf: s.lastCallId, htEndsAt: now + d.seconds * 1000, call: null, jump: null });
-          app.go("HalfTime");
+                    callsAtHalf: s.lastCallId, htEndsAt: now + d.seconds * 1000, call: null, jump: null,
+                    endCard: { title: "Half time", label: "ARS " + d.score[0] + " – " + d.score[1] + " CHE" } });
+          app.later(1600, function () { if (app.state.phase === "half") { app.go("HalfTime"); } });
           break;
         case "demo.full_time":
-          app.set({ phase: "full", ft: d, total: d.total, score: d.score, call: null, jump: null, saved: d.saved });
-          app.go("Result");
+          app.set({ phase: "full", ft: d, total: d.total, score: d.score, call: null, jump: null, saved: d.saved,
+                    endCard: { title: "Full time", label: "ARS " + d.score[0] + " – " + d.score[1] + " CHE" } });
+          app.later(2600, function () { app.go("Result"); });
           break;
         case "forecast.locked":
           var pend = Object.assign({}, s.fc.pending); pend[d.key] = d;
