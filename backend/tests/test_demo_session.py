@@ -107,7 +107,7 @@ def test_plays_to_full_time_with_results():
     msgs = run_session(session, on_open=lambda cid: session.answer(cid, "SHOOT"))
     assert msgs[0]["type"] == "demo.session" and msgs[-1]["type"] == "demo.full_time"
     res = results(msgs)
-    assert ANSWERS == ["PASS", "DRIBBLE", "SHOOT", "SHOOT", "PASS", "SHOOT"]
+    assert ANSWERS == ["PASS", "DRIBBLE", "SHOOT", "SHOOT", "DRIBBLE", "SHOOT"]
     assert len(res) == 6 and sum(r["correct"] for r in res) == 3
     # correct at calls 3, 4, 6; streak peaks at 2, so no bonus
     assert res[-1]["total"] == 6 * 10 + 3 * 100 == 360 == session.total
@@ -118,9 +118,9 @@ def test_plays_to_full_time_with_results():
 def test_always_pass_scores_less_than_always_shoot():
     session = DemoSession(TL, "ARS")
     res = results(run_session(session, on_open=lambda cid: session.answer(cid, "PASS")))
-    # correct at calls 1 and 5 only
-    assert [r["correct"] for r in res] == [True, False, False, False, True, False]
-    assert res[-1]["total"] == 6 * 10 + 2 * 100 == 260 == session.total
+    # correct at call 1 only
+    assert [r["correct"] for r in res] == [True, False, False, False, False, False]
+    assert res[-1]["total"] == 6 * 10 + 1 * 100 == 160 == session.total
 
 
 def test_session_message_and_lock_pairs():

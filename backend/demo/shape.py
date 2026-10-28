@@ -102,6 +102,7 @@ def team_shape(slots_now: list[Slot], ball: tuple[float, float],
             x, y = 5 + max(0.0, shift_x) * 0.15, 34 + (by - 34) * 0.1
         else:
             x, y = base_x + shift_x, 34 + (base_y - 34) * 0.9 + shift_y
+            x = max(x, 7.0)  # outfield players never drop behind their own keeper
         x, y = _clamp(x, 1, 104), _clamp(y, 1, 67)
         if away:
             x, y = LENGTH - x, WIDTH - y

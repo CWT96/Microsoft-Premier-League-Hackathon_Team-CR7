@@ -1,0 +1,398 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>The Premier X — Live real-time calls</title>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,600;0,700;0,800;1,800&amp;family=Inter:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;background:#1A0020}
+a{color:#04F5FF}a:hover{color:#8AFAFF}
+@keyframes mcLive{0%{opacity:1}50%{opacity:.25}100%{opacity:1}}
+@keyframes mcOrbit{0%{transform:translate(-50%,-50%) translate(7px,3px)}50%{transform:translate(-50%,-50%) translate(11px,-5px)}100%{transform:translate(-50%,-50%) translate(7px,3px)}}
+@keyframes mcPulse{0%{transform:translate(-50%,-50%) scale(.7);opacity:.9}100%{transform:translate(-50%,-50%) scale(2.4);opacity:0}}
+@keyframes mcClose{from{transform:translate(-50%,-50%) translate(46px,-38px)}to{transform:translate(-50%,-50%) translate(11px,-9px)}}
+@keyframes mcPop{0%{transform:scale(1.9);opacity:0}14%{transform:scale(.94);opacity:1}22%{transform:scale(1)}100%{transform:scale(1);opacity:1}}
+@keyframes mcRibbon{0%{transform:translateX(-28px);opacity:0}100%{transform:translateX(0);opacity:1}}
+@keyframes mcRise{0%{transform:translateY(6px);opacity:0}20%{opacity:1}100%{transform:translateY(-14px);opacity:0}}
+@keyframes mcBump{0%{transform:scale(1.28)}100%{transform:scale(1)}}
+@keyframes mcDim{0%{background:rgba(26,0,32,0)}100%{background:rgba(26,0,32,.6)}}
+@keyframes mcGlow{0%{box-shadow:0 0 0 0 rgba(4,245,255,.5)}100%{box-shadow:0 0 0 10px rgba(4,245,255,0)}}
+.mc-live-dot{animation:mcLive 1.4s ease-in-out infinite}
+.mc-ball{animation:mcOrbit 1.6s ease-in-out infinite}
+.mc-ring{animation:mcPulse 1.3s ease-out infinite}
+.mc-pop{animation:mcPop .9s cubic-bezier(.2,.9,.2,1) both}
+.mc-rib1{animation:mcRibbon .28s ease-out .18s both}
+.mc-rib2{animation:mcRibbon .28s ease-out .28s both}
+.mc-rise{animation:mcRise 1.2s ease-out both}
+.mc-bump{animation:mcBump .4s ease-out both}
+.mc-dim{animation:mcDim .2s ease-out both}
+.mc-glow{animation:mcGlow 1.1s ease-out infinite}
+@keyframes mcPulse2{0%{transform:scale(.7);opacity:.9}100%{transform:scale(2.2);opacity:0}}
+.mc-ring2{animation:mcPulse2 1.3s ease-out infinite}
+@keyframes mcFeed{0%{opacity:0;transform:translateX(-10px)}8%{opacity:1;transform:translateX(0)}75%{opacity:1;transform:translateX(0)}100%{opacity:0;transform:translateX(0)}}
+.mc-opt{cursor:pointer}
+.mc-opt:disabled{cursor:default}
+.mc-btn{cursor:pointer}
+</style>
+</helmet>
+<div style="position: relative; width: 390px; height: 844px; box-sizing: border-box; background: #1A0020; color: #F3F6F9; font-family: Inter, system-ui, sans-serif; display: flex; flex-direction: column; overflow: hidden">
+
+  <div style="display: flex; align-items: center; justify-content: space-between; padding: 14px 16px 10px">
+    <div style="display: flex; flex-direction: column; gap: 4px">
+      <div style="display: flex; align-items: center; gap: 6px; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 14px; letter-spacing: 1px; color: #FF5C93">
+        <span class="mc-live-dot" style="width: 7px; height: 7px; border-radius: 50%; background: #FF5C93; display: inline-block"></span>
+        <span>{{liveLabel}}</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 6px; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 22px; line-height: 1">
+        <span style="width: 24px; height: 24px; border-radius: 7px; background: #FFFFFF; display: flex; align-items: center; justify-content: center; flex: none"><img src="../assets/crests/ars.svg" alt="Arsenal" style="width: 18px; height: 18px; object-fit: contain"></span>
+        <span>ARS</span><span>{{scoreLine}}</span><span>CHE</span>
+        <span style="width: 24px; height: 24px; border-radius: 7px; background: #FFFFFF; display: flex; align-items: center; justify-content: center; flex: none"><img src="../assets/crests/che.svg" alt="Chelsea" style="width: 18px; height: 18px; object-fit: contain"></span>
+      </div>
+    </div>
+    <div style="position: relative; display: flex; flex-direction: column; align-items: flex-end">
+      <sc-if value="{{hasRise}}" hint-placeholder-val="{{ false }}">
+        <div key="{{riseKey}}" class="mc-rise" style="position: absolute; right: 0; top: -14px; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-style: italic; font-size: 18px; color: #00FF85">+{{riseText}}</div>
+      </sc-if>
+      <div key="{{riseKey}}" class="{{bumpClass}}" style="display: flex; align-items: baseline; gap: 4px">
+        <span style="font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-style: italic; font-size: 34px; line-height: 1; color: #00FF85">{{scoreText}}</span>
+        <span style="font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 13px; color: #CDB8D1">PTS</span>
+      </div>
+      <div style="font-size: 11px; color: #CDB8D1">{{rankText}}</div>
+    </div>
+  </div>
+
+  <div style="display: flex; gap: 6px; margin: 0 16px; padding: 4px; background: #37003C; border-radius: 12px">
+    <div aria-current="page" style="flex: 1; height: 38px; border-radius: 9px; background: #F3F6F9; color: #1A0020; display: flex; align-items: center; justify-content: center; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 17px; letter-spacing: 1px">REAL TIME</div>
+    <a href="Forecast.dc.html" style="flex: 1; height: 38px; border-radius: 9px; color: #F3F6F9; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 6px; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 17px; letter-spacing: 1px">
+      <span>FORECAST</span>
+      <sc-if value="{{hasFcBadge}}" hint-placeholder-val="{{ true }}">
+        <span style="padding: 2px 6px; border-radius: 6px; background: {{fcBadgeBg}}; color: #1A0020; font-size: 12px; letter-spacing: 0.5px">{{fcBadge}}</span>
+      </sc-if>
+    </a>
+  </div>
+
+  <div style="display: flex; align-items: center; gap: 10px; margin: 10px 16px 0; font-size: 12px; color: #CDB8D1">
+    <span style="font-family: 'Barlow Condensed', sans-serif; font-weight: 700; letter-spacing: 1px">ROOM {{roomCode}}</span>
+    <span style="display: flex; align-items: center; gap: 4px"><span style="width: 18px; height: 18px; border-radius: 50%; background: #04F5FF; color: #002A2C; font-size: 10px; font-weight: 700; display: flex; align-items: center; justify-content: center">M</span>{{miaPts}}</span>
+    <span style="display: flex; align-items: center; gap: 4px"><span style="width: 18px; height: 18px; border-radius: 50%; background: #C9A2FF; color: #1E0A3A; font-size: 10px; font-weight: 700; display: flex; align-items: center; justify-content: center">D</span>{{danPts}}</span>
+    <button class="mc-btn" onClick="{{toggleSync}}" aria-expanded="{{syncOpen}}" style="margin-left: auto; height: 28px; padding: 0 10px; border-radius: 999px; border: 1px solid #5C2A63; background: #37003C; color: #F3F6F9; display: flex; align-items: center; gap: 6px; font-family: inherit; font-size: 11px; font-weight: 600">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#04F5FF" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 0 1 15.5-6.2L21 8M21 3v5h-5M21 12a9 9 0 0 1-15.5 6.2L3 16M3 21v-5h5"></path></svg>
+      <span>{{syncLabel}}</span>
+    </button>
+  </div>
+
+  <sc-if value="{{syncOpen}}" hint-placeholder-val="{{ false }}">
+    <div style="position: absolute; left: 16px; right: 16px; top: 168px; z-index: 5; padding: 14px; border-radius: 14px; background: #37003C; border: 1px solid #04F5FF; box-shadow: 0 14px 30px rgba(0,0,0,0.5); display: flex; flex-direction: column; gap: 10px">
+      <div style="font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 18px; letter-spacing: 1px">WHERE ARE YOU WATCHING?</div>
+      <div style="font-size: 12px; color: #CDB8D1; line-height: 1.4">TV and streams run behind the live data. We hold each call back by the same amount, so it opens and locks in step with your screen and nobody gets a head start.</div>
+      <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px">
+        <sc-for list="{{sources}}" as="s" hint-placeholder-count="3">
+          <button class="mc-btn" onClick="{{s.pick}}" aria-pressed="{{s.on}}" style="{{s.style}}">
+            <span style="font-size: 13px; font-weight: 700">{{s.label}}</span>
+            <span style="font-size: 11px; color: #CDB8D1">{{s.delay}}</span>
+          </button>
+        </sc-for>
+      </div>
+      <div style="font-size: 11px; color: #CDB8D1">Still off? Tap the <span style="color: #04F5FF; font-weight: 700">sync chip</span> when you hear the next whistle and we fine-tune it.</div>
+    </div>
+  </sc-if>
+
+  <div data-pitch="1" style="position: relative; margin: 10px 16px 0; height: 206px; border-radius: 14px; overflow: hidden; background: #14492F; background-image: repeating-linear-gradient(90deg, rgba(255,255,255,0.035) 0, rgba(255,255,255,0.035) 36px, rgba(0,0,0,0) 36px, rgba(0,0,0,0) 72px)">
+    <div style="position: absolute; left: 8px; right: 8px; top: 8px; bottom: 8px; border: 1.5px solid rgba(255,255,255,0.38); border-radius: 2px"></div>
+    <div style="position: absolute; left: 50%; top: 8px; bottom: 8px; border-left: 1.5px solid rgba(255,255,255,0.38)"></div>
+    <div style="position: absolute; left: 50%; top: 50%; width: 54px; height: 54px; margin: -27px 0 0 -27px; border: 1.5px solid rgba(255,255,255,0.38); border-radius: 50%"></div>
+    <div style="position: absolute; left: 8px; top: 28%; height: 44%; width: 46px; border: 1.5px solid rgba(255,255,255,0.38); border-left: none"></div>
+    <div style="position: absolute; right: 8px; top: 28%; height: 44%; width: 46px; border: 1.5px solid rgba(255,255,255,0.38); border-right: none"></div>
+
+    <sc-for list="{{players}}" as="p" hint-placeholder-count="22">
+      <div key="{{p.k}}" data-k="{{p.k}}" style="position: absolute; left: {{p.l}}; top: {{p.t}}; width: 15px; height: 15px; margin: -7.5px 0 0 -7.5px; box-sizing: border-box; border-radius: 50%; background: {{p.bg}}; border: 1.5px solid {{p.edge}}; color: {{p.ink}}; display: flex; align-items: center; justify-content: center; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 8.5px; line-height: 1; transition: left {{p.dur}}ms linear, top {{p.dur}}ms linear; z-index: {{p.z}}">{{p.n}}</div>
+    </sc-for>
+
+    <sc-if value="{{hasHolder}}" hint-placeholder-val="{{ true }}">
+    <div data-ring="1" style="position: absolute; left: {{hl.l}}; top: {{hl.t}}; width: 0; height: 0; transition: left {{hl.dur}}ms {{hl.ease}}, top {{hl.dur}}ms {{hl.ease}}; z-index: 3">
+      <div class="mc-ring2" style="position: absolute; left: -11px; top: -11px; width: 22px; height: 22px; box-sizing: border-box; border-radius: 50%; border: 2px solid #00FF85"></div>
+      <div data-tag="1" style="position: absolute; left: 0; top: -27px; transform: translateX(-50%); padding: 1px 5px; border-radius: 5px; background: #00FF85; color: #1A0020; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 12px; white-space: nowrap">{{hl.tag}}</div>
+    </div>
+    </sc-if>
+    <div data-ball="1" style="position: absolute; left: {{ball.l}}; top: {{ball.t}}; width: 7px; height: 7px; margin: -3.5px 0 0 -3.5px; border-radius: 50%; background: #FFFFFF; box-shadow: 0 0 0 1.5px #1A0020, 0 0 6px rgba(255,255,255,0.7); transition: left {{ball.dur}}ms {{ball.ease}}, top {{ball.dur}}ms {{ball.ease}}; z-index: 3"></div>
+
+    <sc-if value="{{feedOn}}" hint-placeholder-val="{{ false }}">
+    <div key="{{feedKey}}" style="position: absolute; left: 12px; top: 12px; z-index: 4; display: flex; flex-direction: column; gap: 4px">
+      <sc-for list="{{feed}}" as="f" hint-placeholder-count="2">
+        <div style="display: flex; align-items: center; gap: 6px; padding: 3px 7px; border-radius: 6px; background: rgba(26,0,32,0.8); font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 12px; letter-spacing: 0.5px; animation: mcFeed 3600ms ease-out {{f.delay}} both">
+          <span style="color: {{f.color}}">{{f.pts}}</span><span style="color: #EEDFF0">{{f.label}}</span>
+        </div>
+      </sc-for>
+    </div>
+    </sc-if>
+    <div style="position: absolute; right: 12px; bottom: 10px; font-size: 10px; color: rgba(255,255,255,0.8); z-index: 4">Live positions · {{syncShort}}</div>
+
+    <sc-if value="{{hasJump}}" hint-placeholder-val="{{ false }}">
+      <div class="mc-dim" style="position: absolute; left: 0; top: 0; right: 0; bottom: 0; z-index: 5; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px">
+        <div class="mc-pop" style="font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-style: italic; font-size: 40px; line-height: 0.95; color: #FFFFFF; text-align: center; text-transform: uppercase; padding: 0 16px">{{jumpTitle}}</div>
+        <div class="mc-rib1" style="display: flex; align-items: center; gap: 8px; padding: 4px 10px; border-radius: 6px; background: rgba(26,0,32,0.88); font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 14px; letter-spacing: 1px">
+          <span style="color: #04F5FF">{{jumpMinute}}</span><span>{{jumpLabel}}</span>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{isReveal}}" hint-placeholder-val="{{ false }}">
+      <div class="mc-dim" style="position: absolute; left: 0; top: 0; right: 0; bottom: 0; z-index: 5; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px">
+        <div class="mc-pop" style="display: flex; flex-direction: column; align-items: center; gap: 2px">
+          <div style="font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-style: italic; font-size: 70px; line-height: 0.9; color: {{popColor}}; text-shadow: 0 0 22px {{popGlow}}">+{{gained}}</div>
+          <div style="font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 20px; letter-spacing: 3px; color: #FFFFFF">{{popLabel}}</div>
+        </div>
+        <div class="mc-rib1" style="display: flex; align-items: center; gap: 8px; padding: 4px 10px; border-radius: 6px; background: rgba(26,0,32,0.88); font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 14px; letter-spacing: 1px">
+          <span style="color: {{popColor}}">+{{basePts}}</span><span>{{ribbon1}}</span>
+        </div>
+        <sc-if value="{{hasBonus}}" hint-placeholder-val="{{ false }}">
+          <div class="mc-rib2" style="display: flex; align-items: center; gap: 8px; padding: 4px 10px; border-radius: 6px; background: rgba(26,0,32,0.88); font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 14px; letter-spacing: 1px">
+            <span style="color: #00FF85">+{{bonusPts}}</span><span>STREAK x{{streak}}</span>
+          </div>
+        </sc-if>
+      </div>
+    </sc-if>
+    <sc-if value="{{isMissed}}" hint-placeholder-val="{{ false }}">
+      <div class="mc-dim" style="position: absolute; left: 0; top: 0; right: 0; bottom: 0; z-index: 5; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px">
+        <div class="mc-pop" style="font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-style: italic; font-size: 52px; line-height: 0.9; color: #FFFFFF">TOO QUICK!</div>
+        <div class="mc-rib1" style="padding: 4px 10px; border-radius: 6px; background: rgba(26,0,32,0.88); font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 14px; letter-spacing: 1px">IT WAS A {{answerLabel}} · STREAK SAFE</div>
+      </div>
+    </sc-if>
+  </div>
+
+  <div style="flex: 1; margin: 10px 16px 0; padding: 14px; background: #37003C; border: 1px solid #5C2A63; border-radius: 16px; display: flex; flex-direction: column; gap: 10px">
+    <sc-if value="{{isStandby}}" hint-placeholder-val="{{ false }}">
+      <div style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; text-align: center">
+        <div style="display: flex; align-items: center; gap: 8px; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 15px; letter-spacing: 2px; color: #04F5FF">
+          <span class="mc-live-dot" style="width: 8px; height: 8px; border-radius: 50%; background: #04F5FF; display: inline-block"></span>
+          <span>READING THE PLAY</span>
+        </div>
+        <div style="font-size: 14px; color: #CDB8D1; line-height: 1.45; max-width: 280px">The next call drops at the next decision moment: a player on the ball, a free kick, a one-on-one.</div>
+        <div style="font-size: 12px; color: #CDB8D1">Keep watching. It pops up the moment it's on.</div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{hasCall}}" hint-placeholder-val="{{ true }}">
+      <div style="display: flex; align-items: center; justify-content: space-between">
+        <div style="display: flex; align-items: center; gap: 6px">
+          <span style="display: flex; align-items: center; gap: 5px; padding: 3px 8px; border-radius: 6px; background: rgba(4,245,255,0.14); color: #04F5FF; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 13px; letter-spacing: 1px">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5L18 18M6 18l2.5-2.5M15.5 8.5L18 6"></path></svg>
+            <span>AI CALL</span>
+          </span>
+          <span style="padding: 3px 8px; border-radius: 6px; background: #4A0E52; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 13px; letter-spacing: 1px">{{prompt.kind}}</span>
+        </div>
+        <div style="font-size: 12px; color: #CDB8D1">+100 if you're right</div>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 2px">
+        <div style="font-size: 13px; color: #CDB8D1">{{prompt.ctx}}</div>
+        <div style="font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 28px; line-height: 1.05; text-transform: uppercase">{{prompt.q}}</div>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 8px; height: 22px; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 14px; letter-spacing: 1px">
+        <sc-if value="{{isAsk}}" hint-placeholder-val="{{ true }}">
+          <span class="mc-glow" style="width: 10px; height: 10px; border-radius: 50%; background: #04F5FF; display: inline-block"></span>
+          <span style="color: #04F5FF">OPEN · LOCKS THE MOMENT {{prompt.who}} PLAYS IT</span>
+        </sc-if>
+        <sc-if value="{{isLocked}}" hint-placeholder-val="{{ false }}">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#04F5FF" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg>
+          <span style="color: #04F5FF">LOCKED IN · WAITING FOR THE PLAY</span>
+        </sc-if>
+        <sc-if value="{{isDone}}" hint-placeholder-val="{{ false }}">
+          <span style="color: #CDB8D1">CALL CLOSED</span>
+        </sc-if>
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px">
+        <sc-for list="{{options}}" as="o" hint-placeholder-count="3">
+          <button class="mc-opt" onClick="{{o.pick}}" disabled="{{o.disabled}}" aria-label="{{o.label}}" style="{{o.style}}">
+            <span style="color: {{o.iconColor}}; display: flex">
+              <sc-if value="{{o.isPass}}" hint-placeholder-val="{{ false }}">
+                <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5" cy="17" r="2.2"></circle><circle cx="19" cy="7" r="2.2"></circle><path d="M7 15.5L16.8 8.5M13 8h4v4"></path></svg>
+              </sc-if>
+              <sc-if value="{{o.isShoot}}" hint-placeholder-val="{{ false }}">
+                <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h7v16h-7"></path><path d="M3 12h11M10 8l4 4-4 4"></path></svg>
+              </sc-if>
+              <sc-if value="{{o.isDribble}}" hint-placeholder-val="{{ false }}">
+                <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 18c3 0 3-6 6-6s3 6 6 6 3-6 6-6"></path><circle cx="20" cy="6" r="2"></circle></svg>
+              </sc-if>
+            </span>
+            <span style="font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 21px; letter-spacing: 1px; color: #F3F6F9">{{o.label}}</span>
+            <span style="font-size: 11px; font-weight: 600; color: {{o.subColor}}">{{o.sub}}</span>
+          </button>
+        </sc-for>
+      </div>
+
+      <div style="min-height: 44px; display: flex; align-items: center; justify-content: space-between; gap: 10px">
+        <sc-if value="{{isAsk}}" hint-placeholder-val="{{ true }}">
+          <div style="font-size: 13px; color: #CDB8D1">Call it before the ball moves.</div>
+        </sc-if>
+        <sc-if value="{{isLocked}}" hint-placeholder-val="{{ false }}">
+          <div style="font-size: 13px; color: #CDB8D1">Points land the instant it happens.</div>
+        </sc-if>
+        <sc-if value="{{isDone}}" hint-placeholder-val="{{ false }}">
+          <div style="font-size: 13px; font-weight: 600; color: #F3F6F9; line-height: 1.3">{{resultLine}}</div>
+        </sc-if>
+      </div>
+    </sc-if>
+  </div>
+
+  <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px 18px">
+    <div style="display: flex; align-items: center; gap: 8px">
+      <span style="font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 14px; letter-spacing: 1px; color: #CDB8D1">STREAK</span>
+      <div style="display: flex; gap: 4px">
+        <sc-for list="{{pips}}" as="p" hint-placeholder-count="5">
+          <span style="width: 14px; height: 6px; border-radius: 3px; background: {{p.color}}"></span>
+        </sc-for>
+      </div>
+      <span style="font-size: 11px; color: #CDB8D1">{{streakHint}}</span>
+    </div>
+    <sc-if value="{{hasError}}" hint-placeholder-val="{{ false }}">
+      <a href="Main.dc.html" data-go="restart" style="font-size: 12px; font-weight: 600">{{error}} Start again</a>
+    </sc-if>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  // The call card, pitch and points follow /demo/ws through app.state (see app.js).
+  // Only the sync chip keeps its own state: it is the design's static picker.
+  constructor(props) {
+    super(props);
+    this.state = { syncOpen: false, source: "stadium" };
+  }
+  componentDidMount() { app.refresh(); }
+  split(prompt) {
+    // the AI line "Saka has the ball in the box. What will he do next?" -> context + question
+    var m = /^(.*?[.!])\s+([^.!?]*\?)\s*$/.exec(prompt || "");
+    return m ? { ctx: m[1], q: m[2] } : { ctx: prompt || "", q: "What's his next move?" };
+  }
+  renderVals() {
+    var self = this;
+    var A = app.state;
+    var s = this.state;
+    var call = A.call;
+    var phase = call ? call.phase : "standby";
+    var res = call && call.result ? call.result : null;
+    var answer = res ? res.answer.toLowerCase() : "";
+    var choice = call ? call.choice : null;
+    var correct = !!(res && res.correct);
+    var defs = [
+      { id: "pass", label: "PASS", hint: "to a teammate" },
+      { id: "shoot", label: "SHOOT", hint: "at goal" },
+      { id: "dribble", label: "DRIBBLE", hint: "run with it" }
+    ];
+    var base = "width: 100%; height: 108px; border-radius: 14px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font-family: inherit; padding: 0; ";
+    var idle = base + "background: #4A0E52; border: 2px solid #5C2A63;";
+    var faded = idle + " opacity: 0.4;";
+    var options = defs.map(function (d) {
+      var isChoice = choice === d.id, isAnswer = answer === d.id;
+      var style = idle, sub = d.hint, subColor = "#CDB8D1", iconColor = "#F3F6F9";
+      if (phase === "locked") {
+        if (isChoice) { style = base + "background: rgba(4,245,255,0.14); border: 2px solid #04F5FF;"; sub = "LOCKED"; subColor = "#04F5FF"; iconColor = "#04F5FF"; }
+        else { style = faded; }
+      } else if (phase === "reveal" || phase === "missed") {
+        if (isAnswer) { style = base + "background: rgba(0,255,133,0.16); border: 2px solid #00FF85;"; sub = isChoice ? "YOU CALLED IT" : "IT WAS THIS"; subColor = "#00FF85"; iconColor = "#00FF85"; }
+        else if (isChoice) { style = base + "background: #4A0E52; border: 2px solid #04F5FF; opacity: 0.7;"; sub = "YOUR CALL"; subColor = "#04F5FF"; }
+        else { style = faded; }
+      }
+      return {
+        label: d.label, sub: sub, subColor: subColor, iconColor: iconColor, style: style,
+        disabled: phase !== "ask",
+        isPass: d.id === "pass", isShoot: d.id === "shoot", isDribble: d.id === "dribble",
+        pick: function () { app.answer(d.id); }
+      };
+    });
+    var answerLabel = answer.toUpperCase();
+    var resultLine = phase === "missed"
+      ? "That was fast. No points lost, your streak is safe."
+      : (res && res.explain) ? res.explain
+        : correct
+          ? (res.streak >= 3 ? "On fire! " + res.streak + " in a row." : "Nailed it. Keep the streak going.")
+          : "So close. It was a " + answerLabel + ". +10 just for playing.";
+    var parts = this.split(call ? call.prompt : "");
+    var prompt = { kind: "OPEN PLAY", ctx: parts.ctx, q: parts.q, who: call ? String(call.player).toUpperCase() : "" };
+
+    // pitch: metres (105 x 68, Arsenal attack left to right) -> % of the pitch box
+    // the pitch moves in pitch.js (every frame, written straight to these nodes); a render
+    // just draws everyone where they are right now, with no CSS transition of its own
+    var holderKey = Pitch.holder;
+    var holderName = holderKey ? app.byNum[holderKey] : null;
+    var players = [];
+    Object.keys(Pitch.dots).sort().forEach(function (k) {
+      var d = Pitch.dots[k];
+      var home = d.team === "ARS", isH = k === holderKey;
+      players.push({ k: k, z: isH ? 2 : 1, n: d.num, l: Pitch.css(d.x, 105), t: Pitch.css(d.y, 68), dur: 0,
+        bg: home ? "#FF8A7A" : "#2F5BFF", ink: home ? "#1F0A07" : "#FFFFFF",
+        edge: isH ? "#00FF85" : (home ? "#3A120D" : "#DCE5FF") });
+    });
+    var hl = {
+      l: Pitch.css(Pitch.ring.x, 105), t: Pitch.css(Pitch.ring.y, 68), dur: 0, ease: "linear",
+      tag: holderKey ? "#" + holderKey.split(":")[1] + " " + String(holderName || "").toUpperCase() : ""
+    };
+    var ball = { l: Pitch.css(Pitch.ball.x, 105), t: Pitch.css(Pitch.ball.y, 68), dur: 0, ease: "linear" };
+
+    var streak = A.streak;
+    var pips = [0, 1, 2, 3, 4].map(function (i) { return { color: i < streak ? "#00FF85" : "#5C2A63" }; });
+    var srcDefs = [ { id: "tv", label: "TV", delay: "~6 s behind" }, { id: "stream", label: "Streaming", delay: "~30 s behind" }, { id: "stadium", label: "Stadium", delay: "Live" } ];
+    var cur = srcDefs.filter(function (x) { return x.id === s.source; })[0];
+    var sources = srcDefs.map(function (x) {
+      var on = x.id === s.source;
+      return {
+        label: x.label, delay: x.delay, on: on,
+        style: "height: 54px; border-radius: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; font-family: inherit; color: #F3F6F9; " + (on ? "background: rgba(4,245,255,0.14); border: 2px solid #04F5FF;" : "background: #4A0E52; border: 2px solid #4A0E52;"),
+        pick: function () { self.setState({ source: x.id, syncOpen: false }); }
+      };
+    });
+    var syncLabel = s.source === "stadium" ? "Synced · live" : "Synced to " + cur.label + " · " + cur.delay.replace(" behind", "");
+
+    var wins = A.session ? A.session.forecasts.windows : [];
+    var free = wins.filter(function (w) { return !A.fc.pending[w.key]; });
+    var fcBadge = !app.isLive() || !free.length ? "" : "+" + app.fmt(free[0].points) + " OPEN";
+    var jump = A.jump;
+    var rank = app.rank();
+    return {
+      liveLabel: "LIVE " + (app.minute(A.clockLabel) || "12'"), scoreLine: app.scoreLine(),
+      rankText: "#" + rank + " in your room",
+      hasFcBadge: !!fcBadge, fcBadge: fcBadge, fcBadgeBg: "#00FF85",
+      roomCode: A.roomCode || "····", miaPts: app.fmt(app.friendPts("Mia")), danPts: app.fmt(app.friendPts("Dan")),
+      isStandby: phase === "standby", hasCall: phase !== "standby",
+      isAsk: phase === "ask", isLocked: phase === "locked", isReveal: phase === "reveal", isMissed: phase === "missed",
+      isDone: phase === "reveal" || phase === "missed",
+      scoreText: app.fmt(A.total), gained: app.fmt(res ? res.points : 0),
+      basePts: res ? res.points - res.streak_bonus : 0, bonusPts: res ? res.streak_bonus : 0,
+      hasBonus: !!(res && res.streak_bonus > 0), streak: res ? res.streak : streak,
+      // the score bumps and "+N" rises for a call's points and for points that land on their own
+      bumpClass: phase === "reveal" || A.pop ? "mc-bump" : "",
+      hasRise: phase === "reveal" || !!A.pop,
+      riseText: A.pop ? app.fmt(A.pop.amount) : app.fmt(res ? res.points : 0),
+      riseKey: A.pop ? "p" + A.pop.key : (call ? "c" + call.id : "-"),
+      popColor: correct ? "#00FF85" : "#FFFFFF",
+      popGlow: correct ? "rgba(0,255,133,0.6)" : "rgba(255,255,255,0.35)",
+      popLabel: correct ? "CORRECT CALL" : "CALLED IT",
+      ribbon1: correct ? "READ THE PLAY" : "TOOK PART",
+      answerLabel: answerLabel,
+      prompt: prompt, options: options, resultLine: resultLine,
+      players: players, hl: hl, ball: ball, hasHolder: !!holderKey,
+      feed: A.feed.map(function (f, i) { return Object.assign({}, f, { delay: (250 + i * 120) + "ms" }); }),
+      feedOn: A.feed.length > 0, feedKey: A.feedKey,
+      // a cut in play, or the half-time / full-time whistle: one card style for all three
+      hasJump: !!(jump || A.endCard),
+      jumpTitle: A.endCard ? A.endCard.title : jump ? jump.title : "",
+      jumpMinute: A.endCard ? A.endCard.label : jump ? app.minute(jump.clock) : "",
+      jumpLabel: A.endCard ? "" : "LIVE",
+      pips: pips,
+      streakHint: streak >= 3 ? "On fire: +50 bonus per call" : "3 in a row = bonus",
+      syncOpen: s.syncOpen, sources: sources, syncLabel: syncLabel,
+      syncShort: s.source === "stadium" ? "live" : "matched to your " + cur.label,
+      toggleSync: function () { self.setState({ syncOpen: !self.state.syncOpen }); },
+      hasError: !!A.error, error: A.error
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,356 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>The Premier X — Full-time results</title>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,600;0,700;0,800;1,800&amp;family=Inter:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;background:#1A0020}
+a{color:#04F5FF}a:hover{color:#8AFAFF}
+@keyframes mcLand{0%{transform:scale(1)}35%{transform:scale(1.22)}100%{transform:scale(1)}}
+@keyframes mcTotal{0%{transform:scale(1)}30%{transform:scale(1.14)}100%{transform:scale(1)}}
+@keyframes mcStamp{0%{transform:scale(1.8);opacity:0}55%{transform:scale(.96);opacity:1}100%{transform:scale(1);opacity:1}}
+@keyframes mcRise{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+@keyframes mcBadge{0%{opacity:0;transform:translateY(12px) scale(.9)}70%{opacity:1;transform:translateY(0) scale(1.03)}100%{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes mcFade{from{opacity:0}to{opacity:1}}
+@keyframes mcRow{from{opacity:0;transform:translateX(-12px)}to{opacity:1;transform:translateX(0)}}
+@keyframes mcYou{0%{box-shadow:0 0 0 0 rgba(0,255,133,0)}40%{box-shadow:0 0 0 3px rgba(0,255,133,.55)}100%{box-shadow:0 0 0 0 rgba(0,255,133,0)}}
+@keyframes mcBreathe{0%{transform:scale(1)}50%{transform:scale(1.025)}100%{transform:scale(1)}}
+@keyframes mcSheen{from{transform:translateX(-120%)}to{transform:translateX(320%)}}
+@keyframes mcLever{0%{box-shadow:0 0 0 0 rgba(0,255,133,.55)}100%{box-shadow:0 0 0 14px rgba(0,255,133,0)}}
+@keyframes mcBlink{0%{opacity:1}50%{opacity:.35}100%{opacity:1}}
+@keyframes mcIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.mc-land{animation:mcLand .5s cubic-bezier(.2,.9,.2,1) both}
+.mc-total{animation:mcTotal .55s cubic-bezier(.2,.9,.2,1) both}
+.mc-lever{animation:mcLever 1.2s ease-out infinite;cursor:pointer}
+.mc-lever:hover{background:#5CFFAE}
+.mc-blink{animation:mcBlink 1s ease-in-out infinite}
+.mc-in{animation:mcIn .32s cubic-bezier(.05,.7,.1,1) both}
+.mc-sheen{animation:mcSheen .7s cubic-bezier(.3,0,.3,1) both}
+.mc-cta:hover{background:#5CFFAE}
+.mc-btn{cursor:pointer}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: #1A0020; color: #F3F6F9; font-family: Inter, system-ui, sans-serif; display: flex; flex-direction: column; overflow: hidden">
+
+  <div ref="{{setScroll}}" style="flex: 1; overflow-y: auto; padding: 18px 18px 12px; display: flex; flex-direction: column; gap: 12px">
+    <div style="display: flex; align-items: center; justify-content: space-between">
+      <div style="font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 15px; letter-spacing: 2px; color: #CDB8D1">FULL TIME</div>
+      <div style="display: flex; align-items: center; gap: 6px; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 20px">
+        <span style="width: 24px; height: 24px; border-radius: 7px; background: #FFFFFF; display: flex; align-items: center; justify-content: center; flex: none"><img src="../assets/crests/ars.svg" alt="Arsenal" style="width: 18px; height: 18px; object-fit: contain"></span>
+        <span>ARS</span><span>{{scoreLine}}</span><span>CHE</span>
+        <span style="width: 24px; height: 24px; border-radius: 7px; background: #FFFFFF; display: flex; align-items: center; justify-content: center; flex: none"><img src="../assets/crests/che.svg" alt="Chelsea" style="width: 18px; height: 18px; object-fit: contain"></span>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 4px 0">
+      <div style="font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 15px; letter-spacing: 3px; color: #CDB8D1">YOUR MATCH SCORE</div>
+      <div class="{{totalClass}}" style="height: 80px; display: flex; align-items: center; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-style: italic; font-size: 76px; line-height: 1; color: {{totalColor}}; text-shadow: 0 0 26px {{totalGlow}}; font-variant-numeric: tabular-nums">{{totalText}}</div>
+      <div style="height: 28px; display: flex; align-items: center">
+        <sc-if value="{{done}}" hint-placeholder-val="{{ false }}">
+          <div style="{{a.stamp}} padding: 4px 12px; border-radius: 8px; background: #00FF85; color: #1A0020; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 16px; letter-spacing: 2px">{{stamp}}</div>
+        </sc-if>
+        <sc-if value="{{notDone}}" hint-placeholder-val="{{ true }}">
+          <div class="{{msgClass}}" style="font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 16px; letter-spacing: 2px; color: #04F5FF">{{message}}</div>
+        </sc-if>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 8px">
+      <sc-for list="{{rows}}" as="r" hint-placeholder-count="3">
+        <div style="{{r.cardStyle}}">
+          <div style="display: flex; align-items: center; gap: 10px">
+            <span style="width: 26px; height: 26px; border-radius: 7px; background: #4A0E52; color: {{r.color}}; display: flex; align-items: center; justify-content: center; flex: none">
+              <sc-if value="{{r.isRt}}" hint-placeholder-val="{{ false }}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2L4 14h7l-1 8 9-12h-7z"></path></svg></sc-if>
+              <sc-if value="{{r.isFc}}" hint-placeholder-val="{{ false }}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><circle cx="12" cy="12" r="5"></circle><circle cx="12" cy="12" r="1"></circle></svg></sc-if>
+              <sc-if value="{{r.isPb}}" hint-placeholder-val="{{ false }}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"></path></svg></sc-if>
+            </span>
+            <div style="flex: 1; min-width: 0; display: flex; flex-direction: column">
+              <span style="font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 17px; letter-spacing: 1px">{{r.label}}</span>
+              <span style="font-size: 11px; color: #CDB8D1">{{r.detail}}</span>
+            </div>
+            <span class="{{r.landClass}}" style="min-width: 80px; text-align: right; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-style: italic; font-size: 26px; color: {{r.color}}; font-variant-numeric: tabular-nums">{{r.valueText}}</span>
+          </div>
+          <div style="position: relative; height: 6px; border-radius: 3px; background: #4A0E52; overflow: hidden">
+            <div style="height: 6px; width: {{r.barW}}; border-radius: 3px; background: {{r.color}}; box-shadow: 0 0 10px {{r.glow}}"></div>
+            <sc-if value="{{r.landed}}" hint-placeholder-val="{{ false }}">
+              <div class="mc-sheen" style="position: absolute; top: 0; left: 0; width: 30%; height: 6px; background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.85) 50%, rgba(255,255,255,0) 100%)"></div>
+            </sc-if>
+          </div>
+          <sc-if value="{{r.showPlayers}}" hint-placeholder-val="{{ false }}">
+            <div class="mc-in" style="display: flex; flex-direction: column; gap: 6px; padding: 2px 0 0 34px">
+              <sc-for list="{{r.players}}" as="p" hint-placeholder-count="2">
+                <div style="display: flex; align-items: center; gap: 8px">
+                  <span style="width: 26px; height: 26px; border-radius: 7px; background: #4A0E52; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 14px; display: flex; align-items: center; justify-content: center; flex: none">{{p.num}}</span>
+                  <div style="flex: 1; min-width: 0; display: flex; flex-direction: column">
+                    <span style="font-size: 13px; font-weight: 700">{{p.name}} <span style="font-weight: 500; color: #CDB8D1">· {{p.pos}}</span></span>
+                    <span style="font-size: 11px; color: #CDB8D1">{{p.stats}}</span>
+                  </div>
+                  <span style="font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 16px; color: #C9A2FF">+{{p.pts}}</span>
+                </div>
+              </sc-for>
+            </div>
+          </sc-if>
+        </div>
+      </sc-for>
+    </div>
+
+    <sc-if value="{{done}}" hint-placeholder-val="{{ false }}">
+      <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px">
+        <sc-for list="{{badges}}" as="b" hint-placeholder-count="3">
+          <div style="{{b.style}} padding: 10px 8px; border-radius: 12px; border: 1px solid {{b.border}}; background: {{b.bg}}; display: flex; flex-direction: column; align-items: center; gap: 2px; text-align: center">
+            <span style="font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 17px; letter-spacing: 1px; color: {{b.color}}">{{b.title}}</span>
+            <span style="font-size: 10px; color: #CDB8D1; line-height: 1.3">{{b.text}}</span>
+          </div>
+        </sc-for>
+      </div>
+
+      <div style="{{a.room}} padding: 12px; background: #37003C; border-radius: 14px; display: flex; flex-direction: column; gap: 6px">
+        <div style="display: flex; justify-content: space-between; align-items: baseline">
+          <span style="font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 16px; letter-spacing: 1px">ROOM {{roomCode}}</span>
+          <span style="font-size: 11px; color: #CDB8D1">{{friendsPlayed}}</span>
+        </div>
+        <sc-for list="{{room}}" as="p" hint-placeholder-count="4">
+          <div style="{{p.style}}">
+            <span style="width: 18px; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 16px; color: #CDB8D1">{{p.pos}}</span>
+            <span style="width: 24px; height: 24px; border-radius: 50%; background: {{p.bg}}; color: {{p.ink}}; font-size: 10px; font-weight: 700; display: flex; align-items: center; justify-content: center">{{p.init}}</span>
+            <span style="flex: 1; font-size: 14px; font-weight: 600">{{p.name}}</span>
+            <span style="font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 18px">{{p.pts}}</span>
+          </div>
+        </sc-for>
+      </div>
+    </sc-if>
+  </div>
+
+  <div style="padding: 10px 18px 20px; border-top: 1px solid #4A0E52; display: flex; flex-direction: column; gap: 8px">
+    <sc-if value="{{isIdle}}" hint-placeholder-val="{{ true }}">
+      <button class="mc-lever" onClick="{{spin}}" style="height: 62px; border-radius: 14px; border: none; background: #00FF85; color: #1A0020; display: flex; align-items: center; justify-content: center; gap: 10px; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 25px; letter-spacing: 1px">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="7" width="13" height="13" rx="2"></rect><path d="M7 11v5M9.5 11v5M12 11v5M16 12h3V5"></path><circle cx="19" cy="4" r="1.6"></circle></svg>
+        <span>COUNT MY POINTS</span>
+      </button>
+    </sc-if>
+    <sc-if value="{{isSpinning}}" hint-placeholder-val="{{ false }}">
+      <div style="height: 62px; border-radius: 14px; border: 2px solid #5C2A63; display: flex; align-items: center; justify-content: center; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 22px; letter-spacing: 2px; color: #CDB8D1">COUNTING…</div>
+      <button class="mc-btn" onClick="{{skip}}" style="height: 32px; border: none; background: transparent; color: #CDB8D1; font-family: inherit; font-size: 12px; font-weight: 600">Skip</button>
+    </sc-if>
+    <sc-if value="{{done}}" hint-placeholder-val="{{ false }}">
+      <div style="{{a.note}} display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 12px; color: #EEDFF0">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#00FF85" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h11l3 3v13H5z"></path><path d="M8 4v5h7V4"></path></svg>
+        <span>Save them to keep climbing the season board.</span>
+      </div>
+      <a class="mc-cta" href="Signup.dc.html" style="{{a.cta}} display: flex; align-items: center; justify-content: center; height: 56px; border-radius: 14px; background: #00FF85; color: #1A0020; text-decoration: none; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 23px; letter-spacing: 1px">{{ctaText}}</a>
+      <button class="mc-btn" onClick="{{replay}}" style="{{a.replay}} height: 36px; border-radius: 12px; border: 1px solid #5C2A63; background: transparent; color: #F3F6F9; font-family: inherit; font-size: 13px; font-weight: 600">Replay the count</button>
+    </sc-if>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = this.fresh();
+    this.timers = [];
+    this.scrollEl = null;
+  }
+  fresh() {
+    return {
+      stage: "idle", active: "", message: "", fast: false,
+      vals: { fc: 0, rt: 0, pb: 0 },
+      started: { fc: false, rt: false, pb: false },
+      landed: { fc: false, rt: false, pb: false },
+      total: 0, totalPop: false, prog: { fc: 0, rt: 0, pb: 0 }
+    };
+  }
+  defs() {
+    // the three result rows of demo.full_time, styled as in the design
+    var ft = app.state.ft || { rows: [], players: [] };
+    var sc = app.squads ? app.squads.scoring : {};
+    var look = {
+      rt: { color: "#04F5FF", glow: "rgba(4,245,255,0.6)", msg: "COUNTING REAL-TIME CALLS…" },
+      fc: { color: "#00FF85", glow: "rgba(0,255,133,0.6)", msg: "COUNTING YOUR FORECASTS…" },
+      pb: { color: "#C9A2FF", glow: "rgba(201,162,255,0.6)", msg: "AND YOUR PLAYERS' BONUS…" }
+    };
+    return ft.rows.map(function (r) {
+      var d = Object.assign({ key: r.key, label: r.label, detail: r.detail, target: r.points }, look[r.key]);
+      if (r.key === "pb" && ft.players && ft.players.length) {
+        d.players = ft.players.map(function (p) {
+          return {
+            num: String(p.num), name: p.name, pos: sc[p.pos] ? sc[p.pos].label : p.pos, pts: app.fmt(p.points),
+            stats: p.stats.length ? p.stats.map(function (x) { return (x.count > 1 ? x.count + " × " : "") + x.what + " +" + app.fmt(x.pts); }).join(" · ") : "No scoring plays this time"
+          };
+        });
+      }
+      return d;
+    });
+  }
+  componentDidMount() {
+    // the screen settles in first, then the count starts on its own (the button still starts it sooner)
+    var self = this;
+    this.later(1300, function () { if (self.state.stage === "idle") { self.spin(); } });
+  }
+  componentWillUnmount() { this.clear(); }
+  clear() { this.timers.forEach(function (t) { clearTimeout(t); }); this.timers = []; if (this.raf) { cancelAnimationFrame(this.raf); this.raf = null; } }
+  later(ms, fn) { this.timers.push(setTimeout(fn, ms)); }
+  scrollDown() {
+    var el = this.scrollEl;
+    if (!el) { return; }
+    try { el.scrollTo({ top: el.scrollHeight, behavior: "smooth" }); } catch (e) { el.scrollTop = el.scrollHeight; }
+  }
+  landedSum(exceptKey) {
+    var s = this.state, sum = 0;
+    this.defs().forEach(function (d) { if (d.key !== exceptKey && s.landed[d.key]) { sum += d.target; } });
+    return sum;
+  }
+  runRow(d, onDone) {
+    var self = this;
+    var DUR = 2800;
+    var started = Object.assign({}, this.state.started); started[d.key] = true;
+    this.setState({ started: started, active: d.key, message: d.msg });
+    var t0 = null;
+    function frame(now) {
+      if (t0 === null) { t0 = now; }
+      var t = Math.min(1, (now - t0) / DUR);
+      var e = 1 - Math.pow(1 - t, 4);
+      var v = t >= 1 ? d.target : Math.round(d.target * e);
+      var vals = Object.assign({}, self.state.vals); vals[d.key] = v;
+      var patch = { vals: vals, prog: Object.assign({}, self.state.prog || {}), total: self.landedSum(d.key) + v };
+      patch.prog[d.key] = e;
+      if (t >= 1) {
+        var landed = Object.assign({}, self.state.landed); landed[d.key] = true;
+        patch.landed = landed; patch.active = ""; patch.prog[d.key] = 1;
+        self.raf = null;
+        self.setState(patch);
+        onDone();
+        return;
+      }
+      self.setState(patch);
+      self.raf = requestAnimationFrame(frame);
+    }
+    this.raf = requestAnimationFrame(frame);
+  }
+  finish(fast) {
+    var self = this;
+    var k = fast ? 0.4 : 1;
+    this.setState({ stage: "done", totalPop: true, fast: fast, message: "" });
+    this.later(2000 * k, function () { self.scrollDown(); });
+  }
+  spin() {
+    var self = this;
+    this.clear();
+    var d = this.defs();
+    this.setState({ stage: "spinning" });
+    this.runRow(d[0], function () {
+      self.later(500, function () {
+        self.runRow(d[1], function () {
+          self.later(500, function () {
+            self.runRow(d[2], function () {
+              self.setState({ message: "" });
+              self.later(650, function () { self.finish(false); });
+            });
+          });
+        });
+      });
+    });
+  }
+  skip() {
+    this.clear();
+    var vals = {}, sum = 0;
+    this.defs().forEach(function (d) { vals[d.key] = d.target; sum += d.target; });
+    this.setState({
+      active: "", vals: vals,
+      started: { fc: true, rt: true, pb: true },
+      landed: { fc: true, rt: true, pb: true },
+      prog: { fc: 1, rt: 1, pb: 1 },
+      total: sum
+    });
+    this.finish(true);
+  }
+  replay() {
+    var self = this;
+    this.clear();
+    if (this.scrollEl) { try { this.scrollEl.scrollTo({ top: 0, behavior: "smooth" }); } catch (e) { this.scrollEl.scrollTop = 0; } }
+    this.setState(this.fresh(), function () { self.later(400, function () { self.spin(); }); });
+  }
+  renderVals() {
+    var self = this;
+    var s = this.state;
+    var k = s.fast ? 0.4 : 1;
+    var DEC = "cubic-bezier(0.05, 0.7, 0.1, 1)";
+    function anim(name, dur, delay, ease) {
+      return "animation: " + name + " " + dur + "ms " + (ease || DEC) + " " + Math.round(delay * k) + "ms both;";
+    }
+    var a = {
+      stamp: anim("mcStamp", 450, 450, "cubic-bezier(0.2, 0.9, 0.2, 1)"),
+      room: anim("mcRise", 420, 2000),
+      note: anim("mcFade", 260, 2900, "ease-out"),
+      cta: "animation: mcRise 380ms " + DEC + " " + Math.round(3050 * k) + "ms both, mcBreathe 2.4s ease-in-out " + Math.round(3900 * k) + "ms infinite;",
+      replay: anim("mcFade", 260, 3350, "ease-out")
+    };
+    var A = app.state;
+    var ft = A.ft || { badges: [], room: { players: [] }, stamp: "", score: A.score };
+    var looks = {
+      "ORACLE": { color: "#00FF85", border: "rgba(0,255,133,0.55)", bg: "rgba(0,255,133,0.08)" },
+      "ON FIRE": { color: "#04F5FF", border: "rgba(4,245,255,0.55)", bg: "rgba(4,245,255,0.08)" },
+      "GOOD EYE": { color: "#C9A2FF", border: "rgba(201,162,255,0.55)", bg: "rgba(201,162,255,0.08)" }
+    };
+    var badgeDefs = ft.badges.map(function (b) { return Object.assign({}, looks[b.title] || looks["ON FIRE"], b); });
+    var badges = badgeDefs.map(function (b, i) {
+      return Object.assign({}, b, { style: anim("mcBadge", 380, 1100 + i * 140) });
+    });
+    var faces = {
+      You: { init: "YOU", bg: "#00FF85", ink: "#1A0020" }, Mia: { init: "M", bg: "#04F5FF", ink: "#002A2C" },
+      Dan: { init: "D", bg: "#C9A2FF", ink: "#1E0A3A" }, Leo: { init: "L", bg: "#FFC9DD", ink: "#3A0A1C" }
+    };
+    var room = ft.room.players.map(function (p, i) {
+      var f = faces[p.name] || { init: p.name.charAt(0), bg: "#5C2A63", ink: "#F3F6F9" };
+      return { pos: String(i + 1), init: f.init, name: p.name, pts: app.fmt(p.pts), bg: f.bg, ink: f.ink, me: p.me };
+    }).map(function (p, i) {
+      var st = "display: flex; align-items: center; gap: 10px; padding: 6px 8px; border-radius: 10px; ";
+      var enter = "mcRow 320ms " + DEC + " " + Math.round((2150 + i * 90) * k) + "ms both";
+      if (p.me) {
+        st += "background: rgba(0,255,133,0.12); animation: " + enter + ", mcYou 900ms ease-out " + Math.round(2750 * k) + "ms both;";
+      } else {
+        st += "animation: " + enter + ";";
+      }
+      return Object.assign({}, p, { style: st });
+    });
+    var rows = this.defs().map(function (d) {
+      var started = s.started[d.key], landed = s.landed[d.key], active = s.active === d.key;
+      var v = s.vals[d.key];
+      return {
+        isRt: d.key === "rt", isFc: d.key === "fc", isPb: d.key === "pb", label: d.label, detail: d.detail, color: d.color, landed: landed,
+        glow: landed ? d.glow : "rgba(0,0,0,0)",
+        valueText: started ? "+" + v.toLocaleString("en-US") : "—",
+        barW: started ? (((s.prog || {})[d.key] || 0) * 100) + "%" : "0%",
+        landClass: landed ? "mc-land" : "",
+        showPlayers: !!d.players && landed, players: d.players || [],
+        cardStyle: "padding: 10px 12px; border-radius: 12px; display: flex; flex-direction: column; gap: 8px; background: #37003C; border: 1px solid " + (active ? d.color : "#37003C") + "; opacity: " + (started || s.stage === "idle" ? 1 : 0.45) + "; transition: opacity 250ms ease-out, border-color 250ms ease-out;"
+      };
+    });
+    var idle = s.stage === "idle";
+    return {
+      scoreLine: ft.score[0] + " – " + ft.score[1], stamp: ft.stamp, roomCode: A.roomCode,
+      friendsPlayed: (room.length - 1) + " friends played",
+      ctaText: A.saved ? "YOUR " + app.fmt(A.total) + " POINTS ARE SAVED" : "SAVE MY " + app.fmt(A.total) + " POINTS",
+      rows: rows, badges: badges, room: room, a: a,
+      totalText: idle ? "?" : s.total.toLocaleString("en-US"),
+      totalColor: idle ? "#5C2A63" : "#00FF85",
+      totalGlow: idle ? "rgba(0,0,0,0)" : "rgba(0,255,133,0.45)",
+      totalClass: s.totalPop ? "mc-total" : "",
+      isIdle: idle, isSpinning: s.stage === "spinning", done: s.stage === "done", notDone: s.stage !== "done",
+      message: idle ? "READY WHEN YOU ARE" : s.message,
+      msgClass: s.stage === "spinning" ? "mc-blink" : "",
+      setScroll: function (el) { self.scrollEl = el; },
+      spin: function () { self.spin(); },
+      skip: function () { self.skip(); },
+      replay: function () { self.replay(); }
+    };
+  }
+}
+</script>
+</body>
+</html>
