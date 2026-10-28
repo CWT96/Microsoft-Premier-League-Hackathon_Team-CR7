@@ -13,6 +13,8 @@ CAUTION: none
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 from fastapi.testclient import TestClient
 
@@ -42,6 +44,16 @@ def test_ops_dashboard_served(client):
     assert r.status_code == 200 and "Partner report" in r.text
     assert client.get("/ops/data/data.js").status_code == 200
     assert client.get("/ops", follow_redirects=False).headers["location"] == "/ops/"
+
+
+DIRECTOR = Path(__file__).resolve().parents[2] / "frontend" / "director"
+
+
+@pytest.mark.skipif(not DIRECTOR.is_dir(), reason="frontend/director/ not built yet")
+def test_director_served(client):
+    assert client.get("/director/").status_code == 200
+    assert client.get("/director", follow_redirects=False).headers["location"] == "/director/"
+    assert client.get("/demo/director", params={"team": "XYZ"}).status_code == 400  # API wins
 
 
 def test_api_still_wins_over_static(client):
