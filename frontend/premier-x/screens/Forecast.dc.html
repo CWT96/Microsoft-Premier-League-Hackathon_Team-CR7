@@ -15,6 +15,10 @@ a{color:#04F5FF}a:hover{color:#8AFAFF}
 @keyframes mcLock{0%{transform:scale(1.15);opacity:0}100%{transform:scale(1);opacity:1}}
 .mc-live-dot{animation:mcLive 1.4s ease-in-out infinite}
 .mc-lock{animation:mcLock .25s ease-out both}
+@keyframes mcRise{0%{transform:translateY(6px);opacity:0}20%{opacity:1}100%{transform:translateY(-14px);opacity:0}}
+@keyframes mcBump{0%{transform:scale(1.28)}100%{transform:scale(1)}}
+.mc-rise{animation:mcRise 1.2s ease-out both}
+.mc-bump{animation:mcBump .4s ease-out both}
 .mc-fo{cursor:pointer}
 .mc-step{cursor:pointer}
 .mc-step:disabled{cursor:not-allowed;opacity:.35}
@@ -34,8 +38,11 @@ a{color:#04F5FF}a:hover{color:#8AFAFF}
         <span style="width: 24px; height: 24px; border-radius: 7px; background: #FFFFFF; display: flex; align-items: center; justify-content: center; flex: none"><img src="../assets/crests/che.svg" alt="Chelsea" style="width: 18px; height: 18px; object-fit: contain"></span>
       </div>
     </div>
-    <div style="display: flex; flex-direction: column; align-items: flex-end">
-      <div style="display: flex; align-items: baseline; gap: 4px">
+    <div style="position: relative; display: flex; flex-direction: column; align-items: flex-end">
+      <sc-if value="{{hasRise}}" hint-placeholder-val="{{ false }}">
+        <div key="{{riseKey}}" class="mc-rise" style="position: absolute; right: 0; top: -14px; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-style: italic; font-size: 18px; color: #00FF85">+{{riseText}}</div>
+      </sc-if>
+      <div key="{{riseKey}}" class="{{bumpClass}}" style="display: flex; align-items: baseline; gap: 4px">
         <span style="font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-style: italic; font-size: 34px; line-height: 1; color: #00FF85">{{scoreText}}</span>
         <span style="font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 13px; color: #CDB8D1">PTS</span>
       </div>
@@ -225,7 +232,7 @@ class Component extends DCLogic {
         : nowMin + "'–" + (nowMin + c.minutes) + "'";
       return {
         window: c.label, range: range, q: c.question, scoredAt: pend ? app.minute(pend.to_clock) : "",
-        closes: isLive ? "Open now. It locks in the moment you tap." : "Opens when the next highlight plays.",
+        closes: isLive ? "Open now. It locks in the moment you tap." : "Opens again as soon as play restarts.",
         pts: "+" + app.fmt(c.points),
         locked: !!chosen, open: !chosen,
         cardStyle: "padding: 14px; border-radius: 16px; display: flex; flex-direction: column; gap: 10px; background: #37003C; border: 1px solid " + (chosen ? "#04F5FF" : "#5C2A63") + ";",
@@ -283,6 +290,11 @@ class Component extends DCLogic {
     return {
       liveLabel: "LIVE " + (app.minute(A.clockLabel) || "12'"), scoreLine: app.scoreLine(),
       scoreText: app.fmt(A.total), rankText: "#" + app.rank() + " in your room",
+      // a forecast (or a call, while this tab is open) landing: the same bump and "+N" as live
+      hasRise: !!A.pop || !!(A.call && A.call.phase === "reveal"),
+      bumpClass: A.pop || (A.call && A.call.phase === "reveal") ? "mc-bump" : "",
+      riseText: A.pop ? app.fmt(A.pop.amount) : A.call && A.call.result ? app.fmt(A.call.result.points) : "",
+      riseKey: A.pop ? "p" + A.pop.key : (A.call ? "c" + A.call.id : "-"),
       hasLast: !!last, last: last || {},
       cards: cards, ladder: ladder, ftOpts: ftOpts, ftHint: ftHint,
       ftHintColor: s.flash && !stepLock ? "#04F5FF" : "#CDB8D1",

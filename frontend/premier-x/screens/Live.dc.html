@@ -54,10 +54,10 @@ a{color:#04F5FF}a:hover{color:#8AFAFF}
       </div>
     </div>
     <div style="position: relative; display: flex; flex-direction: column; align-items: flex-end">
-      <sc-if value="{{isReveal}}" hint-placeholder-val="{{ false }}">
-        <div class="mc-rise" style="position: absolute; right: 0; top: -14px; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-style: italic; font-size: 18px; color: #00FF85">+{{gained}}</div>
+      <sc-if value="{{hasRise}}" hint-placeholder-val="{{ false }}">
+        <div key="{{riseKey}}" class="mc-rise" style="position: absolute; right: 0; top: -14px; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-style: italic; font-size: 18px; color: #00FF85">+{{riseText}}</div>
       </sc-if>
-      <div class="{{bumpClass}}" style="display: flex; align-items: baseline; gap: 4px">
+      <div key="{{riseKey}}" class="{{bumpClass}}" style="display: flex; align-items: baseline; gap: 4px">
         <span style="font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-style: italic; font-size: 34px; line-height: 1; color: #00FF85">{{scoreText}}</span>
         <span style="font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 13px; color: #CDB8D1">PTS</span>
       </div>
@@ -101,7 +101,7 @@ a{color:#04F5FF}a:hover{color:#8AFAFF}
     </div>
   </sc-if>
 
-  <div style="position: relative; margin: 10px 16px 0; height: 206px; border-radius: 14px; overflow: hidden; background: #14492F; background-image: repeating-linear-gradient(90deg, rgba(255,255,255,0.035) 0, rgba(255,255,255,0.035) 36px, rgba(0,0,0,0) 36px, rgba(0,0,0,0) 72px)">
+  <div data-pitch="1" style="position: relative; margin: 10px 16px 0; height: 206px; border-radius: 14px; overflow: hidden; background: #14492F; background-image: repeating-linear-gradient(90deg, rgba(255,255,255,0.035) 0, rgba(255,255,255,0.035) 36px, rgba(0,0,0,0) 36px, rgba(0,0,0,0) 72px)">
     <div style="position: absolute; left: 8px; right: 8px; top: 8px; bottom: 8px; border: 1.5px solid rgba(255,255,255,0.38); border-radius: 2px"></div>
     <div style="position: absolute; left: 50%; top: 8px; bottom: 8px; border-left: 1.5px solid rgba(255,255,255,0.38)"></div>
     <div style="position: absolute; left: 50%; top: 50%; width: 54px; height: 54px; margin: -27px 0 0 -27px; border: 1.5px solid rgba(255,255,255,0.38); border-radius: 50%"></div>
@@ -109,16 +109,16 @@ a{color:#04F5FF}a:hover{color:#8AFAFF}
     <div style="position: absolute; right: 8px; top: 28%; height: 44%; width: 46px; border: 1.5px solid rgba(255,255,255,0.38); border-right: none"></div>
 
     <sc-for list="{{players}}" as="p" hint-placeholder-count="22">
-      <div key="{{p.k}}" style="position: absolute; left: {{p.l}}; top: {{p.t}}; width: 15px; height: 15px; margin: -7.5px 0 0 -7.5px; box-sizing: border-box; border-radius: 50%; background: {{p.bg}}; border: 1.5px solid {{p.edge}}; color: {{p.ink}}; display: flex; align-items: center; justify-content: center; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 8.5px; line-height: 1; transition: left {{p.dur}}ms linear, top {{p.dur}}ms linear; z-index: {{p.z}}">{{p.n}}</div>
+      <div key="{{p.k}}" data-k="{{p.k}}" style="position: absolute; left: {{p.l}}; top: {{p.t}}; width: 15px; height: 15px; margin: -7.5px 0 0 -7.5px; box-sizing: border-box; border-radius: 50%; background: {{p.bg}}; border: 1.5px solid {{p.edge}}; color: {{p.ink}}; display: flex; align-items: center; justify-content: center; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 8.5px; line-height: 1; transition: left {{p.dur}}ms linear, top {{p.dur}}ms linear; z-index: {{p.z}}">{{p.n}}</div>
     </sc-for>
 
     <sc-if value="{{hasHolder}}" hint-placeholder-val="{{ true }}">
-    <div style="position: absolute; left: {{hl.l}}; top: {{hl.t}}; width: 0; height: 0; transition: left {{hl.dur}}ms {{hl.ease}}, top {{hl.dur}}ms {{hl.ease}}; z-index: 3">
+    <div data-ring="1" style="position: absolute; left: {{hl.l}}; top: {{hl.t}}; width: 0; height: 0; transition: left {{hl.dur}}ms {{hl.ease}}, top {{hl.dur}}ms {{hl.ease}}; z-index: 3">
       <div class="mc-ring2" style="position: absolute; left: -11px; top: -11px; width: 22px; height: 22px; box-sizing: border-box; border-radius: 50%; border: 2px solid #00FF85"></div>
-      <div style="position: absolute; left: 0; top: -27px; transform: translateX(-50%); padding: 1px 5px; border-radius: 5px; background: #00FF85; color: #1A0020; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 12px; white-space: nowrap">{{hl.tag}}</div>
+      <div data-tag="1" style="position: absolute; left: 0; top: -27px; transform: translateX(-50%); padding: 1px 5px; border-radius: 5px; background: #00FF85; color: #1A0020; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 12px; white-space: nowrap">{{hl.tag}}</div>
     </div>
     </sc-if>
-    <div style="position: absolute; left: {{ball.l}}; top: {{ball.t}}; width: 7px; height: 7px; margin: -3.5px 0 0 -3.5px; border-radius: 50%; background: #FFFFFF; box-shadow: 0 0 0 1.5px #1A0020, 0 0 6px rgba(255,255,255,0.7); transition: left {{ball.dur}}ms {{ball.ease}}, top {{ball.dur}}ms {{ball.ease}}; z-index: 3"></div>
+    <div data-ball="1" style="position: absolute; left: {{ball.l}}; top: {{ball.t}}; width: 7px; height: 7px; margin: -3.5px 0 0 -3.5px; border-radius: 50%; background: #FFFFFF; box-shadow: 0 0 0 1.5px #1A0020, 0 0 6px rgba(255,255,255,0.7); transition: left {{ball.dur}}ms {{ball.ease}}, top {{ball.dur}}ms {{ball.ease}}; z-index: 3"></div>
 
     <sc-if value="{{feedOn}}" hint-placeholder-val="{{ false }}">
     <div key="{{feedKey}}" style="position: absolute; left: 12px; top: 12px; z-index: 4; display: flex; flex-direction: column; gap: 4px">
@@ -317,30 +317,23 @@ class Component extends DCLogic {
     var prompt = { kind: "OPEN PLAY", ctx: parts.ctx, q: parts.q, who: call ? String(call.player).toUpperCase() : "" };
 
     // pitch: metres (105 x 68, Arsenal attack left to right) -> % of the pitch box
-    function pos(x, y) {
-      return [Math.max(3, Math.min(97, x / 105 * 100)), Math.max(6, Math.min(94, y / 68 * 100))];
-    }
-    // dots, ball and ring all move by CSS transitions whose times app.pitch() set to land
-    // them together; the ball sits at the holder's feet like the design's off() offset
-    var holderNum = A.holder ? app.names[A.holder.team + ":" + A.holder.name] : undefined;
-    var holderKey = A.holder && holderNum !== undefined ? A.holder.team + ":" + holderNum : null;
+    // the pitch moves in pitch.js (every frame, written straight to these nodes); a render
+    // just draws everyone where they are right now, with no CSS transition of its own
+    var holderKey = Pitch.holder;
+    var holderName = holderKey ? app.byNum[holderKey] : null;
     var players = [];
-    Object.keys(A.dots).sort().forEach(function (k) {
-      var d = A.dots[k];
-      var xy = pos(d.x, d.y);
+    Object.keys(Pitch.dots).sort().forEach(function (k) {
+      var d = Pitch.dots[k];
       var home = d.team === "ARS", isH = k === holderKey;
-      players.push({ k: k, z: isH ? 2 : 1, n: d.num, l: xy[0] + "%", t: xy[1] + "%", dur: d.dur,
+      players.push({ k: k, z: isH ? 2 : 1, n: d.num, l: Pitch.css(d.x, 105), t: Pitch.css(d.y, 68), dur: 0,
         bg: home ? "#FF8A7A" : "#2F5BFF", ink: home ? "#1F0A07" : "#FFFFFF",
         edge: isH ? "#00FF85" : (home ? "#3A120D" : "#DCE5FF") });
     });
-    var bxy = pos(A.ball.x, A.ball.y);
-    if (A.ball.feet) { bxy = [bxy[0] + 1.6, bxy[1] + 2.2]; }
-    var rxy = pos(A.ring.x, A.ring.y);
     var hl = {
-      l: rxy[0] + "%", t: rxy[1] + "%", dur: A.ring.dur, ease: A.ring.ease,
-      tag: A.holder ? "#" + (holderNum !== undefined ? holderNum : "") + " " + String(A.holder.name).toUpperCase() : ""
+      l: Pitch.css(Pitch.ring.x, 105), t: Pitch.css(Pitch.ring.y, 68), dur: 0, ease: "linear",
+      tag: holderKey ? "#" + holderKey.split(":")[1] + " " + String(holderName || "").toUpperCase() : ""
     };
-    var ball = { l: bxy[0] + "%", t: bxy[1] + "%", dur: A.ball.dur, ease: A.ball.ease };
+    var ball = { l: Pitch.css(Pitch.ball.x, 105), t: Pitch.css(Pitch.ball.y, 68), dur: 0, ease: "linear" };
 
     var streak = A.streak;
     var pips = [0, 1, 2, 3, 4].map(function (i) { return { color: i < streak ? "#00FF85" : "#5C2A63" }; });
@@ -372,14 +365,18 @@ class Component extends DCLogic {
       scoreText: app.fmt(A.total), gained: app.fmt(res ? res.points : 0),
       basePts: res ? res.points - res.streak_bonus : 0, bonusPts: res ? res.streak_bonus : 0,
       hasBonus: !!(res && res.streak_bonus > 0), streak: res ? res.streak : streak,
-      bumpClass: phase === "reveal" ? "mc-bump" : "",
+      // the score bumps and "+N" rises for a call's points and for points that land on their own
+      bumpClass: phase === "reveal" || A.pop ? "mc-bump" : "",
+      hasRise: phase === "reveal" || !!A.pop,
+      riseText: A.pop ? app.fmt(A.pop.amount) : app.fmt(res ? res.points : 0),
+      riseKey: A.pop ? "p" + A.pop.key : (call ? "c" + call.id : "-"),
       popColor: correct ? "#00FF85" : "#FFFFFF",
       popGlow: correct ? "rgba(0,255,133,0.6)" : "rgba(255,255,255,0.35)",
       popLabel: correct ? "CORRECT CALL" : "CALLED IT",
       ribbon1: correct ? "READ THE PLAY" : "TOOK PART",
       answerLabel: answerLabel,
       prompt: prompt, options: options, resultLine: resultLine,
-      players: players, hl: hl, ball: ball, hasHolder: !!A.holder,
+      players: players, hl: hl, ball: ball, hasHolder: !!holderKey,
       feed: A.feed.map(function (f, i) { return Object.assign({}, f, { delay: (250 + i * 120) + "ms" }); }),
       feedOn: A.feed.length > 0, feedKey: A.feedKey,
       // a cut in play, or the half-time / full-time whistle: one card style for all three

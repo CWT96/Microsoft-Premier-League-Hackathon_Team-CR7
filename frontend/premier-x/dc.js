@@ -212,13 +212,21 @@
   }
 
   function morphChildren(live, fresh, refs) {
+    var wanted = [];
+    var want = {};
+    for (var f = fresh.firstChild; f; f = f.nextSibling) { wanted.push(f); want[f.__k] = true; }
+    // drop what is no longer wanted first, so nodes that stay never move: moving a node
+    // (insertBefore) restarts its CSS animations, which would replay an overlay or a pop
+    var gone = [];
+    for (var c0 = live.firstChild; c0; c0 = c0.nextSibling) {
+      if (!c0.__k || !want[c0.__k]) { gone.push(c0); }
+    }
+    gone.forEach(function (g) { live.removeChild(g); });
     var olds = {};
     for (var c = live.firstChild; c; c = c.nextSibling) {
       if (c.__k) { olds[c.__k] = c; }
     }
     var cursor = live.firstChild;
-    var wanted = [];
-    for (var f = fresh.firstChild; f; f = f.nextSibling) { wanted.push(f); }
     wanted.forEach(function (n) {
       var old = olds[n.__k];
       var keep = old && old.nodeType === n.nodeType && (n.nodeType !== 1 || old.localName === n.localName);

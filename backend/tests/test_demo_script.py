@@ -1,5 +1,5 @@
 from backend.ingest.loader import load_match
-from backend.demo.script import DRIBBLE_LEAD, build_timeline
+from backend.demo.script import DRIBBLE_LEAD, MIN_OPEN_S, build_timeline
 
 TL = build_timeline(load_match("nbr-cal-seed42"))
 types = [c.type for c in TL.cues]
@@ -24,7 +24,7 @@ def test_every_call_opens_before_it_locks():
     opens = {c.data["call_id"]: c.at for c in TL.cues if c.type == "call.open"}
     locks = {c.data["call_id"]: c.at for c in TL.cues if c.type == "call.lock"}
     assert opens.keys() == locks.keys() == TL.calls.keys()
-    assert all(3.0 <= locks[k] - opens[k] <= 8.0 for k in opens)
+    assert all(MIN_OPEN_S - 1e-9 <= locks[k] - opens[k] <= 8.0 for k in opens)
 
 def test_cues_sorted_and_jumps():
     assert [c.at for c in TL.cues] == sorted(c.at for c in TL.cues)
@@ -71,29 +71,27 @@ def test_dribble_is_visible_at_its_lock():
     assert ev["team"] == "ARS" and ev["player"] == "Zubimendi" and ev["end_xy"] is None
     x, y = ev["xy"]
     assert 0 <= x <= 105 and 0 <= y <= 68
-    # the take-on starts DRIBBLE_LEAD before the lock: he squares up to a defender, goes round
-    # him (the defender lunges) and is past him at the lock; then on to his pass
+    # the take-on starts DRIBBLE_LEAD before the lock: he runs at a defender standing on the
+    # dribble spot, steps round him as he bites, and is past him at the lock; then on to his pass
     start = round(lock.at - DRIBBLE_LEAD, 3)
-    take_on = next(c for c in TL.cues if c.type == "demo.shape" and round(c.at, 3) == start)
-    assert take_on.data["holder"] == "Zubimendi" and take_on.data["dur"] < DRIBBLE_LEAD
-    burst = next(c for c in TL.cues if c.type == "demo.shape" and c.at > take_on.at + 1e-6)
-    assert round(take_on.data["dur"] + burst.data["dur"], 3) == DRIBBLE_LEAD
-    before = [c for c in TL.cues if c.type == "demo.shape" and c.at < take_on.at - 1e-6][-1]
+    step = next(c for c in TL.cues if c.type == "demo.shape" and round(c.at, 3) == start)
+    burst = next(c for c in TL.cues if c.type == "demo.shape" and c.at > step.at + 1e-6)
+    after = next(c for c in TL.cues if c.type == "demo.shape" and c.at == lock.at)
+    before = [c for c in TL.cues if c.type == "demo.shape" and c.at < step.at - 1e-6][-1]
+    assert step.data["holder"] == burst.data["holder"] == "Zubimendi"
+    assert round(step.data["dur"] + burst.data["dur"], 3) == DRIBBLE_LEAD
     them = lambda c: {p["num"]: (p["x"], p["y"]) for p in c.data["players"] if p["team"] == "CHE"}
     me = lambda c: next((p["x"], p["y"]) for p in c.data["players"]
                         if p["team"] == "ARS" and p["num"] == 36)
-    assert list(me(before)) == ev["xy"]
-    facing = [n for n, xy in them(before).items() if 2.8 < ((xy[0] - ev["xy"][0]) ** 2
-                                                          + (xy[1] - ev["xy"][1]) ** 2) ** 0.5 < 3.2]
-    assert len(facing) >= 1
-    defender = min(facing, key=lambda n: abs(them(before)[n][1] - ev["xy"][1]))
-    side, past = me(take_on), me(burst)
-    gap = ((side[0] - them(take_on)[defender][0]) ** 2 + (side[1] - them(take_on)[defender][1]) ** 2) ** 0.5
-    assert gap > 4.4  # a dot is ~4 m wide on the phone: the two never overlap
-    assert past[0] > them(burst)[defender][0] + 3  # Arsenal attack left to right: he is past him
-    after = next(c for c in TL.cues if c.type == "demo.shape" and c.at == lock.at)
+    dist = lambda a, b: ((a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2) ** 0.5
+    assert me(before)[0] < ev["xy"][0]  # runs at his man from behind the spot
+    defender = min(them(before), key=lambda n: dist(them(before)[n], ev["xy"]))
+    assert dist(them(before)[defender], ev["xy"]) < 1.0  # standing on the spot
+    assert dist(me(step), them(step)[defender]) > 4.2  # a dot is ~4 m wide: no overlap
+    assert dist(me(burst), them(burst)[defender]) > 4.2 and me(burst)[0] > them(burst)[defender][0]
     nxt = next(c for c in TL.cues if c.type == "demo.event" and c.at > lock.at)
     assert list(me(after)) == nxt.data["xy"] and after.data["dur"] == events[0].data["dur"]
+    assert me(burst)[0] <= me(after)[0]  # always moving forward
     assert them(after)[defender] == them(burst)[defender]  # beaten, he stays where he lunged
 
 

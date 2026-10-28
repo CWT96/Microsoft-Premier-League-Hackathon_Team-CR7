@@ -99,14 +99,17 @@ def _event_data(e: MatchEvent) -> dict:
     """Wire data of a ``demo.event`` cue (motion fields are added by ``_play_cues``)."""
     xy, end_xy = fixed_xy(e.team, e.start), fixed_xy(e.team, e.end)
     return {"type": e.type, "team": TEAMS[e.team]["code"], "player": display_name(e.player_id),
-            "xy": list(xy) if xy else None, "end_xy": list(end_xy) if end_xy else None}
+            "xy": list(xy) if xy else None, "end_xy": list(end_xy) if end_xy else None,
+            **({"goal": (e.outcome or "").lower() == "goal"} if e.type == "shot" else {})}
 
 
 _BALL_TYPES = {"pass", "carry", "shot", "kickoff"}
 _CENTRE = (52.5, 34.0)
 PASS_SPEED = 18.0  # m/s, ball in the air or along the ground
-DRIBBLE_LEAD = 1.1  # s: a take-on starts this long before the dribble's data moment
-SHOT_SPEED = 30.0  # m/s
+DRIBBLE_LEAD = 1.5  # s: a take-on starts this long before the dribble's data moment
+MIN_OPEN_S = 2.5  # s: a call card is up at least this long before it locks
+RUN_IN = 7.5  # m/s: how fast a pass receiver runs to where the ball will land
+SHOT_SPEED = 22.0  # m/s on average: ~35 m/s off the boot, as the client eases it
 
 
 @dataclass(frozen=True)
@@ -204,6 +207,8 @@ def _play_cues(match: Match, play: Play, at: float, goals: list[MatchEvent],
         """Ball spot and holder at beat ``k`` (after the last beat: where its ball ends up)."""
         if k < n:
             b = located[k]
+            if (t := take_on(k)):  # he runs at his man from a few metres back
+                return t["approach"], b.player_id
             return tuple(b.data["xy"]), b.player_id
         last = located[-1] if located else None
         if last is None:
@@ -218,8 +223,12 @@ def _play_cues(match: Match, play: Play, at: float, goals: list[MatchEvent],
     pressers: dict[int, tuple[str, tuple[float, float]]] = {}
 
     def take_on(k: int) -> dict | None:
-        """The take-on of the dribble at beat ``k``: the defender, where he stands up to the
-        dribbler, where he lunges, and the spot past him the dribbler reaches at the lock."""
+        """The take-on of the dribble at beat ``k`` (the data spot is where he beats his man).
+
+        He runs at the defender from ``approach``, steps to the ``side`` as the defender lunges,
+        and bursts ``past`` him by the lock; then on to the next beat, always moving forward.
+        A dot is ~4 m wide on a phone, so the move is drawn wide enough to read.
+        """
         if k >= n or located[k].data["type"] != "dribble":
             return None
         if k not in pressers:
@@ -237,14 +246,20 @@ def _play_cues(match: Match, play: Play, at: float, goals: list[MatchEvent],
             shape = team_shape(on_pitch(slots, play.half, b.t), xy, b.player_id)
             them = [p for p in shape if p["team"] != TEAMS[b.team]["code"] and p["num"] != 1]
             near = min(them, key=lambda p: _dist((p["x"], p["y"]), xy))
-            # metres are drawn big on a phone (a dot is ~4 m wide), so the move is drawn wide
-            # enough to read: he stands up 3 m in front, the dribbler swerves ~4 m round him
+            length = _dist(nxt, xy) if nxt else 6.0
+            ahead = length * 0.9 if length >= 5.0 else 4.5
+
+            def at(f: float, lat: float) -> tuple[float, float]:
+                return (min(104.5, max(0.5, xy[0] + fx * f + lx * lat)),
+                        min(67.5, max(0.5, xy[1] + fy * f + ly * lat)))
             pressers[k] = {
                 "id": near["id"],
-                "front": (xy[0] + fx * 3.0, xy[1] + fy * 3.0),  # squares up to him
-                "lunge": (xy[0] + fx * 2.6 + lx * 1.0, xy[1] + fy * 2.6 + ly * 1.0),
-                "side": (xy[0] + fx * 1.2 + lx * 5.5, xy[1] + fy * 1.2 + ly * 5.5),  # step
-                "past": (xy[0] + fx * 6.5 + lx * 4.6, xy[1] + fy * 6.5 + ly * 4.6)}  # burst
+                "approach": at(-3.0, 0.0),  # runs at him
+                "front": at(0.8, 0.0),  # the defender squares up on the spot
+                "lunge": at(0.5, 1.3),  # ...and bites
+                "side": at(-0.5, 5.5),  # the step round him
+                "past": at(ahead, 1.5)}  # the burst past him
+        return pressers[k]
         return pressers[k]
 
     def presser(k: int) -> tuple[str, tuple[float, float]] | None:
@@ -270,13 +285,33 @@ def _play_cues(match: Match, play: Play, at: float, goals: list[MatchEvent],
     def placed(k: int) -> dict[str, tuple[float, float]]:
         """Players put somewhere other than their formation spot at beat ``k``."""
         out: dict[str, tuple[float, float]] = {}
+        t_k = located[k].t if k < n else play.end_t
+        ball_k, holder_k = target(k)
+        spots = None
+        for j in range(k, n):  # receivers of passes still to come run to where the ball lands
+            w = waiting(j)
+            if not w or w[0] == holder_k:
+                continue
+            b = located[j]
+            flight = max(0.35, _dist(b.data["xy"], b.data["end_xy"]) / PASS_SPEED)
+            left = b.t + flight - t_k  # until the ball gets there
+            if left > 9.0:
+                break
+            if spots is None:
+                spots = {p["id"]: (p["x"], p["y"])
+                         for p in team_shape(on_pitch(slots, play.half, t_k), ball_k, holder_k)}
+            home = spots.get(w[0])
+            if home is None:
+                continue
+            need = _dist(home, w[1]) / RUN_IN
+            if left < need:  # he is on his way: as far along as he needs to be to arrive in time
+                f = 1.0 - left / need if need > 0 else 1.0
+                out[w[0]] = (home[0] + (w[1][0] - home[0]) * f, home[1] + (w[1][1] - home[1]) * f)
         if k and located[k - 1].data["type"] == "pass" and located[k - 1].player_id:
             # the passer follows his pass a step or two instead of jogging back into shape
             p = located[k - 1]
             d = attack_dir(p.team)
             out[p.player_id] = (p.data["xy"][0] + 1.5 * d, p.data["xy"][1])
-        if (w := waiting(k)):
-            out[w[0]] = tuple(w[1])
         for who in (presser(k), keeper(k - 1) if k else None):
             if who:  # facing the dribbler, or the keeper after a shot
                 out[who[0]] = who[1]
@@ -290,6 +325,7 @@ def _play_cues(match: Match, play: Play, at: float, goals: list[MatchEvent],
         return _shape_cue(slots, at_s, play.half, t, ball, holder, dur, placed(k))
 
     # placed during the jump card, so the cut to the new clip never shows players teleporting
+    arrives: dict[float, float] = {}  # pass time -> when the ball reaches the receiver
     cues.append(shape_at(max(0.0, at - JUMP_CARD_S), 0, 0.0))
     for k in range(int(-(-(play.end_t - play.start_t) // 1))):
         t = play.start_t + k
@@ -317,6 +353,8 @@ def _play_cues(match: Match, play: Play, at: float, goals: list[MatchEvent],
         cues.append(Cue(when, "demo.event", {
             **b.data, "dur": round(dur, 3), "flight": round(flight, 3),
             "to": display_name(receiver) if receiver else None}))
+        if kind == "pass":
+            arrives[round(b.t, 3)] = b.t + flight
         if (t := take_on(k)) and mt[k] < b.t:
             # the take-on: a step to the side (the defender bites), then a burst past him,
             # done by the real moment; the shape after it goes on to the next beat
@@ -334,9 +372,11 @@ def _play_cues(match: Match, play: Play, at: float, goals: list[MatchEvent],
             cues.append(shape_at(when, k + 1, dur))
             continue
         cues.append(shape_at(at + (mt[k] - play.start_t), k + 1, dur))
-    for c in calls:  # open on the pass, lock on the receiver's action (select_calls: no overlap)
+    for c in calls:  # open as the pass reaches him, lock on his action (select_calls: no overlap)
         player = display_name(c.player_id)
-        cues.append(Cue(at + (c.open_t - play.start_t), "call.open", {
+        # the card shows when the ball gets to him (he is on it), yet always >= 3 s before the lock
+        shown = min(max(c.open_t, arrives.get(round(c.open_t, 3), c.open_t)), c.lock_t - MIN_OPEN_S)
+        cues.append(Cue(at + (max(c.open_t, shown) - play.start_t), "call.open", {
             "call_id": c.call_id, "player": player, "team": TEAMS[c.team]["code"],
             "prompt": lines[c.call_id].setup, "options": list(OPTIONS)}))
         cues.append(Cue(at + (c.lock_t - play.start_t), "call.lock", {"call_id": c.call_id}))
