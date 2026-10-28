@@ -150,15 +150,17 @@
   var maxPlayers = niceTop(Math.max.apply(null, s.live)), maxCalls = niceTop(Math.max.apply(null, s.calls));
 
   // ---- state + render
-  var idx = N - 1, timer = null, hold = 0, metric = "players";
-  var holds = {}; goals.forEach(function (g) { holds[g.i] = 8; }); holds[HT0] = 5; holds[FT] = 10;
+  // pos is a fractional minute index: the replay moves continuously at a constant speed, with no pauses.
+  var pos = N - 1, timer = null, metric = "players";
 
   function bar(k, y, base) {
     var x = xAt(k) - BW / 2;
     return "M" + x.toFixed(1) + " " + base + "V" + y.toFixed(1) + "H" + (x + BW).toFixed(1) + "V" + base + "Z";
   }
+  function lerp(arr, p) { var k = Math.floor(p), f = p - k; return k >= N - 1 ? arr[N - 1] : arr[k] + (arr[k + 1] - arr[k]) * f; }
 
   function render() {
+    var idx = Math.min(N - 1, Math.floor(pos)), px = X0 + (pos + 0.5) * STEP;
     var aMax = metric === "players" ? maxPlayers : maxCalls, k;
     function yA(v) { return AB - v / aMax * (AB - AT); }
     function yB(v) { return BB - Math.min(v, 1000) / 1000 * (BB - BT); }
@@ -168,23 +170,24 @@
       if (s.signups[k] > 0) { if (k <= idx) bp += bar(k, yB(s.signups[k]), BB); else bf += bar(k, yB(s.signups[k]), BB); }
       if (metric === "players" && k <= idx) pts.push(xAt(k).toFixed(1) + "," + yA(s.live[k]).toFixed(1));
     }
+    if (metric === "players" && pos > idx) pts.push(px.toFixed(1) + "," + yA(lerp(s.live, pos)).toFixed(1));
     aPast.setAttribute("d", ap); aFut.setAttribute("d", af); bPast.setAttribute("d", bp); bFut.setAttribute("d", bf);
     aLine.setAttribute("points", pts.join(" "));
-    aArea.setAttribute("d", pts.length ? "M" + xAt(0).toFixed(1) + "," + AB + " L" + pts.join(" L") + " L" + xAt(idx).toFixed(1) + "," + AB + " Z" : "");
+    aArea.setAttribute("d", pts.length ? "M" + xAt(0).toFixed(1) + "," + AB + " L" + pts.join(" L") + " L" + Math.max(xAt(idx), px).toFixed(1) + "," + AB + " Z" : "");
     var ticks = [1, 2, 3, 4].map(function (q) { return kfmt(aMax * q / 4); });
     aTicks.forEach(function (t, j) { t.textContent = ticks[j]; });
     A.setAttribute("aria-label", (metric === "players" ? "Players online" : "Calls per minute") + " across the match, with goals, half-time and full time marked");
 
-    var atEnd = idx >= N - 1 && !timer, px = xAt(idx);
+    var atEnd = pos >= N - 1 && !timer;
     [aPlay, bPlay].forEach(function (l) { l.setAttribute("x1", px); l.setAttribute("x2", px); l.style.opacity = atEnd ? 0 : 0.6; });
 
     var peak = 0, peakI = 0;
     for (k = 0; k <= idx; k++) if (s.live[k] > peak) { peak = s.live[k]; peakI = k; }
-    var players = cum.pl[idx], scans = cum.sc[idx], su = cum.su[idx];
+    var players = lerp(cum.pl, pos), scans = lerp(cum.sc, pos), su = lerp(cum.su, pos), calls = lerp(cum.calls, pos);
     setText("clock", atEnd ? "FT +20 min (final)" : T[idx].clock);
     setText("k-scans", fmt(scans)); setText("k-players", fmt(players)); setText("k-playrate", pct(players, scans));
     setText("k-peak", fmt(peak)); setText("k-peakclock", T[peakI].clock);
-    setText("k-calls", fmt(cum.calls[idx])); setText("k-perplayer", players > 0 ? (cum.calls[idx] / players).toFixed(1) : "0");
+    setText("k-calls", fmt(calls)); setText("k-perplayer", players > 0 ? (calls / players).toFixed(1) : "0");
     setText("k-signups", fmt(su)); setText("k-conv", pct(su, players));
     setText("readout", "At " + T[idx].clock + ": " + fmt(s.live[idx]) + " players online · " + fmt(s.calls[idx]) + " calls per minute");
     setText("wave-note", fmt(Math.max(0, cum.su[Math.min(idx, H2 - 1)] - cum.su[HT0 - 1])) + " at half-time · " + fmt(Math.max(0, su - cum.su[FT])) + " after full time");
@@ -193,21 +196,22 @@
     $("seg-calls").setAttribute("aria-pressed", metric === "calls");
     $("icon-play").style.display = timer ? "none" : "";
     $("icon-pause").style.display = timer ? "" : "none";
-    setText("play-label", timer ? "Pause" : (idx >= N - 1 ? "Replay match" : "Resume"));
+    setText("play-label", timer ? "Pause" : (pos >= N - 1 ? "Replay match" : "Resume"));
   }
 
-  function stop() { if (timer) { clearInterval(timer); timer = null; } render(); }
+  function stop() { if (timer) { cancelAnimationFrame(timer); timer = null; } render(); }
   function play() {
     if (timer) return;
-    if (idx >= N - 1) idx = 0;
-    hold = 0;
-    var ms = Math.max(25, Math.round(REPLAY_SECONDS * 1000 / (N + 31)));
-    timer = setInterval(function () {
-      if (hold > 0) { hold--; return; }
-      if (idx + 1 >= N - 1) { idx = N - 1; stop(); return; }
-      idx++; if (holds[idx]) hold = holds[idx];
+    if (pos >= N - 1) pos = 0;
+    var perMinute = REPLAY_SECONDS * 1000 / (N - 1), t0 = null, p0 = pos;
+    function frame(now) {
+      if (t0 === null) t0 = now;
+      pos = Math.min(N - 1, p0 + (now - t0) / perMinute);
+      if (pos >= N - 1) { timer = null; render(); return; }
+      timer = requestAnimationFrame(frame);
       render();
-    }, ms);
+    }
+    timer = requestAnimationFrame(frame);
     render();
   }
   $("play").addEventListener("click", function () { if (timer) stop(); else play(); });

@@ -19,7 +19,7 @@ URL options:
 | Option | Effect |
 |---|---|
 | `?autoplay=1` | Start the match replay on load |
-| `&seconds=16` | Replay length in seconds (it also pauses briefly at goals, half time and full time) |
+| `&seconds=16` | Replay length in seconds |
 | `&demo=0` | Hide the "Simulated data" tag |
 
 ## What is on the page
@@ -31,7 +31,7 @@ A light, report-style layout: the audience is a club or league marketing team, s
 - **Key findings:** four one-line takeaways computed from the data, including how many half-time sign-ups left before full time.
 - **Funnel table:** scanned → started → made a call → made a forecast → saw a sign-up prompt (half-time or full-time) → signed up, with share of scans and step conversion.
 - **Channels table:** scans, sign-ups and sign-up rate per QR channel, sorted by rate, with a total row.
-- **Replay match:** animates the match minute by minute (pauses briefly at goals, half time and full time) for the demo video.
+- **Replay match:** plays the match data back smoothly at a constant speed, with no pauses, for the demo video.
 
 ## Data (simulated)
 
