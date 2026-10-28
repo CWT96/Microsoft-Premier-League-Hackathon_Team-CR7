@@ -47,6 +47,7 @@ from typing import Any, Callable, Protocol
 from fastapi import FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field, ValidationError, field_validator
 
@@ -583,6 +584,24 @@ def create_app(source: MatchSource | None = None, *, sleep: Sleep = asyncio.slee
     # is the app at /; the earlier fan app stays reachable at /classic/.
     if (frontend / "fan-app").is_dir():
         app.mount("/classic", StaticFiles(directory=frontend / "fan-app", html=True), name="fan-app")
+    if (frontend / "ops-dashboard").is_dir():  # partner report, shown after the phone flow
+        @app.get("/ops", include_in_schema=False)
+        def ops_slash() -> RedirectResponse:
+            return RedirectResponse("/ops/")  # relative asset paths need the slash
+
+        app.mount("/ops", StaticFiles(directory=frontend / "ops-dashboard", html=True), name="ops-dashboard")
+    if (frontend / "director").is_dir():  # detector + timing over the match, beside The Premier X
+        @app.get("/director", include_in_schema=False)
+        def director_slash() -> RedirectResponse:
+            return RedirectResponse("/director/")  # relative asset paths need the slash
+
+        app.mount("/director", StaticFiles(directory=frontend / "director", html=True), name="director")
+    if (frontend / "picker").is_dir():  # call picker: how the app picks each call
+        @app.get("/picker", include_in_schema=False)
+        def picker_slash() -> RedirectResponse:
+            return RedirectResponse("/picker/")  # relative asset paths need the slash
+
+        app.mount("/picker", StaticFiles(directory=frontend / "picker", html=True), name="picker")
     if (frontend / "premier-x").is_dir():
         app.mount("/", StaticFiles(directory=frontend / "premier-x", html=True), name="premier-x")
 

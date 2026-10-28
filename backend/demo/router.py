@@ -1,6 +1,8 @@
 """WS /demo/ws: one DemoSession per socket, beside a reader that takes the fan's calls.
 
 ``GET /demo/squads`` gives both squads and the scoring table (``bonus.squads``).
+``GET /demo/director?team=ARS|CHE`` gives the director view's data (``director.build_director``,
+built once per side; unknown team 400).
 Protocol: first message ``start`` {team: ARS|CHE, players?: [id, id]} within 10 s, else close
 1008 (bad ``players`` are sanitised, never a close). Then any
 number of ``call.answer`` {call_id, pick} (bad input ignored), ``forecast.pick`` {key, pick}
@@ -18,10 +20,11 @@ import json
 import os
 from typing import Any, Callable
 
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, HTTPException, WebSocket, WebSocketDisconnect
 
 from backend.core.types import Match
 from backend.demo import bonus
+from backend.demo.director import build_director
 from backend.demo.script import Timeline, build_timeline
 from backend.demo.session import DemoSession, Sleep
 
@@ -83,6 +86,17 @@ def make_demo_router(*, sleep: Sleep = asyncio.sleep, load: Callable[[], Match] 
     @router.get("/demo/squads")
     async def demo_squads() -> dict:
         return bonus.squads()
+
+    directors: dict[str, dict] = {}
+
+    @router.get("/demo/director")
+    async def demo_director(team: str = "ARS") -> dict:
+        """Director view data for one side, built once per side off the event loop."""
+        if team not in TEAM_CODES:
+            raise HTTPException(400, "team must be ARS or CHE")
+        if team not in directors:
+            directors[team] = await asyncio.to_thread(lambda: build_director(load(), team=team))
+        return directors[team]
 
     async def read_start(ws: WebSocket) -> tuple[str, list[str]] | None:
         """(team code, backed player ids) from a valid ``start`` within START_TIMEOUT_S, else

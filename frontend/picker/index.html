@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Call picker: how the app picks each call</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<main class="page">
+  <header class="head">
+    <h1>Call picker: how the app picks each call</h1>
+    <p class="sub">Left: the pitch, 22 dots. Right: the fan's phone. Bottom: every decision moment the code found, and what it did with it. Press ▶ or drag the slider to stop on any second.</p>
+  </header>
+
+  <section class="controls" aria-label="Playback">
+    <button id="play" class="btn" type="button" aria-label="Play">▶</button>
+    <span id="time" class="time">--:-- · 0.0s</span>
+    <input id="scrub" class="scrub" type="range" min="0" max="100" step="0.1" value="0" aria-label="Time in the cut">
+    <div class="teams" role="group" aria-label="Fan's team">
+      <button class="team on" type="button" data-team="ARS">Arsenal</button>
+      <button class="team" type="button" data-team="CHE">Chelsea</button>
+    </div>
+  </section>
+
+  <p id="status" class="status" hidden></p>
+
+  <div class="grid">
+    <section class="left">
+      <div class="pitch-wrap">
+        <svg id="pitch" class="pitch" viewBox="-2 -2 109 72" role="img" aria-label="Pitch with 22 players and the ball">
+          <rect class="grass" x="-2" y="-2" width="109" height="72"></rect>
+          <rect id="third" class="third" x="70" y="0" width="35" height="68"></rect>
+          <text id="third-label" class="third-label" x="103" y="4" text-anchor="end">final third</text>
+          <g class="lines">
+            <rect x="0" y="0" width="105" height="68"></rect>
+            <line x1="52.5" y1="0" x2="52.5" y2="68"></line>
+            <circle cx="52.5" cy="34" r="9.15"></circle>
+            <rect x="0" y="13.84" width="16.5" height="40.32"></rect>
+            <rect x="88.5" y="13.84" width="16.5" height="40.32"></rect>
+            <rect x="0" y="24.84" width="5.5" height="18.32"></rect>
+            <rect x="99.5" y="24.84" width="5.5" height="18.32"></rect>
+            <circle class="spot" cx="52.5" cy="34" r="0.4"></circle>
+          </g>
+          <g id="dots"></g>
+          <circle id="ball" class="ball" cx="52.5" cy="34" r="1.1"></circle>
+          <text id="holder" class="holder" x="52.5" y="31"></text>
+          <g id="card" class="card" hidden>
+            <rect x="-2" y="-2" width="109" height="72"></rect>
+            <text id="card-title" class="card-title" x="52.5" y="32" text-anchor="middle"></text>
+            <text id="card-clock" class="card-clock" x="52.5" y="40" text-anchor="middle"></text>
+          </g>
+        </svg>
+      </div>
+
+      <div class="chart-wrap">
+        <svg id="chart" class="chart" role="img" aria-label="Decision timeline"></svg>
+        <div id="tip" class="tip" hidden></div>
+      </div>
+
+      <ul class="legend" aria-label="Legend">
+        <li><span class="sym pick">▲</span> picked</li>
+        <li><span class="sym block">✕</span> blocked by a rule</li>
+        <li><span class="sym short">◆</span> too short to answer</li>
+        <li><span class="sym other">○</span> other side</li>
+        <li><span class="sw green"></span> green window</li>
+        <li><span class="sw grey"></span> grey result hold</li>
+        <li><span class="ln blue"></span> blue movement</li>
+        <li><span class="sw att-ars"></span> Arsenal attacking</li>
+        <li><span class="sw att-che"></span> Chelsea attacking</li>
+      </ul>
+    </section>
+
+    <aside class="right">
+      <div class="phone">
+        <div class="phone-screen">
+          <div class="board"><span id="score">ARS 0–0 CHE</span><span id="clock">--:--</span></div>
+          <div id="goal" class="goal" hidden></div>
+          <div id="screen" class="screen"></div>
+        </div>
+      </div>
+
+      <div id="detail" class="detail" aria-live="polite"></div>
+    </aside>
+  </div>
+</main>
+<script src="app.js"></script>
+</body>
+</html>
