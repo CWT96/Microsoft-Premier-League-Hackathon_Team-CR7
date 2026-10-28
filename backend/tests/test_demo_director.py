@@ -161,19 +161,27 @@ def test_blocked_names_a_picked_call(team):
 def test_too_short_and_other_team(team):
     moments = DIR[team]["moments"]
     short = [m for m in moments if m["status"] == "too_short"]
-    assert short
+    assert short or team == "ARS"  # ARS's cut has no short Arsenal moment
     for m in short:
+        assert m["team"] == team  # the other side is other_team first, whatever its window
         w = m["lock_t"] - m["open_t"]
         assert w < MIN_WINDOW_S and m["against"] is None
         assert m["reason"] == f"Only {w:.1f} s to answer (needs 3 s)"
         assert TOO_SHORT.fullmatch(m["reason"])
     for m in moments:
-        if m["status"] != "too_short":
+        if m["status"] != "too_short" and m["team"] == team:
             assert m["lock_t"] - m["open_t"] >= MIN_WINDOW_S
         if m["status"] == "other_team":
             assert m["team"] != team and m["reason"] == "Not the fan's team"
         elif m["status"] in {"picked", "blocked"}:
             assert m["team"] == team
+
+
+def test_other_side_short_moment_is_other_team():
+    # Joao Pedro, 60:10, 2.5 s window: an Arsenal fan sees him as the other side, not too short
+    jp = [m for m in DIR["ARS"]["moments"] if m["clock_open"] == "60:10"]
+    assert [(m["player"], m["status"]) for m in jp] == [("João Pedro", "other_team")]
+    assert jp[0]["lock_t"] - jp[0]["open_t"] < MIN_WINDOW_S
 
 
 @pytest.mark.parametrize("team", SIDES)

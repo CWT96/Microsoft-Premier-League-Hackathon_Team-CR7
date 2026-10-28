@@ -2,7 +2,8 @@
 
 ``build_director`` returns the JSON behind ``GET /demo/director``: the side's full timeline
 (cues, wire format), every decision moment inside a Play with what the picker did with it
-(``calls.explain_selection``, plus ``too_short`` for moments under MIN_WINDOW_S), the call
+(``calls.explain_selection``, plus ``too_short`` for the fan's side's moments under
+MIN_WINDOW_S; the other side's are ``other_team`` whatever their window), the call
 lines, ball movement and attack spans. Picked moments are exactly the timeline's calls.
 Real time ``at`` maps to match time as in ``script.build_timeline``: a Play's match second
 ``t`` plays at ``at_start + (t - start_t)``.
@@ -51,7 +52,11 @@ def _moments(match_id: str, plays: list[dict], side: str) -> list[dict]:
         h, t0, t1 = p["half"], p["start_t"], p["end_t"]
         for c in every:
             w = c.lock_t - c.open_t
-            if c.half == h and t0 <= c.open_t and c.lock_t <= t1 and w < MIN_WINDOW_S:
+            if not (c.half == h and t0 <= c.open_t and c.lock_t <= t1 and w < MIN_WINDOW_S):
+                continue
+            if c.team != side:  # the other side first: too short only matters for the fan's team
+                out.append(_moment(c, p, "other_team", "Not the fan's team", None))
+            else:
                 out.append(_moment(c, p, "too_short",
                                    f"Only {w:.1f} s to answer (needs {MIN_WINDOW_S:.0f} s)", None))
         for d in explain_selection(longer, h, t0, t1, side):
