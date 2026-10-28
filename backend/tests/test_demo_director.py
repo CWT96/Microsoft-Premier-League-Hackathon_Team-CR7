@@ -22,7 +22,7 @@ from backend.demo.script import SCRIPTS, Play, build_timeline
 from backend.ingest.loader import load_match
 
 MATCH = load_match("nbr-cal-seed42")
-SIDES = {"ARS": "NBR", "CHE": "CAL"}
+SIDES = {"NBR": "NBR", "CAL": "CAL"}
 DIR = {team: build_director(MATCH, team=team) for team in SIDES}
 TLS = {team: build_timeline(MATCH, team=team) for team in SIDES}
 
@@ -45,7 +45,7 @@ def _call(cid: str, open_t: float, lock_t: float, answer: str = "PASS", team: st
 
 def test_explain_selection_statuses_and_reasons():
     moments = [
-        _call("a", 100.0, 104.0, "DRIBBLE", player="910109"),  # Saka, picked first (rarest)
+        _call("a", 100.0, 104.0, "DRIBBLE", player="910109"),  # Mensah, picked first (rarest)
         _call("b", 102.0, 106.0, "PASS"),  # opens 2.0 s after a
         _call("c", 106.5, 110.0, "PASS"),  # 6.5 s gap but opens 2.5 s after a locks
         _call("d", 120.0, 124.0, "SHOOT", team="CAL"),  # other side
@@ -56,9 +56,9 @@ def test_explain_selection_statuses_and_reasons():
     assert set(out) == {"a", "b", "c", "d", "e"}
     assert (out["a"].status, out["a"].reason, out["a"].against) == ("picked", "Picked", None)
     assert (out["b"].status, out["b"].against) == ("blocked", "a")
-    assert out["b"].reason == "Too close to Saka's call (2.0 s apart, needs 6 s)"
+    assert out["b"].reason == "Too close to Mensah's call (2.0 s apart, needs 6 s)"
     assert (out["c"].status, out["c"].against) == ("blocked", "a")
-    assert out["c"].reason == "Would cover Saka's result (needs 3 s after it locks)"
+    assert out["c"].reason == "Would cover Mensah's result (needs 3 s after it locks)"
     assert (out["d"].status, out["d"].reason, out["d"].against) == (
         "other_team", "Not the fan's team", None)
     assert out["e"].status == "picked"
@@ -111,13 +111,13 @@ def test_shape(team):
                           "clock_open", "clock_lock", "player", "team", "answer", "status",
                           "reason", "against"}
         assert m["status"] in {"picked", "blocked", "too_short", "other_team"}
-        assert m["team"] in {"ARS", "CHE"} and m["answer"] in {"PASS", "SHOOT", "DRIBBLE"}
+        assert m["team"] in {"NBR", "CAL"} and m["answer"] in {"PASS", "SHOOT", "DRIBBLE"}
         assert m["clock_open"] == clock_label(m["half"], m["open_t"])
         assert m["clock_lock"] == clock_label(m["half"], m["lock_t"])
     assert [m["at_open"] for m in d["moments"]] == sorted(m["at_open"] for m in d["moments"])
     assert d["movement"] and all(set(x) == {"at", "v"} and x["v"] >= 0 for x in d["movement"])
     assert d["attack"] and all(set(a) == {"at_start", "at_end", "team"} for a in d["attack"])
-    assert all(a["team"] in {"ARS", "CHE"} and a["at_end"] > a["at_start"] for a in d["attack"])
+    assert all(a["team"] in {"NBR", "CAL"} and a["at_end"] > a["at_start"] for a in d["attack"])
 
 
 @pytest.mark.parametrize("team", SIDES)
@@ -161,7 +161,7 @@ def test_blocked_names_a_picked_call(team):
 def test_too_short_and_other_team(team):
     moments = DIR[team]["moments"]
     short = [m for m in moments if m["status"] == "too_short"]
-    assert short or team == "ARS"  # ARS's cut has no short Arsenal moment
+    assert short or team == "NBR"  # NBR's cut has no short Northbridge moment
     for m in short:
         assert m["team"] == team  # the other side is other_team first, whatever its window
         w = m["lock_t"] - m["open_t"]
@@ -178,9 +178,9 @@ def test_too_short_and_other_team(team):
 
 
 def test_other_side_short_moment_is_other_team():
-    # Joao Pedro, 60:10, 2.5 s window: an Arsenal fan sees him as the other side, not too short
-    jp = [m for m in DIR["ARS"]["moments"] if m["clock_open"] == "60:10"]
-    assert [(m["player"], m["status"]) for m in jp] == [("João Pedro", "other_team")]
+    # Doyle, 60:10, 2.5 s window: an Northbridge fan sees him as the other side, not too short
+    jp = [m for m in DIR["NBR"]["moments"] if m["clock_open"] == "60:10"]
+    assert [(m["player"], m["status"]) for m in jp] == [("Doyle", "other_team")]
     assert jp[0]["lock_t"] - jp[0]["open_t"] < MIN_WINDOW_S
 
 
@@ -229,15 +229,15 @@ def test_route_default_team_and_cache():
         return MATCH
     with _client(load) as client:
         r = client.get("/demo/director")
-        assert r.status_code == 200 and r.json()["team"] == "ARS"
-        assert client.get("/demo/director?team=ARS").json() == r.json()
-        che = client.get("/demo/director", params={"team": "CHE"})
-        assert che.status_code == 200 and che.json()["team"] == "CHE"
-        client.get("/demo/director?team=CHE")
+        assert r.status_code == 200 and r.json()["team"] == "NBR"
+        assert client.get("/demo/director?team=NBR").json() == r.json()
+        che = client.get("/demo/director", params={"team": "CAL"})
+        assert che.status_code == 200 and che.json()["team"] == "CAL"
+        client.get("/demo/director?team=CAL")
     assert len(loads) == 2  # built once per side
 
 
-@pytest.mark.parametrize("bad", ["XYZ", "ars", "", "NBR"])
+@pytest.mark.parametrize("bad", ["XYZ", "nbr", "", "ARS"])
 def test_route_unknown_team_is_400(bad):
     with _client() as client:
         assert client.get("/demo/director", params={"team": bad}).status_code == 400

@@ -3,7 +3,7 @@
 ``GET /demo/squads`` gives both squads and the scoring table (``bonus.squads``).
 ``GET /demo/director?team=NBR|CAL`` gives the director view's data (``director.build_director``,
 built once per side; unknown team 400).
-Protocol: first message ``start`` {team: ARS|CHE, players?: [id, id]} within 10 s, else close
+Protocol: first message ``start`` {team: NBR|CAL, players?: [id, id]} within 10 s, else close
 1008 (bad ``players`` are sanitised, never a close). Then any
 number of ``call.answer`` {call_id, pick} (bad input ignored), ``forecast.pick`` {key, pick}
 and ``forecast.final`` {result, home, away} (each answered with the session's reply; bad shapes
@@ -90,10 +90,10 @@ def make_demo_router(*, sleep: Sleep = asyncio.sleep, load: Callable[[], Match] 
     directors: dict[str, dict] = {}
 
     @router.get("/demo/director")
-    async def demo_director(team: str = "ARS") -> dict:
+    async def demo_director(team: str = "NBR") -> dict:
         """Director view data for one side, built once per side off the event loop."""
         if team not in TEAM_CODES:
-            raise HTTPException(400, "team must be ARS or CHE")
+            raise HTTPException(400, "team must be NBR or CAL")
         if team not in directors:
             directors[team] = await asyncio.to_thread(lambda: build_director(load(), team=team))
         return directors[team]
