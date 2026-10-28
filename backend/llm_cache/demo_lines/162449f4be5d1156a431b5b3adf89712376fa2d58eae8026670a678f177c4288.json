@@ -1,0 +1,8 @@
+{
+  "match_id": "nbr-cal-seed42",
+  "qid": "c-76a30eb0-c50c-41f4-8d08-f416160a3a13",
+  "response": {
+    "setup": "Rice has the ball near the opponent's goal area. What will he do next?",
+    "explain": "Rice tried to kick the ball towards the goal, but it missed and no goal was scored."
+  }
+}
