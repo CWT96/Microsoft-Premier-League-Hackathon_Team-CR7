@@ -15,8 +15,6 @@ from typing import Any, Callable
 
 from backend.demo.calls import Call
 from backend.demo.forecasts import WINDOWS, outcome, score_final, score_window
-from backend.demo.lines import goal_after
-from backend.demo.names import display_name
 from backend.demo.points import score_call
 from backend.demo.script import OPTIONS, Timeline
 
@@ -139,6 +137,25 @@ def friend_totals(timeline: Timeline) -> list[dict]:
     return rows
 
 
+def friend_progress(timeline: Timeline) -> list[dict]:
+    """[{name, saved, calls: {call_id: running call points}}]: the friends' totals during play.
+
+    Same picks as ``friend_totals``; forecasts are left out (they land in the half-time and
+    full-time boards), so the app can rank the fan in the room after every call.
+    """
+    rows = []
+    for f in FRIENDS:
+        run = streak = 0
+        after: dict[str, int] = {}
+        for c in _ordered_calls(timeline):
+            pick = _pick(random.Random(f"{f.name}-{c.call_id}"), f.accuracy, c.answer, OPTIONS)
+            s = score_call(pick, c.answer, streak)
+            streak, run = s.streak, run + s.points
+            after[c.call_id] = run
+        rows.append({"name": f.name, "saved": f.saved, "calls": after})
+    return rows
+
+
 _CROWD_CACHE: dict[int, tuple[Timeline, list[int]]] = {}
 
 
@@ -159,7 +176,8 @@ def crowd_totals(timeline: Timeline) -> list[int]:
             lambda half, t0, got: _pick(rng, acc, got, [got, _F15_OTHER[got]]),
             final)
         totals.append(ft)
-    _CROWD_CACHE.clear()  # one demo timeline per process; keep only the latest
+    if len(_CROWD_CACHE) >= 4:  # one timeline per side; never grow without bound
+        _CROWD_CACHE.clear()
     _CROWD_CACHE[id(timeline)] = (timeline, totals)
     return totals
 
@@ -183,12 +201,12 @@ def rank_of(players: list[dict]) -> int:
     return next(i for i, p in enumerate(players, 1) if p["me"])
 
 
-def goal_scorer(call: Call, timeline: Timeline) -> str | None:
-    """Who scored the goal this call's move ended in, else None."""
-    if call.answer == "SHOOT":
-        return display_name(call.player_id) if call.lock_outcome == "Goal" else None
-    goal = goal_after(call, timeline.events)
-    return display_name(goal.player_id) if goal is not None else None
+def good_eye(cards: list[dict]) -> str | None:
+    """Name of the first backed player who scored (design: "Your pick Saka scored"), else None."""
+    for card in cards:
+        if any(row["what"] == "Goal" for row in card.get("stats", [])):
+            return card["name"]
+    return None
 
 
 def badges(final_right: bool, best_streak: int, good_eye: str | None) -> list[dict]:
@@ -198,7 +216,7 @@ def badges(final_right: bool, best_streak: int, good_eye: str | None) -> list[di
     if best_streak >= ON_FIRE_FROM:
         out.append({"title": "ON FIRE", "text": f"{best_streak} calls in a row"})
     if good_eye:
-        out.append({"title": "GOOD EYE", "text": f"You called {good_eye}'s goal"})
+        out.append({"title": "GOOD EYE", "text": f"Your pick {good_eye} scored"})
     return out
 
 

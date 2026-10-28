@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>The Premier X</title>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,600;0,700;0,800;1,800&amp;family=Inter:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;background:#1A0020}
+a{color:#04F5FF}a:hover{color:#8AFAFF}
+@keyframes mcLive{0%{opacity:1}50%{opacity:.25}100%{opacity:1}}
+.mc-live-dot{animation:mcLive 1.4s ease-in-out infinite}
+.mc-cta:hover{background:#5CFFAE}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: #1A0020; color: #F3F6F9; font-family: Inter, system-ui, sans-serif; display: flex; flex-direction: column; overflow: hidden">
+
+  <div style="display: flex; align-items: center; justify-content: space-between; padding: 20px 20px 0">
+    <div style="font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-style: italic; font-size: 26px; letter-spacing: 0.5px; line-height: 1; white-space: nowrap">THE PREMIER <span style="color: #00FF85">X</span></div>
+    <div style="display: flex; align-items: center; gap: 6px; padding: 6px 10px; border: 1px solid #5C2A63; border-radius: 999px; font-size: 12px; color: #CDB8D1">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect><path d="M14 14h3v3h-3zM20 14v.01M14 20h.01M17 20h4v-3"></path></svg>
+      <span>Scanned at {{venue}}</span>
+    </div>
+  </div>
+
+  <div style="margin: 18px 20px 0; padding: 16px; background: #37003C; border: 1px solid #5C2A63; border-radius: 16px; display: flex; flex-direction: column; gap: 12px">
+    <div style="display: flex; align-items: center; justify-content: space-between">
+      <div style="display: flex; align-items: center; gap: 6px; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 15px; letter-spacing: 1px; color: #FF5C93">
+        <span class="mc-live-dot" style="width: 8px; height: 8px; border-radius: 50%; background: #FF5C93; display: inline-block"></span>
+        <span>{{liveLabel}}</span>
+      </div>
+      <div style="font-size: 12px; color: #CDB8D1">{{matchday}}</div>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: center; gap: 8px">
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 6px">
+        <span style="width: 58px; height: 58px; border-radius: 16px; background: #FFFFFF; display: flex; align-items: center; justify-content: center; flex: none"><img src="../assets/crests/ars.svg" alt="Arsenal" style="width: 46px; height: 46px; object-fit: contain"></span>
+        <div style="font-size: 14px; font-weight: 600">Arsenal</div>
+      </div>
+      <div style="text-align: center; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 46px; line-height: 1">{{score}}</div>
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 6px">
+        <span style="width: 58px; height: 58px; border-radius: 16px; background: #FFFFFF; display: flex; align-items: center; justify-content: center; flex: none"><img src="../assets/crests/che.svg" alt="Chelsea" style="width: 46px; height: 46px; object-fit: contain"></span>
+        <div style="font-size: 14px; font-weight: 600">Chelsea</div>
+      </div>
+    </div>
+    <div style="display: flex; align-items: center; gap: 8px; padding-top: 10px; border-top: 1px solid #5C2A63; font-size: 13px; color: #CDB8D1">
+      <div style="display: flex">
+        <span style="width: 22px; height: 22px; border-radius: 50%; background: #04F5FF; color: #002A2C; font-size: 10px; font-weight: 700; display: flex; align-items: center; justify-content: center; border: 2px solid #37003C">M</span>
+        <span style="width: 22px; height: 22px; border-radius: 50%; background: #00FF85; color: #1A0020; font-size: 10px; font-weight: 700; display: flex; align-items: center; justify-content: center; border: 2px solid #37003C; margin-left: -6px">D</span>
+        <span style="width: 22px; height: 22px; border-radius: 50%; background: #C9A2FF; color: #1E0A3A; font-size: 10px; font-weight: 700; display: flex; align-items: center; justify-content: center; border: 2px solid #37003C; margin-left: -6px">L</span>
+      </div>
+      <span>{{crowd}} people are calling this match</span>
+    </div>
+  </div>
+
+  <div style="padding: 24px 20px 0; display: flex; flex-direction: column; gap: 10px">
+    <h1 style="margin: 0; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 42px; line-height: 0.95; text-transform: uppercase">Road to Barclays. <span style="color: #00FF85">Call it now.</span></h1>
+    <p style="margin: 0; font-size: 15px; line-height: 1.45; color: #CDB8D1">Watch and play, beat your mates and top the table. Start earning points now. Free to play.</p>
+  </div>
+
+  <div style="padding: 20px 20px 0">
+    <a class="mc-cta" href="Pick.dc.html" style="display: flex; align-items: center; justify-content: center; gap: 10px; height: 58px; border-radius: 14px; background: #00FF85; color: #1A0020; text-decoration: none; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 24px; letter-spacing: 1px">
+      <span>PLAY THIS MATCH</span>
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg>
+    </a>
+  </div>
+
+  <div style="padding: 18px 20px 0; display: flex; flex-direction: column; gap: 8px">
+    <label for="room" style="font-size: 13px; font-weight: 600; color: #F3F6F9">Playing with friends? Enter their room code</label>
+    <div style="display: flex; gap: 8px">
+      <input id="room" type="text" placeholder="e.g. 4K7Q" style="flex: 1; min-width: 0; height: 48px; box-sizing: border-box; padding: 0 14px; border-radius: 12px; border: 1px solid #5C2A63; background: #37003C; color: #F3F6F9; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 20px; letter-spacing: 3px">
+      <a href="Pick.dc.html" style="display: flex; align-items: center; justify-content: center; padding: 0 18px; height: 48px; border-radius: 12px; border: 1px solid #04F5FF; color: #04F5FF; text-decoration: none; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 18px; letter-spacing: 1px">JOIN</a>
+    </div>
+    <a href="Pick.dc.html" style="font-size: 13px; font-weight: 600">or create a room for your group</a>
+  </div>
+
+  <div style="padding: 22px 20px 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px">
+    <div style="padding: 12px 10px; background: #37003C; border-radius: 12px; display: flex; flex-direction: column; gap: 6px">
+      <div style="font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 20px; color: #00FF85">01</div>
+      <div style="font-size: 13px; font-weight: 600; line-height: 1.25">Pick a side</div>
+    </div>
+    <div style="padding: 12px 10px; background: #37003C; border-radius: 12px; display: flex; flex-direction: column; gap: 6px">
+      <div style="font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 20px; color: #00FF85">02</div>
+      <div style="font-size: 13px; font-weight: 600; line-height: 1.25">Call plays as they happen</div>
+    </div>
+    <div style="padding: 12px 10px; background: #37003C; border-radius: 12px; display: flex; flex-direction: column; gap: 6px">
+      <div style="font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 20px; color: #00FF85">03</div>
+      <div style="font-size: 13px; font-weight: 600; line-height: 1.25">Climb the board, win rewards</div>
+    </div>
+  </div>
+
+  <div style="margin-top: auto; padding: 0 20px 22px; display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 12px; color: #CDB8D1">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 3v6c0 4.5-3.4 8.3-8 9-4.6-.7-8-4.5-8-9V6z"></path></svg>
+    <span>Points only. No money, no betting.</span>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    // the match card: Arsenal v Chelsea from GET /demo/squads (the run opens at 11:34, 0-0)
+    var m = app.squads && app.squads.matches ? app.squads.matches[0] : null;
+    return { venue: "the Emirates", liveLabel: "LIVE 12'", score: "0 – 0",
+             matchday: m ? m.meta : "Matchday 9", crowd: app.fmt(m ? m.fans : 128406) };
+  }
+}
+</script>
+</body>
+</html>

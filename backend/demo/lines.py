@@ -171,23 +171,25 @@ def main() -> None:
     client = llm.get_client()
     print(f"LLM_MODE={client.mode}  cache={client.cache_dir / AGENT}")
     match = load_match("nbr-cal-seed42")
-    tl = build_timeline(match, client=client)
-    for cid, ln in tl.lines.items():
-        print(f"\n{cid}\n  facts:   {ln.facts}")
-        print(f"  setup:   {ln.setup!r}  [{'AI ok' if ln.setup_ok else 'TEMPLATE'}]")
-        print(f"  explain: {ln.explain!r}  [{'AI ok' if ln.explain_ok else 'TEMPLATE'}]")
-        if ln.reply is not None and not ln.ai:
-            print(f"  rejected reply: {ln.reply}")
-    print(f"\nai_lines={tl.ai_lines}")
-    if "--drop-rejected" in sys.argv[1:]:
+    drop = "--drop-rejected" in sys.argv[1:]
+    for team in ("ARS", "CHE"):  # each side has its own cut, so its own calls
+        tl = build_timeline(match, client=client, team=team)
+        print(f"\n=== {team}")
         for cid, ln in tl.lines.items():
-            if not ln.ai:
-                key = llm.cache_key(AGENT, prompt_for(ln.facts), match.match_id, cid)
-                path = client.cache_dir / AGENT / f"{key}.json"
-                if path.is_file():
-                    path.unlink()
-                    print(f"dropped {cid} ({path.name})")
-
+            print(f"\n{cid}\n  facts:   {ln.facts}")
+            print(f"  setup:   {ln.setup!r}  [{'AI ok' if ln.setup_ok else 'TEMPLATE'}]")
+            print(f"  explain: {ln.explain!r}  [{'AI ok' if ln.explain_ok else 'TEMPLATE'}]")
+            if ln.reply is not None and not ln.ai:
+                print(f"  rejected reply: {ln.reply}")
+        print(f"\n{team} ai_lines={tl.ai_lines}")
+        if drop:
+            for cid, ln in tl.lines.items():
+                if not ln.ai:
+                    key = llm.cache_key(AGENT, prompt_for(ln.facts), match.match_id, cid)
+                    path = client.cache_dir / AGENT / f"{key}.json"
+                    if path.is_file():
+                        path.unlink()
+                        print(f"dropped {cid} ({path.name})")
 
 if __name__ == "__main__":
     main()

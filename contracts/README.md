@@ -1,6 +1,6 @@
 # contracts/: WebSocket and REST contract
 
-> **Judged demo:** the Matchday Call fan app (served at `/`) uses `WS /demo/ws` and `GET /demo/squads`, documented in [Demo mode](#demo-mode-demows-and-demosquads) below. The original yes/no Room flow (`/ws`, `/api/*`) described in the other sections still exists unchanged.
+> **Judged demo:** The Premier X fan app (served at `/`) uses `WS /demo/ws` and `GET /demo/squads`, documented in [Demo mode](#demo-mode-demows-and-demosquads) below. The original yes/no Room flow (`/ws`, `/api/*`) described in the other sections still exists unchanged.
 
 **Owners:** all three. This folder plus the `*.schema.json` files are the only agreement between `backend/` and `frontend/`. Change them through a PR that is approved by one backend owner **and** the frontend owner. Freeze target: **10/25 morning**. After that, additive changes only (new optional fields).
 
@@ -193,7 +193,7 @@ During the match the UI shows only ✓/coin animations. It never shows point num
 
 ## Demo mode: /demo/ws and /demo/squads
 
-This is the protocol of the judged Matchday Call fan app (`frontend/fan-app/`). Code: `backend/demo/router.py` (socket, close codes) and `backend/demo/session.py` (messages, scoring). One socket plays one fan's ~93 s highlights run of `nbr-cal-seed42`, shown as Arsenal (`ARS`, home) vs Chelsea (`CHE`, away). Every run is private to that socket; there is no shared room state. The examples below are real payloads from a local cache-mode run, trimmed with `…`. They are prose, not schema-validated.
+This is the protocol of the judged fan app, The Premier X (`frontend/premier-x/`, served at `/`; the earlier `frontend/fan-app/` is at `/classic/`). Code: `backend/demo/router.py` (socket, close codes) and `backend/demo/session.py` (messages, scoring). One socket plays one fan's ~100 s highlights run of `nbr-cal-seed42` (each side has its own cut, and calls only ask about the fan's own team), shown as Arsenal (`ARS`, home) vs Chelsea (`CHE`, away). Every run is private to that socket; there is no shared room state. The examples below are real payloads from a local cache-mode run, trimmed with `…`. They are prose, not schema-validated.
 
 Endpoint: `GET /demo/ws` (`wss://` on the deployed https site). Same envelope as `/ws`: `{"type": "...", "data": {...}}`. Frames over 4096 bytes or that are not JSON are skipped (before `start` they close the socket with 1008).
 
@@ -202,7 +202,7 @@ Endpoint: `GET /demo/ws` (`wss://` on the deployed https site). Same envelope as
 1. Client connects. If `MAX_DEMO_SESSIONS` sockets (default 50) are already open, the server accepts and closes at once with **1013** (try again later).
 2. Client sends `start` within **10 s**. A missing, late or malformed `start`, or a team other than `ARS`/`CHE`, closes with **1008**. Bad `players` never close the socket; they are dropped.
 3. Server sends `demo.session`, then the timed cues of the highlights run, ending with `demo.full_time`.
-4. After `demo.full_time` the socket stays open for up to **120 s** (`POST_MATCH_S`) so the fan can still `signup`. Then the server closes with **1000**. It also closes with 1000 whenever the client leaves.
+4. After `demo.full_time` the socket stays open for up to **600 s** (`POST_MATCH_S`) so the fan can still `signup`. Then the server closes with **1000**. It also closes with 1000 whenever the client leaves.
 
 Clock values: `t` is match seconds (same convention as `/ws`), `clock` is the display label (`MM:SS`, or `45+M:SS` / `90+M:SS`), `score` is `[home, away]`. Pitch coordinates are metres in a fixed frame: Arsenal attack left to right (105 × 68), Chelsea's are rotated 180°.
 
@@ -228,16 +228,16 @@ Clock values: `t` is match seconds (same convention as `/ws`), `clock` is the di
 
 | `type` | `data` | When |
 |---|---|---|
-| `demo.session` | `{teams: {home, away}, you: {team, players: [card]}, duration, ai_lines, forecasts}` | Once, right after `start`. `ai_lines` is true when every call line came from the LLM cache and passed the guards. `forecasts` lists the three windows and the final-result options with their points. |
+| `demo.session` | `{teams: {home, away}, you: {team, players: [card]}, duration, ai_lines, forecasts, room: {code, friends: [{name, saved, calls: {call_id: points}}]}}` | Once, right after `start`. `ai_lines` is true when every call line came from the LLM cache and passed the guards. `forecasts` lists the three windows and the final-result options with their points. `room.friends` gives each simulated friend's running call points after each call, so the app can rank the fan in the room during play (forecasts land in the half-time and full-time boards). |
 | `demo.jump` | `{title, clock}` | A 2 s title card before each highlight clip (the first one is the intro). |
 | `demo.clock` | `{half, clock, score, t}` | Once per real second while a clip plays. |
-| `demo.event` | `{type, team, player, xy, end_xy}` | Each on-ball event in a clip. `type` ∈ `pass`, `carry`, `shot`, `goal`, `save`, `kickoff`, `dribble`. `xy`/`end_xy` may be null. |
-| `demo.shape` | `{players: [{team, num, x, y}]}` | 22 dots at each clip start and with each located event. **Estimated** from the formation and the ball; there is no tracking data. |
+| `demo.event` | `{type, team, player, xy, end_xy, dur, flight, to, goal}` | Each on-ball event in a clip. `type` ∈ `pass`, `carry`, `shot`, `goal`, `save`, `kickoff`, `dribble`. `xy`/`end_xy` may be null. `dur`: seconds until the next on-ball event of the clip; `flight`: seconds the ball takes to reach `end_xy` (pass ≈ 18 m/s, shot ≈ 22 m/s, carry = `dur`); `to`: the pass receiver, else null; `goal`: on a `shot`, true if it went in (the client ends the ball in the net). A `dribble` starts 1.5 s early and is drawn as a take-on: two extra `demo.shape` cues (side-step, then burst past the defender), always forward. |
+| `demo.shape` | `{players: [{team, num, x, y}], dur, ball, holder}` | Where the 22 players stand at the **next** on-ball moment, reached in `dur` seconds (`0` = place them now: the first shape of each clip, sent with its `demo.jump`). Sent with each located event; `ball` is the ball spot then and `holder` the player on it (null if none). A pass receiver (passes up to 9 s ahead) runs toward where the ball lands at about 7.5 m/s; the passer follows his pass; the beaten defender and the keeper (dives, misses on goals) are placed too. Outfield players never stand behind their own keeper (x ≥ 7). **Estimated** from the formation and the ball; there is no tracking data. |
 | `demo.goal` | `{team, player, clock, score}` | Right after the goal's `demo.event`. |
-| `call.open` | `{call_id, player, team, prompt, options}` | The ball is passed to a player. `prompt` is the AI-written (cached) setup line. |
+| `call.open` | `{call_id, player, team, prompt, options}` | The ball reaches a player: sent when the pass arrives, but always at least 2.5 s before `call.locked`. `prompt` is the AI-written (cached) setup line. |
 | `call.locked` | `{call_id}` | That player passes, shoots or dribbles. Answers after this are ignored. |
 | `call.result` | `{call_id, answer, pick, too_quick, correct, points, streak_bonus, total, streak, explain}` | Right after `call.locked`. Points: +10 answered, +100 more if correct, streak bonus +50 per step from the 3rd correct call in a row. Unanswered: `pick: null`, `too_quick: true`, 0 points, streak kept. |
-| `demo.half_time` | `{score, seconds, room, breakdown, players, you: {rank}, total, saved}` | After the first half. `seconds` is the pause length (10). `players` is the bonus card of each backed player for the first half. |
+| `demo.half_time` | `{score, seconds, room, breakdown, players, you: {rank}, total, saved}` | After the first half. `seconds` is the pause length (10): the second half starts on its own, as in a live match. `players` is the bonus card of each backed player for the first half. |
 | `demo.full_time` | `{score, seconds, rows, badges, stamp, room, players, total, saved}` | Last cue. `rows` are the three result lines, `badges` ⊆ ORACLE / ON FIRE / GOOD EYE, `stamp` ranks the fan in the room and against a simulated crowd of 1,000. |
 
 `total` is the fan's running total in every message that carries it: calls, forecasts, player bonus (first half added before `demo.half_time`, the rest before `demo.full_time`) and the signup bonus. `room.players` is the fan plus three simulated friends (Mia, Dan, Leo), sorted by points.
@@ -282,7 +282,7 @@ Clock values: `t` is match seconds (same convention as `/ws`), `clock` is the di
 
 ### GET /demo/squads
 
-Both squads and the player-bonus scoring table, for the "back up to 2 players" screen. `popular` is the id of the player the app offers as a one-tap quick pick; `pos` ∈ `GK`, `DEF`, `MID`, `FWD`; `rules` are `[stat, points]` pairs. Code: `backend/demo/bonus.py` (`squads`).
+Both squads and the player-bonus scoring table, for the "back up to 2 players" screen. `matches` lists the pick screen's three matches (`playable` only for ARS v CHE; `fans` is the number shown as calling the match) and `other_teams` the squads of the display-only teams (LIV, MCI, NEW, TOT; ids `<CODE>-<num>`), same shape as `teams`. `popular` is the id of the player the app offers as a one-tap quick pick; `pos` ∈ `GK`, `DEF`, `MID`, `FWD`; `rules` are `[stat, points]` pairs. Code: `backend/demo/bonus.py` (`squads`).
 
 ```json
 {"teams": {"ARS": {"name": "Arsenal", "popular": "910109", "players": [{"id": "910101", "name": "Raya", "num": 1, "pos": "GK", "starter": true}, "…"]},

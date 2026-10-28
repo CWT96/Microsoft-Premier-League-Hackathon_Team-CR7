@@ -1,6 +1,7 @@
-# One image: FastAPI serves the API and the WebSocket (and later the built frontend).
+# One image: FastAPI serves the API, the WebSocket and the frontend (premier-x at /, fan-app at /classic/).
 # Build from the repo root:  docker build -f infra/Dockerfile -t matchday-call .
-FROM python:3.11-slim
+# Same Python as the venv the app was tested on (the pinned numpy needs 3.12+).
+FROM python:3.13-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
@@ -8,14 +9,18 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
+# The exact versions the app was tested with locally (pip freeze of the dev venv), so the
+# deployed app does not pick up a newer FastAPI/Starlette/uvicorn than the one we played on.
 COPY backend/requirements.txt backend/requirements.txt
-RUN pip install --no-cache-dir -r backend/requirements.txt
+COPY infra/constraints.txt infra/constraints.txt
+RUN pip install --no-cache-dir -r backend/requirements.txt -c infra/constraints.txt
 
 # Runtime needs only the backend, the contracts (event validation) and the match data.
 COPY contracts/ contracts/
 COPY data/source/ data/source/
 COPY backend/ backend/
 COPY frontend/fan-app/ frontend/fan-app/
+COPY frontend/premier-x/ frontend/premier-x/
 
 EXPOSE 8000
 

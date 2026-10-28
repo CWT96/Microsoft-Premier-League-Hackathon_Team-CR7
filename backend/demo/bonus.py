@@ -13,6 +13,7 @@ from dataclasses import dataclass
 from functools import lru_cache
 from typing import Any
 
+from backend.demo.fixtures import MATCHES, other_teams
 from backend.demo.names import PLAYERS, SQUADS, TEAMS
 from backend.ingest import statsbomb
 from backend.ingest.loader import SOURCE_DIR
@@ -59,7 +60,8 @@ def squads() -> dict:
         teams[code] = {"name": TEAMS[internal]["name"], "popular": popular, "players": [
             {"id": pid, "name": PLAYERS[pid][0], "num": PLAYERS[pid][1], "pos": pos,
              "starter": starter} for pid, pos, starter in rows]}
-    return {"teams": teams, "scoring": SCORING}
+    # the other matches on the pick screen: browsable squads, the run plays Arsenal v Chelsea
+    return {"teams": teams, "scoring": SCORING, "matches": MATCHES, "other_teams": other_teams()}
 
 
 def sanitise(team: Any, raw: Any) -> list[str]:

@@ -29,7 +29,7 @@ DEMO_MATCH_ID = "nbr-cal-seed42"
 MAX_SESSIONS_ENV = "MAX_DEMO_SESSIONS"
 DEFAULT_MAX_SESSIONS = 50
 START_TIMEOUT_S = 10.0
-POST_MATCH_S = 120.0  # how long a finished demo keeps its socket (and slot) for signup
+POST_MATCH_S = 600.0  # how long a finished demo keeps its socket (and slot) for signup
 MAX_FRAME_BYTES = 4096
 TEAM_CODES = frozenset({"ARS", "CHE"})
 WS_CLOSE_NORMAL = 1000
@@ -73,12 +73,12 @@ def make_demo_router(*, sleep: Sleep = asyncio.sleep, load: Callable[[], Match] 
     router.active = active  # type: ignore[attr-defined]  # exposed for tests and diagnostics
     cache: dict[str, Timeline] = {}
 
-    async def timeline() -> Timeline:
+    async def timeline(team: str = "ARS") -> Timeline:
         """Built once, on first connect, off the event loop."""
-        if "tl" not in cache:
-            cache["tl"] = await asyncio.to_thread(lambda: build_timeline(load()))
+        if team not in cache:
+            cache[team] = await asyncio.to_thread(lambda: build_timeline(load(), team=team))
             await asyncio.to_thread(bonus.match_stats)  # warm: sessions never read it mid-match
-        return cache["tl"]
+        return cache[team]
 
     @router.get("/demo/squads")
     async def demo_squads() -> dict:
@@ -104,7 +104,7 @@ def make_demo_router(*, sleep: Sleep = asyncio.sleep, load: Callable[[], Match] 
         if start is None:
             return
         team, players = start
-        session = DemoSession(await timeline(), team, players=players)
+        session = DemoSession(await timeline(team), team, players=players)
 
         async def send(env: dict) -> None:
             await ws.send_json(env)

@@ -65,16 +65,17 @@ def test_all_facts_have_known_values(tmp_path):
     for f in by_id.values():
         assert f["zone"] in lines.ZONES and f["team"] in ("Arsenal", "Chelsea")
     outs = [by_id[k]["outcome"] for k in tl.calls]
-    # Estêvão's pass sets up João Pedro's goal; Saka's first shot is blocked
-    assert outs == ["kept the move going", "kept the move going", "shot blocked", "goal",
-                    "set up a goal", "goal"]
+    # Rice's shot misses; Havertz's dribble keeps the move going
+    assert outs == ["kept the move going", "kept the move going", "shot missed", "goal",
+                    "kept the move going", "goal"]
 
 
 def test_pass_that_sets_up_a_goal_names_the_scorer(tmp_path):
-    tl = build_timeline(M, client=llm.LLMClient(mode="cache", cache_dir=tmp_path))
-    by_player = {ln.facts["player"]: ln.facts for ln in tl.lines.values()}
+    che = build_timeline(M, client=llm.LLMClient(mode="cache", cache_dir=tmp_path), team="CHE")
+    by_player = {ln.facts["player"]: ln.facts for ln in che.lines.values()}
     assert by_player["Estêvão"]["outcome"] == "set up a goal"
     assert by_player["Estêvão"]["scorer"] == "João Pedro"
+    tl = build_timeline(M, client=llm.LLMClient(mode="cache", cache_dir=tmp_path))
     saka = tl.lines[saka_call(tl).call_id].facts
     assert saka["outcome"] == "goal" and "scorer" not in saka
 

@@ -1,11 +1,11 @@
-"""test_demo_static.py — the fan app is served at / and the API routes still win over it.
+"""test_demo_static.py — The Premier X is served at /, the earlier fan app at /classic/, and the API routes still win over both.
 
 Last Modified: 2026-10-27, first version
-Inputs:  frontend/fan-app/ (static files), hand-built tiny match (fast, no ingest)
+Inputs:  frontend/premier-x/ and frontend/fan-app/ (static files), hand-built tiny match (fast, no ingest)
 Outputs: none
 
 Workflow:
-  - GET / returns the fan app page
+  - GET / returns The Premier X page; GET /classic/ the earlier fan app
   - GET /api/matches still answers from the API, not the static mount
 
 CAUTION: none
@@ -26,8 +26,14 @@ def client():
         yield c
 
 
-def test_root_serves_fan_app(client):
+def test_root_serves_premier_x(client):
     r = client.get("/")
+    assert r.status_code == 200 and "The Premier X" in r.text
+    assert client.get("/screens/Live.dc.html").status_code == 200
+
+
+def test_classic_fan_app_still_served(client):
+    r = client.get("/classic/")
     assert r.status_code == 200 and "Matchday Call" in r.text
 
 
