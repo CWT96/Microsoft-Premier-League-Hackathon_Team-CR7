@@ -11,9 +11,9 @@ Matchday Call is a second-screen game for your phone while a football match is o
 
 ## What you'll see (about 90 seconds)
 
-The demo plays a ~93-second highlights cut of one match, shown as **Arsenal 2–1 Chelsea**.
+The demo plays a ~93-second highlights cut of one match, shown as **Northbridge 2–1 Calder**.
 
-1. **Pick a side** (Arsenal or Chelsea), then optionally **back up to 2 players**. Each position earns from different things (a goalkeeper from saves and clean sheets, a forward from goals and shots); the table is on screen.
+1. **Pick a side** (Northbridge or Calder), then optionally **back up to 2 players**. Each position earns from different things (a goalkeeper from saves and clean sheets, a forward from goals and shots); the table is on screen.
 2. **Kick off.** A small pitch shows 22 player dots and the ball. A score bar and clock run at the top.
 3. **Live calls.** When the ball is passed to a player, a card pops up: *PASS / SHOOT / DRIBBLE*. It locks the moment he acts. Then you see the answer, a one-line explanation and your points.
    - +10 for answering, +100 more if right, and a streak bonus (+50 per step from the 3rd correct call in a row).
@@ -39,7 +39,7 @@ match events ─► decision moments (code) ─► live calls ─────┐
 - **Decision moments.** Code scans the events for each time the ball reaches a player, and takes the answer from what that player does next (pass, shot or dribble). Calls open on the pass to him and lock on his action, so the answer cannot be known when you tap.
 - **Forecasts and player bonus.** Code settles each forecast window from the events in that span, and counts each backed player's stats (saves, tackles, key passes, goals…) against the position's scoring table.
 - **Points.** Pure functions in code. The total is shown live during the match.
-- **AI call lines.** For each call, an LLM writes a short setup line ("Gabriel has the ball in his own half for Arsenal. What will he do next?") and a one-sentence explanation after it locks. They were generated once, offline, with `gpt-4.1-mini` on **Azure OpenAI**, through `backend/agents/llm.py`, and committed to `backend/llm_cache/demo_lines/`. Guards reject any setup that hints at the answer and any line with a number that is not in the facts; a rejected line falls back to a template.
+- **AI call lines.** For each call, an LLM writes a short setup line ("Duarte has the ball in his own half for Northbridge. What will he do next?") and a one-sentence explanation after it locks. They were generated once, offline, with `gpt-4.1-mini` on **Azure OpenAI**, through `backend/agents/llm.py`, and committed to `backend/llm_cache/demo_lines/`. Guards reject any setup that hints at the answer and any line with a number that is not in the facts; a rejected line falls back to a template.
 - **Core rule: code decides, the LLM phrases.** The LLM never picks an answer or a number.
 
 ## Architecture
@@ -51,7 +51,7 @@ match events ─► decision moments (code) ─► live calls ─────┐
 
 ## Honest notes
 
-- **The data is synthetic.** The match is a generated dataset (`nbr-cal-seed42`) between two fictional clubs, relabelled for the demo as Arsenal vs Chelsea with real player names. The events did not happen in a real match.
+- **The data is synthetic.** The match is a generated dataset (`nbr-cal-seed42`) between two fictional clubs, Northbridge vs Calder; every club, crest and player name in the app is fictional. The events did not happen in a real match.
 - **Off-ball player positions are estimated.** The dataset has no tracking data, so the 22 dots are placed from each team's formation and the ball position. Only the ball and the player on it come from the events.
 - **The email save is a mock.** The address is checked for shape and dropped. Nothing is sent or stored.
 - **The friends and the crowd are simulated** in code (fixed seeds), so every run is reproducible.

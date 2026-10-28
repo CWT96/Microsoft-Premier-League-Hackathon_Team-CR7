@@ -251,7 +251,7 @@ class Component extends DCLogic {
       return { label: o.label, on: on, style: st, pick: function () { self.pickResult(o.id); } };
     });
     if (s.ft) { potential += 5000; }
-    var names = { ars: "an Northbridge win", draw: "a draw", che: "a Calder win" };
+    var names = { ars: "a Northbridge win", draw: "a draw", che: "a Calder win" };
     var ftHint = this.locked()
       ? (s.ft ? "Locked at the second-half kick-off. Scored at full time." : "Locked at the second-half kick-off.")
       : !s.ft

@@ -18,14 +18,14 @@
 - Selection inside a Play `[start_t, end_t]`: candidates with `start_t <= open_t` and `lock_t <= end_t`; greedy by priority SHOOT > DRIBBLE > PASS, then earlier `lock_t`; accept if, against every accepted call, `abs(open_t - other.open_t) >= MIN_GAP_S` (6.0) and the two windows do not overlap (`open_t >= other.lock_t or other.open_t >= lock_t`). Return sorted by `open_t`.
 - New `SCRIPT` (exact):
   ```
-  Play(1, 694, 716, "Arsenal on the attack"),
-  Play(1, 1422, 1437, "Saka's goal"),
+  Play(1, 694, 716, "Northbridge on the attack"),
+  Play(1, 1422, 1437, "Mensah's goal"),
   Pause("half_time", 10),
-  Play(2, 3600, 3616, "Chelsea hit back"),
+  Play(2, 3600, 3616, "Calder hit back"),
   Play(2, 4780, 4793, "The winner"),
   Pause("full_time", 0),
   ```
-  Expected: duration 82.0 s; 3 jumps; calls in order (open_t ≈, answer, player): 696.6 PASS 910104, 703.4 DRIBBLE 910106, 711.7 SHOOT 910109 (blocked), 1430.0 SHOOT 910109 (Saka goal), 3606.0 PASS 910211, 4786.2 SHOOT 910105 (Saliba goal). Goals Saka, João Pedro, Saliba; final 2–1.
+  Expected: duration 82.0 s; 3 jumps; calls in order (open_t ≈, answer, player): 696.6 PASS 910104, 703.4 DRIBBLE 910106, 711.7 SHOOT 910109 (blocked), 1430.0 SHOOT 910109 (Mensah goal), 3606.0 PASS 910211, 4786.2 SHOOT 910105 (Hale goal). Goals Mensah, Doyle, Hale; final 2–1.
 - `call.open` cue at `play_real_start + (open_t - start_t)`; `call.lock` at `... + (lock_t - start_t)`; window 3–8 s. Everything else in the timeline (clock, events, shapes, goals, jumps, half/full time, forecasts settlement, `t` in clock) unchanged in behaviour.
 - Do not modify `backend/ingest/`, `backend/app/replay.py`, `backend/bank/`, `backend/resolve/`, `backend/scoring/`, or pre-existing (non-demo) tests. Demo tests (`backend/tests/test_demo_*.py`) may be updated where their expected values encode the old cut; keep every behavioural assertion, only change cut-specific numbers/clock labels.
 - Commits `[area] Verb thing: description` + blank line + `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`. Branch `backend/demo-live-calls`. Tests `.venv/bin/python -m pytest -q`.
@@ -86,7 +86,7 @@ def test_carry_never_locks():
 
 **Files:** Modify `backend/demo/script.py` (new `SCRIPT`, open calls at `open_t`); update cut-specific expectations in `backend/tests/test_demo_script.py`, `test_demo_session.py`, `test_demo_shape.py`, `test_demo_forecast_session.py`; frontend copy only if a fixed "25 seconds"/"3-MIN" string exists in `frontend/fan-app/` (make it read the server's `seconds`, and "3-MIN HIGHLIGHTS" → "90-SECOND HIGHLIGHTS").
 
-- [ ] **Step 1:** Update the tests to the new cut first (RED): duration 82.0; 6 calls with answers `["PASS","DRIBBLE","SHOOT","SHOOT","PASS","SHOOT"]`; 3 jumps; goals Saka, João Pedro, Saliba, final [2, 1]; always-SHOOT total 360 and always-PASS total 260 (session); new `test_windows_do_not_overlap` (every call.open `at` ≥ previous call.lock `at`); forecast tests re-anchored to the new Plays (e.g. pick at the first tick of "Arsenal on the attack", settle after the jump before the first tick of "Saka's goal"; half-time settlement at `demo.half_time`; final locks before the first half-2 tick) with the same assertions on behaviour.
+- [ ] **Step 1:** Update the tests to the new cut first (RED): duration 82.0; 6 calls with answers `["PASS","DRIBBLE","SHOOT","SHOOT","PASS","SHOOT"]`; 3 jumps; goals Mensah, Doyle, Hale, final [2, 1]; always-SHOOT total 360 and always-PASS total 260 (session); new `test_windows_do_not_overlap` (every call.open `at` ≥ previous call.lock `at`); forecast tests re-anchored to the new Plays (e.g. pick at the first tick of "Northbridge on the attack", settle after the jump before the first tick of "Mensah's goal"; half-time settlement at `demo.half_time`; final locks before the first half-2 tick) with the same assertions on behaviour.
 - [ ] **Step 2:** implement. **Step 3:** full suite green, run demo test files 3×. **Step 4:** commit `[backend] Add demo 90-second cut: four segments, 10 s half time`.
 
 ### Task 3: Redeploy

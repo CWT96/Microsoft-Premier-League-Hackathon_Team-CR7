@@ -1,6 +1,6 @@
 """The other matches on the demo's "Pick your side" screen: shown with their squads, not playable.
 
-Only Northbridge v Calder has match data (the synthetic match, relabelled). Wexmoor v Harrowgate
+Only Northbridge v Calder has match data (the synthetic match). Wexmoor v Harrowgate
 and Ashford v Kingsmere come from the design prototype so the screen looks like a real
 matchday: fans can browse them and their squads, and the run itself plays Northbridge v Calder.
 Squads are (num, name, pos) as drawn in the prototype; ids are ``<CODE>-<num>``.

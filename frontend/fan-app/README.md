@@ -1,6 +1,6 @@
 # frontend/fan-app
 
-Phone fan app for the demo: landing → pick Arsenal or Chelsea → live PASS / SHOOT / DRIBBLE calls with live points.
+Phone fan app for the demo: landing → pick Northbridge or Calder → live PASS / SHOOT / DRIBBLE calls with live points.
 
 - Plain HTML, CSS and vanilla JS. No build step, no framework.
 - Served by the backend at `/` (static mount at the end of `backend/app/main.py`), so the page and `/demo/ws` share one origin.

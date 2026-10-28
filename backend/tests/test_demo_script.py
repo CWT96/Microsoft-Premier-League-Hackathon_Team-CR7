@@ -11,7 +11,7 @@ def test_calls_and_mix():
     assert len(TL.calls) == 6
     answers = [c.answer for c in TL.calls.values()]
     assert answers == ["PASS", "DRIBBLE", "SHOOT", "SHOOT", "DRIBBLE", "SHOOT"]
-    assert all(c.team == "NBR" for c in TL.calls.values())  # an Northbridge fan is asked about Northbridge
+    assert all(c.team == "NBR" for c in TL.calls.values())  # a Northbridge fan is asked about Northbridge
     assert [c.player_id for c in TL.calls.values()][:3] == ["910104", "910106", "910108"]
 
 def test_goals_and_final_score():

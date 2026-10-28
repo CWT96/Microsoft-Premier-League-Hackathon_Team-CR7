@@ -58,7 +58,7 @@ Suggested backend split (the two owners may swap): **core** = `ingest/ detect/ m
 - Timing decides when and why (the moment's situation). The question generator alone decides what is asked.
 - Room flow (`/ws`): no point numbers or running total on screen during the match. Only ✓ and coins. Demo mode (`/demo/ws`, the judged fan app) is the agreed exception: it shows live points and a running total.
 - Every number in LLM text must appear in that call's `facts` (number guard), or a template is used instead.
-- Synthetic data only. Fictional clubs, except the demo relabel (approved 2026-10-27): demo mode shows the synthetic match as Arsenal vs Chelsea with real player names (`backend/demo/names.py`). The data itself stays synthetic.
+- Synthetic data only. Fictional clubs, crests and player names everywhere, the demo included: it shows the synthetic match as Northbridge vs Calder with the dataset's own fictional names (`backend/demo/names.py`). No real club or player names or crests.
 - When a match dataset appears in `data/source/`, first run the three must-have checks at the top of `data/README.md` (ball coordinates, player positions with fitting stats, both dull spells and attacks). Report any gaps before writing ingest code.
 
 ## Infrastructure

@@ -1,7 +1,7 @@
-"""Demo relabel: Northbridge vs Calder names, shirt numbers and the fixed pitch frame.
+"""Demo display: Northbridge vs Calder names, shirt numbers and the fixed pitch frame.
 
-The demo plays a synthetic match relabelled as Northbridge (home, NBR) vs Calder (away, CAL).
-Internal team codes stay NBR / CAL; display codes are NBR / CAL.
+The demo plays the synthetic match as Northbridge (home, NBR) vs Calder (away, CAL).
+Team codes are NBR / CAL, internally and on screen.
 """
 
 from __future__ import annotations

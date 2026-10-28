@@ -34,6 +34,6 @@ There is no build step and no npm. The fonts are in `assets/fonts/`, so the app 
 - **Kept static, as agreed:**
   - The sync chip.
   - The landing's room-code box.
-- **Other matches:** Pick shows the design's three matches with their squads (from `GET /demo/squads`). Only Arsenal v Chelsea has match data: starting from another match plays it as the side in the same place (home → Arsenal, away → Chelsea).
+- **Other matches:** Pick shows the design's three matches with their squads (from `GET /demo/squads`). Only Northbridge v Calder has match data: starting from another match plays it as the side in the same place (home → Northbridge, away → Calder).
 - **Pitch:** each `demo.shape` is where everyone is at the next on-ball moment, with the time to get there; `pitch.js` moves them every frame (no CSS transitions), so passes land on the receiver, goals end in the net, and a cue mid-run never teleports anyone. A dribble is drawn as a take-on: a defender stands up to him, he steps to the side and bursts past. Coordinates map onto the drawn pitch lines.
 - **Removed:** "End match (demo)" (the match now ends by itself).
