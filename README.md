@@ -15,27 +15,36 @@ The web address still says `matchday-call`, the product's name before 2026-10-27
 
 ## What it is
 
-The Premier X is a second-screen game (an app you play on your phone while the match is on the TV) for the friend who came for the company, not the football. Every few seconds the phone asks one simple thing about what is happening right now: a player has just received the ball, so will he **pass** it, **shoot**, or **dribble** (run past an opponent with it)? You tap a guess before he acts, and you see straight away whether you were right. Alongside that, you can make bigger, slower predictions ("Will anyone score in the next 15 minutes?") and back up to two players who earn you points for what they do. At full time you get a score, badges and your rank among friends. No football knowledge needed: the questions explain themselves, and every result comes with one plain sentence on what happened.
+The Premier X is a second-screen game (an app you play on your phone while the match is on the TV) for the friend who came for the company, not the football. You scan a QR code, pick a side and play. No download, no account, no football knowledge needed.
 
-**Why the Premier League would want it.** People who watch without following the game leave at full time with nothing to come back for, and the league never learns they were there. The Premier X asks for an email twice: at half time ("save your progress", +500 points) and at full time, once the player has points worth keeping. Points never go down and nothing is staked, so it plays like a game, not a bet.
+The match drives the game. Whenever the ball is played to a player, an **AI call** pops up: what's his next move, **PASS**, **SHOOT** or **DRIBBLE** (run past an opponent with the ball)? You tap before he acts. The call locks the moment he plays it, and the points land as it happens. There is no countdown and no "next" button. On a second tab you make bigger, slower **forecasts** ("Will anyone score in the next 15 minutes?", the full-time result). You can also **back up to two players**, who earn you bonus points for what they really do. Your points, your streak and your friends' scores run live at the top of the screen.
 
-## What you'll see (about 90 seconds)
+**Points only ever go up.** A wrong call still earns points, a slow tap shows "Too quick!" and keeps your streak, and nothing is staked: no money, no betting.
 
-The demo plays a ~93-second highlights cut of one match, shown as **Arsenal 2–1 Chelsea**.
+**Why the Premier League would want it.** People who watch without following the game leave at full time with nothing to come back for, and the league never learns they were there. The Premier X asks for an email at two moments when the player has something to keep: at half time ("save your progress", +500 points) and after the full-time count ("save my points", +500 welcome bonus). The partner report then shows a club or league marketing team how many people played and signed up, and when.
 
-1. **Pick a match and a side** (Arsenal or Chelsea), then optionally **back up to 2 players**. Each position earns from different things (a goalkeeper from saves and clean sheets, a forward from goals and shots); the table is on screen.
-2. **Kick off.** A small pitch shows 22 player dots and the ball. A score bar and clock run at the top.
-3. **Live calls.** When the ball is passed to a player, a card pops up: *PASS / SHOOT / DRIBBLE*. It locks the moment he acts. Then you see the answer, a one-line explanation and your points.
-   - +10 for answering, +100 more if right, and a streak bonus (+50 per step from the 3rd correct call in a row).
-   - No answer in time shows "Too quick!" and scores 0. Nothing is ever taken away.
-4. **Forecast tab.** Bigger predictions that settle from what really happens in the match, including minutes the highlights skip:
+## What you'll see (about 2 minutes)
+
+The demo plays a ~93-second highlights cut of one match, shown as **Arsenal 2–1 Chelsea**. Best on a phone, or a browser window about 390 px wide.
+
+1. **Landing** (what you see after scanning the QR code). The live match card, how many people are calling this match, **PLAY THIS MATCH**, and a box to join a friend's room by code. "Points only. No money, no betting."
+2. **Pick your side.** Choose a match and a team, then optionally **back up to 2 players** from the matchday squad, grouped into starting XI and bench. Backing a player is not a prediction: each one earns from real match stats by position, and the card shows how.
+   - Goalkeeper: penalty save, clean sheet, saves, claimed crosses.
+   - Defender: goal, clean sheet, blocked shots, tackles won, interceptions, clearances.
+   - Midfielder: goal, assist, shots on target, key passes, tackles won, interceptions.
+   - Forward: goal, assist, big chances made, shots on target, dribbles past, fouls won.
+3. **Live, Real time tab.** A 2D pitch with 22 players who run at football speed (never faster than a sprint, so nobody jumps) and a ball that flies on passes and shots. The score bar, your points, your rank and your friends Mia and Dan sit on top. When the ball reaches a player, the AI call card opens with one line on the situation. Tap PASS, SHOOT or DRIBBLE before he plays it. Then the answer, a one-sentence explanation and the points pop up, and the call history fades after a few seconds.
+   - +10 for any call, +100 more if you're right, and +50 per step from the 3rd correct call in a row.
+   - Too slow: "Too quick!", 0 points, streak kept. Nothing is ever taken away.
+4. **Live, Forecast tab.** Bigger calls for bigger points, settled from what really happens in the match (including minutes the highlights skip):
    - next 5 minutes, "Who has more of the ball?" +500
    - next 10 minutes, "Who takes the next shot?" +1,000
    - next 15 minutes, "Will anyone score?" +1,500
-   - full-time result +3,000, plus +2,000 for the exact score (locks when the second half starts)
-5. **Half time.** Your points so far, your backed players' first-half bonus, the room table, and a "save your progress" sheet (email, +500 once).
-6. **Full time.** Your total counts up row by row (calls, forecasts, player bonus), then badges (ORACLE for the right result, ON FIRE for 3+ calls in a row, GOOD EYE for calling a goal), a stamp such as "#1 IN ROOM · TOP 19%" against a simulated crowd of 1,000 players, and the room leaderboard with three simulated friends (Mia, Dan and Leo). Then the email-only sign-up (+500 welcome bonus).
-7. **Partner report** (`/ops/`). Open it after the phone flow: QR scans, players, calls and sign-ups, a minute-by-minute replay of the match with goals and half time marked, sign-ups per minute (a peak at the half-time save, a bigger one after full time), the funnel from scan to sign-up, and a table per QR channel.
+   - full-time result +3,000, and the exact score +2,000 more. The result and the score are linked: change one and the other follows.
+5. **Half time.** The whistle shows on the pitch, then the half-time screen: your first half split into calls, forecasts and player bonus, the room table, and a countdown to the second half. A sheet asks you to **save your progress** with just an email (+500). "Maybe later" closes it.
+6. **Full time.** Your total counts up row by row (real-time calls, forecasts, player bonus), with your backed players' stats. Then come the badges (ORACLE for the right result, ON FIRE for 3+ calls in a row, GOOD EYE when a player you backed scores), a stamp with your place in the room and against a simulated crowd of 1,000 players (for example "TOP 19% TONIGHT"), and the room leaderboard with Mia, Dan and Leo.
+7. **Save my points.** Email only, no password. +500 welcome bonus, your season total and your team's next fixture.
+8. **Partner report** (`/ops/`). Open it after the phone flow: QR scans, players, calls and sign-ups, a minute-by-minute replay of the match with goals and half time marked, sign-ups per minute (a peak at the half-time save, a bigger one after full time), the funnel from scan to sign-up, and a table per QR channel.
 
 ## How it works
 
