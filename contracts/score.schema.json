@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "score.schema.json",
   "title": "FinalScore",
-  "description": "Payload of score.final and GET /api/score/{user_id}. final_score is on a 0-1000 scale for every user.",
+  "description": "Payload of score.final and GET /api/score/{user_id}. final_score is on a 0-1000 scale. Every answered card adds points and unanswered cards cost nothing; 1000 = what a typical engaged player earns in this match (capped).",
   "type": "object",
   "required": ["user_id", "match_id", "final_score", "issued", "answered", "correct", "hit_rate", "by_category", "best_streak", "hints_used"],
   "additionalProperties": false,
@@ -10,7 +10,7 @@
     "user_id": {"type": "string"},
     "match_id": {"type": "string"},
     "final_score": {"type": "integer", "minimum": 0, "maximum": 1000},
-    "issued": {"type": "integer", "minimum": 0, "description": "Non-void questions issued to this user (the denominator)"},
+    "issued": {"type": "integer", "minimum": 0, "description": "Non-void cards shown to this user"},
     "answered": {"type": "integer", "minimum": 0},
     "correct": {"type": "integer", "minimum": 0},
     "hit_rate": {"type": "number", "minimum": 0, "maximum": 1, "description": "correct / answered"},
@@ -27,7 +27,22 @@
     "best_streak": {"type": "integer", "minimum": 0},
     "hints_used": {"type": "integer", "minimum": 0},
     "terms_learned": {"type": "array", "items": {"type": "string"}},
+    "tier": {"type": "string", "enum": ["Rookie", "Rising Star", "Super Fan"], "description": "Rookie < 400, Rising Star 400-699, Super Fan >= 700. Every tier gets the membership card"},
+    "radar": {
+      "type": "object",
+      "description": "Six fun axes, 0-100 each, null when the user had nothing on that axis. The frontend decides what to show. For lightning_thumbs and on_fire, answered/correct repeat the totals for uniformity; the score comes from speed and streaks.",
+      "additionalProperties": false,
+      "properties": {
+        "crystal_ball": {"$ref": "#/$defs/axis"},
+        "galaxy_brain": {"$ref": "#/$defs/axis"},
+        "pause_pro": {"$ref": "#/$defs/axis"},
+        "bestie_mode": {"$ref": "#/$defs/axis"},
+        "lightning_thumbs": {"$ref": "#/$defs/axis"},
+        "on_fire": {"$ref": "#/$defs/axis"}
+      }
+    },
     "rank": {
+      "description": "Filled only where it flatters (top half of that scope); otherwise null and the UI shows a best moment instead",
       "type": "object",
       "additionalProperties": false,
       "properties": {
@@ -39,6 +54,16 @@
     "summary": {"type": ["string", "null"], "description": "One-paragraph summary written by the scoring agent (LLM); numbers guarded"}
   },
   "$defs": {
+    "axis": {
+      "type": ["object", "null"],
+      "required": ["score", "answered", "correct"],
+      "additionalProperties": false,
+      "properties": {
+        "score": {"type": "integer", "minimum": 0, "maximum": 100},
+        "answered": {"type": "integer", "minimum": 0},
+        "correct": {"type": "integer", "minimum": 0}
+      }
+    },
     "cat": {
       "type": "object",
       "required": ["issued", "correct", "points"],

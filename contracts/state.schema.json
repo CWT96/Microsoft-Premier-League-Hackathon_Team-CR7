@@ -1,0 +1,144 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "state.schema.json",
+  "title": "MatchState",
+  "description": "Payload of match.state, per user, once per match second (repeated with the same t while the replay is paused).",
+  "type": "object",
+  "required": [
+    "t",
+    "half",
+    "home",
+    "away",
+    "score",
+    "mode",
+    "speed"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "t": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Displayed match clock in seconds; the second half starts at 2700"
+    },
+    "half": {
+      "type": "integer",
+      "enum": [
+        1,
+        2
+      ]
+    },
+    "home": {
+      "type": "string"
+    },
+    "away": {
+      "type": "string"
+    },
+    "score": {
+      "type": "object",
+      "required": [
+        "home",
+        "away"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "home": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "away": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "mode": {
+      "type": "string",
+      "enum": [
+        "lobby",
+        "live",
+        "game",
+        "attack",
+        "break",
+        "full_time"
+      ],
+      "description": "game = this user has an open card (set by the app)"
+    },
+    "break_kind": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "half_time",
+        "water_break",
+        null
+      ],
+      "description": "Non-null exactly when mode is break"
+    },
+    "speed": {
+      "type": "number",
+      "minimum": 1,
+      "maximum": 15
+    },
+    "dull_score": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 0,
+      "maximum": 1
+    },
+    "cost": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 0,
+      "maximum": 1,
+      "description": "Interruption cost from the timing agent: 0 = nothing to miss, 1 = do not look away"
+    },
+    "movement": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 0,
+      "maximum": 1,
+      "description": "Mean player speed, normalised; null without tracking"
+    },
+    "pressure_m": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 0,
+      "description": "Distance from the ball carrier to the nearest opponent; null without tracking"
+    },
+    "situation": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "kickoff",
+        "open_play",
+        "stalled_near_box",
+        "attack",
+        "throw_in",
+        "goal_kick",
+        "corner",
+        "free_kick",
+        "penalty",
+        "referee_decision",
+        "substitution",
+        "injury",
+        "water_break",
+        "after_goal",
+        "half_time",
+        "full_time",
+        null
+      ],
+      "description": "Detector vocabulary: what is happening on the pitch. A superset of the cases timing reacts to; includes attack. Not the same set as question.situation"
+    }
+  }
+}

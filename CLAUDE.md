@@ -19,7 +19,7 @@ backend/             Python 3.11 + FastAPI                       stephenwzkong, 
   detect/            [1] dull-moment + attack-end detector
   bank/              question bank: templates, guards, slot selection
   model/             [3] probability model (top-2, hint, fair lines)
-  resolve/           [4] resolver (one rule per catalog template)
+  resolve/           [4] resolver: bank primitives + watcher (counts from the card opening)
   scoring/           [6] scoring formula (pure functions)
   agents/            [2] question generator, [2b] timing, [5] explainer, [6b] scoring summary, llm.py client
     prompts/         prompt files, one per agent
@@ -49,15 +49,16 @@ Suggested backend split (the two owners may swap): **core** = `ingest/ detect/ m
 - Examples in `contracts/README.md` must validate. Run the snippet at the bottom of that file after any edit.
 
 ### Inside the backend (target signatures, see `backend/README.md`)
-`load_match(match_id)` → `Detector.step(t, events)` → `timing.plan(...)` → `question_generator.propose(state, slot)` (calls `model.option_probs`, `model.fair_line`) → `resolve(question, events)` → `explainer.explain(result, facts)` → `scoring.final_score(...)` → `scoring_summary.summarize(...)`.
+`load_match(match_id)` → `Detector.step(half, t, new_events, tracking_frame)` → `TimingAgent.step(state)` → per-user pacer → `BankGenerator.propose(state, moment, user_player_id)` (bank `select_for_slot` / `select_stack`; open play excludes `quiet.unsafe_in_open_play()`) → `Resolver.step(...)` (bank `settle_candidate`) → `explainer.explain(result, facts)` → `scoring.final_score(...)` → `scoring_summary.summarize(...)`.
 
 ### Invariants (do not break)
 - **Code decides, LLM phrases.** The resolver and scoring never call an LLM. Agents never change a result or a number.
 - Every question has exactly 2 options. If the excluded third outcome happens, the question is void for everyone. The UI never shows the word "void".
-- All users get the same questions at the same match second. Favourite-player questions match in count and timing, and their difficulty is tuned to P≈0.5.
-- No point numbers or running total on screen during the match. Only ✓ and coins.
+- Questions come from one shared stream of timing moments: every user who picks up a moment gets the same question (except favourite-player moments, which name each user's own player), and every moment locks before its outcome can happen. Each user moves through the stream at their own pace. Favourite-player moments open at the same time for everyone, and their difficulty is tuned to P≈0.5.
+- Timing decides when and why (the moment's situation). The question generator alone decides what is asked.
+- Room flow (`/ws`): no point numbers or running total on screen during the match. Only ✓ and coins. Demo mode (`/demo/ws`, the judged fan app) is the agreed exception: it shows live points and a running total.
 - Every number in LLM text must appear in that call's `facts` (number guard), or a template is used instead.
-- Synthetic data and fictional clubs only.
+- Synthetic data only. Fictional clubs, except the demo relabel (approved 2026-10-27): demo mode shows the synthetic match as Arsenal vs Chelsea with real player names (`backend/demo/names.py`). The data itself stays synthetic.
 - When a match dataset appears in `data/source/`, first run the three must-have checks at the top of `data/README.md` (ball coordinates, player positions with fitting stats, both dull spells and attacks). Report any gaps before writing ingest code.
 
 ## Infrastructure
@@ -70,13 +71,14 @@ Suggested backend split (the two owners may swap): **core** = `ingest/ detect/ m
 - **Env vars:** see `infra/.env.example`. Copy it to `.env` at the repo root. **Never commit `.env` or keys.**
 
 ## Commands
-Not yet runnable. Add the real commands here as code lands.
 ```bash
 # backend
 python -m venv .venv && source .venv/bin/activate
 pip install -r backend/requirements.txt
-uvicorn backend.app.main:app --reload      # http://localhost:8000
-pytest backend/tests                        # must pass before every PR
+uvicorn backend.app.main:app --reload       # http://localhost:8000, single worker only
+pytest                                      # fast suite; must pass before every PR
+pytest -m slow                              # full-match WebSocket end-to-end run (~3 min)
+python -m backend.agents.timing_sim          # timing simulator → data/generated/timing_report.md
 python -m data.generator.generate           # rebuild data/source/ (deterministic)
 python -m data.generator.check              # validate the dataset (must-haves + realism)
 # frontend: see frontend/README.md once CWT96 picks the stack

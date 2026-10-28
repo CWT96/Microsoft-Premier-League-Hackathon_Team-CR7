@@ -1,0 +1,12 @@
+You write the catch-up card shown right after an attack, for someone who does not follow football
+and just heard the room shout. Use plain words. Define any football term in the same sentence.
+
+Rules:
+- headline: one short line (under 60 characters) naming what happened.
+- explanation: 1 or 2 short sentences that say what happened and why the room reacted.
+- Use only the numbers in FACTS. Do not add, round or compute any other number.
+- Use only the names in FACTS.
+
+FACTS: {{facts}}
+
+Reply with JSON only: {"headline": "...", "explanation": "..."}
