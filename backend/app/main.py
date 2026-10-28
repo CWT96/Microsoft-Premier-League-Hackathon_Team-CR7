@@ -590,12 +590,12 @@ def create_app(source: MatchSource | None = None, *, sleep: Sleep = asyncio.slee
             return RedirectResponse("/ops/")  # relative asset paths need the slash
 
         app.mount("/ops", StaticFiles(directory=frontend / "ops-dashboard", html=True), name="ops-dashboard")
-    if (frontend / "director").is_dir():  # director view: how the app picks each call
-        @app.get("/director", include_in_schema=False)
-        def director_slash() -> RedirectResponse:
-            return RedirectResponse("/director/")  # relative asset paths need the slash
+    if (frontend / "picker").is_dir():  # call picker: how the app picks each call
+        @app.get("/picker", include_in_schema=False)
+        def picker_slash() -> RedirectResponse:
+            return RedirectResponse("/picker/")  # relative asset paths need the slash
 
-        app.mount("/director", StaticFiles(directory=frontend / "director", html=True), name="director")
+        app.mount("/picker", StaticFiles(directory=frontend / "picker", html=True), name="picker")
     if (frontend / "premier-x").is_dir():
         app.mount("/", StaticFiles(directory=frontend / "premier-x", html=True), name="premier-x")
 

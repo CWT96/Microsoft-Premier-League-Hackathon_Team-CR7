@@ -1,6 +1,6 @@
-# frontend/director/
+# frontend/picker/
 
-**Owner:** `stephenwzkong`. The director view: a page for judges that shows how the app picks each call in the fan's highlights run.
+**Owner:** `stephenwzkong`. The call picker: a page for judges that shows how the app picks each call in the fan's highlights run.
 
 Plain HTML, CSS and JavaScript. No build step, no framework, no external network.
 
@@ -9,7 +9,7 @@ Plain HTML, CSS and JavaScript. No build step, no framework, no external network
 Served by the backend at `/director/` (it reads `GET /demo/director?team=ARS|CHE`):
 
 ```bash
-uvicorn backend.app.main:app --reload    # http://localhost:8000/director/
+uvicorn backend.app.main:app --reload    # http://localhost:8000/picker/
 ```
 
 URL options:
@@ -18,7 +18,7 @@ URL options:
 |---|---|
 | `?team=CHE` | Start on the Chelsea fan's cut (default Arsenal) |
 | `?t=47.5` | Start with the playhead at that real second of the cut |
-| `?data=director-{team}.json` | Read a stand-in JSON instead of the endpoint (same origin only; `{team}` is replaced) |
+| `?data=picker-{team}.json` | Read a stand-in JSON instead of the endpoint (same origin only; `{team}` is replaced) |
 
 ## What is on the page
 

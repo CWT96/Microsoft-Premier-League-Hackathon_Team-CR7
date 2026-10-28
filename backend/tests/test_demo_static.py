@@ -46,13 +46,13 @@ def test_ops_dashboard_served(client):
     assert client.get("/ops", follow_redirects=False).headers["location"] == "/ops/"
 
 
-DIRECTOR = Path(__file__).resolve().parents[2] / "frontend" / "director"
+PICKER = Path(__file__).resolve().parents[2] / "frontend" / "picker"
 
 
-@pytest.mark.skipif(not DIRECTOR.is_dir(), reason="frontend/director/ not built yet")
-def test_director_served(client):
-    assert client.get("/director/").status_code == 200
-    assert client.get("/director", follow_redirects=False).headers["location"] == "/director/"
+@pytest.mark.skipif(not PICKER.is_dir(), reason="frontend/picker/ not built yet")
+def test_picker_served(client):
+    assert client.get("/picker/").status_code == 200
+    assert client.get("/picker", follow_redirects=False).headers["location"] == "/picker/"
     assert client.get("/demo/director", params={"team": "XYZ"}).status_code == 400  # API wins
 
 
