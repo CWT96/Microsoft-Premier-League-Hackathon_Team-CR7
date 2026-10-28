@@ -37,5 +37,12 @@ def test_classic_fan_app_still_served(client):
     assert r.status_code == 200 and "Matchday Call" in r.text
 
 
+def test_ops_dashboard_served(client):
+    r = client.get("/ops/")
+    assert r.status_code == 200 and "Partner report" in r.text
+    assert client.get("/ops/data/data.js").status_code == 200
+    assert client.get("/ops", follow_redirects=False).headers["location"] == "/ops/"
+
+
 def test_api_still_wins_over_static(client):
     assert client.get("/api/matches").status_code == 200
