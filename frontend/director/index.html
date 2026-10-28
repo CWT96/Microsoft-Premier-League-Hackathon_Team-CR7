@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Director view</title>
+<style>
+  :root { --bg: #1e1f22; --ink: #eee; --muted: #9a9ca3;
+          --dull: #c05; --threat: #f90; --cost: #36c; --moment: #2a2; --call: #8a3ffc; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.45 system-ui, sans-serif; padding: 20px 28px; }
+  h2 { margin: 0 0 6px; font-size: 30px; }
+  .subtitle { color: var(--muted); margin: 0 0 14px; font-size: 16px; }
+  .dv-ctrl { display: flex; gap: 14px; align-items: center; margin: 12px 0; }
+  .dv-ctrl button { padding: 8px 16px; border-radius: 6px; border: 1px solid #888; background: #fff; cursor: pointer; font-size: 16px; }
+  #dvClock { font: 700 17px ui-monospace, monospace; white-space: nowrap; }
+  #dvSync { font-size: 12px; padding: 2px 8px; border-radius: 10px; background: #333; color: var(--muted); white-space: nowrap; }
+  #dvSync.on { background: #143d24; color: #5fd38a; }
+  .scrub { flex: 1; min-width: 0; }
+  .scrub input { width: 100%; margin: 0; }
+  #dvMarks { display: block; width: 100%; height: 10px; padding: 0 8px; }
+  .dv-wrap { display: grid; grid-template-columns: minmax(0, 1fr) minmax(300px, 31%); gap: 20px; align-items: start; }
+  .dv-pitch { display: block; width: 100%; background: #0c7a3e; border-radius: 8px; }
+  #dvChart { display: block; width: 100%; background: #fafafa; border-radius: 8px; margin-top: 12px; }
+  .dv-legend { font-size: 13px; display: flex; gap: 16px; flex-wrap: wrap; margin-top: 8px; }
+  .dv-legend span::before { content: ""; display: inline-block; width: 11px; height: 11px; border-radius: 2px;
+                            margin-right: 5px; vertical-align: middle; background: var(--c); }
+  .dv-legend.marks span::before { display: none; }
+  .dv-phone { display: block; width: 100%; aspect-ratio: 390 / 844; border: 0; border-radius: 22px; background: #000; }
+  .dv-log { font: 12px/1.5 ui-monospace, monospace; background: #f4f4f4; color: #222; border-radius: 6px;
+            padding: 8px; height: 150px; overflow: auto; margin-top: 12px; }
+  .dv-log b { display: inline-block; min-width: 66px; }
+  @media (max-width: 900px) { .dv-wrap { grid-template-columns: 1fr; } .dv-phone { max-width: 390px; } }
+</style>
+</head>
+<body>
+<h2>Director view</h2>
+<p class="subtitle" id="dvSub"></p>
+
+<div class="dv-ctrl">
+  <button id="dvPlay">▶ Play</button>
+  <span id="dvClock"></span>
+  <span id="dvSync">phone idle · press ▶ Play</span>
+  <div class="scrub">
+    <input id="dvSlider" type="range" min="0" value="0">
+    <svg id="dvMarks" viewBox="0 0 1000 10" preserveAspectRatio="none"></svg>
+  </div>
+</div>
+
+<div class="dv-wrap">
+  <div>
+    <svg id="dvPitch" class="dv-pitch" viewBox="0 0 105 68">
+      <rect x="0.5" y="0.5" width="104" height="67" fill="none" stroke="#fff" stroke-width=".4"/>
+      <line x1="52.5" y1="0" x2="52.5" y2="68" stroke="#fff" stroke-width=".4"/>
+      <circle cx="52.5" cy="34" r="9.15" fill="none" stroke="#fff" stroke-width=".4"/>
+      <rect x="0.5" y="13.8" width="16.5" height="40.3" fill="none" stroke="#fff" stroke-width=".4"/>
+      <rect x="88" y="13.8" width="16.5" height="40.3" fill="none" stroke="#fff" stroke-width=".4"/>
+      <rect x="70" y="0.5" width="34.5" height="67" fill="#fff" opacity=".06"/>
+      <text x="87" y="5" fill="#fff" font-size="2.6" opacity=".7">final third</text>
+      <text id="dvIdle" x="52.5" y="36" fill="#fff" font-size="3" opacity=".75" text-anchor="middle">Start a match on the phone →</text>
+      <circle id="dvRing" r="2.6" fill="none" stroke="#fd0" stroke-width=".4" visibility="hidden"/>
+      <g id="dvDots"></g>
+    </svg>
+    <svg id="dvChart" viewBox="0 0 600 210"></svg>
+    <div class="dv-legend">
+      <span style="--c:var(--dull)">dull_score</span>
+      <span style="--c:var(--threat)">threat</span>
+      <span style="--c:var(--cost)">cost (dashed: CANDIDATE_COST)</span>
+      <span style="--c:#f9c98a">mode: attack</span>
+      <span style="--c:#bfe3bf">Moment open_at → lock_at</span>
+      <span style="--c:var(--call)">The Premier X call open → lock</span>
+    </div>
+    <div class="dv-legend marks">timing.decision: ▲ open &nbsp;◆ hold &nbsp;✕ blocked &nbsp;■ scheduled &nbsp;· calm / silent</div>
+  </div>
+  <div>
+    <iframe id="dvPhone" class="dv-phone" src="/" title="The Premier X"></iframe>
+    <div class="dv-log" id="dvLog"></div>
+  </div>
+</div>
+
+<script src="data.js"></script>
+<script>
+(function () {
+  var T = window.TRACE, S = T.series, N = S.t.length, HALF_W = 60;  // chart shows ±60 s
+  var teams = T.teams, codes = [teams.home.code, teams.away.code];
+  var DOT = {}; DOT[codes[0]] = "#e0393e"; DOT[codes[1]] = "#2f6fd6";  // as on the phone's pitch
+  document.getElementById("dvSub").textContent = "Left: the live pitch of the phone · right: The Premier X · bottom: " +
+    "dull_score, threat and cost with every timing.decision and Moment, and The Premier X calls, on one match clock. " +
+    teams.home.name + " v " + teams.away.name + ".";
+
+  // (half, t) → row of the per-second series; each half's t steps by 1 s
+  var off = {}, t0 = {};
+  S.half.forEach(function (h, i) { if (off[h] === undefined) { off[h] = i; t0[h] = S.t[i]; } });
+  function ix(h, t) { return Math.max(0, Math.min(N - 1, off[h] + Math.floor(t - t0[h]))); }
+  function fmt(t) { var m = Math.floor(t / 60), s = Math.floor(t % 60); return m + ":" + String(s).padStart(2, "0"); }
+
+  var dec = T.decisions.map(function (d) { return Object.assign({ i: ix(d.half, d.t) }, d); });
+  var mom = T.moments.map(function (m) { return Object.assign({ a: ix(m.half, m.open_at), b: ix(m.half, m.lock_at) }, m); });
+  var px = {};
+  codes.forEach(function (c) {
+    var p = T.premier_x[c];
+    px[c] = {
+      clips: p.clips.map(function (k) { return Object.assign({ a: ix(k.half, k.start_t), b: ix(k.half, k.end_t) }, k); }),
+      calls: p.calls.map(function (k) { return Object.assign({ a: ix(k.half, k.open_t), b: ix(k.half, k.lock_t) }, k); })
+    };
+  });
+  var attacks = [], s0 = -1;
+  for (var i = 0; i <= N; i++) {
+    var on = i < N && S.mode[i] === "attack";
+    if (on && s0 < 0) s0 = i;
+    if (!on && s0 >= 0) { attacks.push([s0, i - 1]); s0 = -1; }
+  }
+
+  // Whole-match marks under the slider: attack (orange), The Premier X clips (purple), half time
+  var mx = function (i) { return i / (N - 1) * 1000; }, mk = "";
+  attacks.forEach(function (b) { mk += '<rect x="' + mx(b[0]) + '" y="0" width="' + Math.max(1, mx(b[1]) - mx(b[0])) + '" height="5" fill="#f90" opacity=".7"/>'; });
+  codes.forEach(function (c) { px[c].clips.forEach(function (b) { mk += '<rect x="' + mx(b.a) + '" y="5" width="' + Math.max(3, mx(b.b) - mx(b.a)) + '" height="5" fill="#8a3ffc"/>'; }); });
+  mk += '<rect x="' + mx(off[2]) + '" y="0" width="2" height="10" fill="#fff"/>';
+  document.getElementById("dvMarks").innerHTML = mk;
+
+  // Chart (±60 s around the cursor)
+  var chart = document.getElementById("dvChart"), W = 600, H = 210, PAD = 26, TOP = 22, BOT = 160;
+  var log = document.getElementById("dvLog"), clock = document.getElementById("dvClock");
+  var slider = document.getElementById("dvSlider");
+  slider.max = N - 1;
+  var cur = ix(1, 660), team = codes[0], callId = null;
+
+  function draw() {
+    var lo = Math.max(0, cur - HALF_W), hi = Math.min(N - 1, cur + HALF_W);
+    var x = function (i) { return PAD + (i - lo) / Math.max(1, hi - lo) * (W - 2 * PAD); };
+    var y = function (v) { return BOT - v * (BOT - TOP); };
+    var span = function (a, b) { a = Math.max(a, lo); b = Math.min(b, hi); return a <= b ? [x(a), Math.max(1, x(b) - x(a))] : null; };
+    var s = "", r;
+    attacks.forEach(function (b) { if ((r = span(b[0], b[1]))) s += '<rect x="' + r[0] + '" y="' + TOP + '" width="' + r[1] + '" height="' + (BOT - TOP) + '" fill="#f90" opacity=".18"/>'; });
+    mom.forEach(function (m) { if ((r = span(m.a, m.b))) s += '<rect x="' + r[0] + '" y="' + TOP + '" width="' + r[1] + '" height="' + (BOT - TOP) + '" fill="#2a2" opacity=".18"><title>' + m.moment_id + " · " + m.kind + " · " + m.situation + "</title></rect>"; });
+    var yc = y(T.candidate_cost);
+    s += '<line x1="' + PAD + '" x2="' + (W - PAD) + '" y1="' + yc + '" y2="' + yc + '" stroke="#36c" stroke-dasharray="3 3" opacity=".6"/>';
+    s += '<text x="' + (W - PAD + 3) + '" y="' + (yc + 3) + '" font-size="9" fill="#36c">' + T.candidate_cost + "</text>";
+    [["dull_score", "#c05"], ["threat", "#f90"], ["cost", "#36c"]].forEach(function (k) {
+      var p = "";
+      for (var i = lo; i <= hi; i++) p += (i === lo ? "M" : "L") + x(i).toFixed(1) + "," + y(S[k[0]][i]).toFixed(1);
+      s += '<path d="' + p + '" fill="none" stroke="' + k[1] + '" stroke-width="2"/>';
+    });
+    dec.forEach(function (d) {
+      if (d.i < lo || d.i > hi) return;
+      var X = x(d.i), Y = TOP - 10, tip = "<title>" + fmt(d.t) + " " + d.action + " (" + d.source + ") " + d.reason + "</title>";
+      if (d.action === "open") s += '<path d="M' + (X - 5) + "," + (Y + 4) + " L" + (X + 5) + "," + (Y + 4) + " L" + X + "," + (Y - 5) + 'Z" fill="#2a2">' + tip + "</path>";
+      else if (d.action === "hold") s += '<rect x="' + (X - 4) + '" y="' + (Y - 4) + '" width="8" height="8" transform="rotate(45 ' + X + " " + Y + ')" fill="#f90">' + tip + "</rect>";
+      else if (d.action === "blocked") s += '<text x="' + (X - 4) + '" y="' + (Y + 4) + '" font-size="12" fill="#c00" font-weight="700">✕' + tip + "</text>";
+      else if (d.action === "scheduled") s += '<rect x="' + (X - 4) + '" y="' + (Y - 4) + '" width="8" height="8" fill="#36c">' + tip + "</rect>";
+      else s += '<circle cx="' + X + '" cy="' + Y + '" r="2" fill="#999">' + tip + "</circle>";
+    });
+    s += '<text x="2" y="' + (BOT + 21) + '" font-size="9" fill="#666">PX ' + team + "</text>";
+    px[team].clips.forEach(function (b) { if ((r = span(b.a, b.b))) s += '<rect x="' + r[0] + '" y="' + (BOT + 11) + '" width="' + r[1] + '" height="14" fill="#8a3ffc" opacity=".2"/>'; });
+    px[team].calls.forEach(function (b) {
+      if (!(r = span(b.a, b.b))) return;
+      var hit = b.call_id === callId;
+      s += '<rect x="' + r[0] + '" y="' + (BOT + 11) + '" width="' + Math.max(2, r[1]) + '" height="14" fill="#8a3ffc" opacity="' + (hit ? 1 : 0.6) + '"' + (hit ? ' stroke="#000" stroke-width="1.5"' : "") + "><title>" + b.player + " · " + b.answer + "</title></rect>";
+    });
+    px[team].clips.forEach(function (b) { if ((r = span(b.a, b.b))) s += '<text x="' + r[0] + '" y="' + (BOT + 37) + '" font-size="9" fill="#555">' + b.title + "</text>"; });
+    for (var i = lo - (lo % 20) + 20; i <= hi; i += 20) s += '<text x="' + (x(i) - 12) + '" y="' + (H - 4) + '" font-size="9" fill="#666">' + fmt(S.t[i]) + "</text>";
+    s += '<line x1="' + x(cur) + '" x2="' + x(cur) + '" y1="' + (TOP - 16) + '" y2="' + (BOT + 26) + '" stroke="#000"/>';
+    chart.innerHTML = s;
+
+    slider.value = cur;
+    var sc = S.score[cur];
+    clock.textContent = "H" + S.half[cur] + " " + fmt(S.t[cur]) + " · " + codes[0] + " " + sc[0] + "–" + sc[1] + " " + codes[1] + " · " + S.mode[cur];
+    log.innerHTML = dec.filter(function (d) { return d.i >= lo && d.i <= cur; }).reverse().map(function (d) {
+      return fmt(d.t) + " <b>" + d.action + "</b>" + d.source + " · " + (d.situation || "") + (d.tone ? " · “" + d.tone + "”" : "") + " — " + d.reason;
+    }).join("<br>") || "No timing.decision in this window yet.";
+  }
+
+  // The phone drives the cursor while The Premier X plays a clip (same origin: window.app.state)
+  var frame = document.getElementById("dvPhone"), sync = document.getElementById("dvSync"), timer = null;
+  function phone() {
+    try { return frame.contentWindow; } catch (e) { return null; }
+  }
+  var play = document.getElementById("dvPlay");
+  setInterval(function () {
+    var w = phone(), st = w && w.app && w.app.state;
+    var live = st && st.phase === "live" && st.live;
+    var running = !!(st && w.app.ws && st.phase !== "full");  // from start until full time, half time included
+    slider.disabled = running;
+    if (!timer) { play.disabled = running; play.textContent = running ? "● Playing on the phone" : "▶ Play"; }
+    sync.className = live ? "on" : "";
+    sync.textContent = live ? "following The Premier X · " + st.team : "phone idle · press ▶ Play";
+    if (!live) return;
+    team = codes.indexOf(st.team) >= 0 ? st.team : codes[0];
+    callId = st.call ? st.call.id : null;
+    cur = ix(st.live.half, st.live.t);
+    draw();
+  }, 250);
+
+  // Left pitch mirrors the phone's live pitch every frame (window.Pitch: metres, 105 x 68)
+  var dotsG = document.getElementById("dvDots"), ring = document.getElementById("dvRing");
+  var idle = document.getElementById("dvIdle"), dots = {}, NS = "http://www.w3.org/2000/svg";
+  function mirror() {
+    var w = phone(), P = w && w.Pitch, st = w && w.app && w.app.state;
+    var keys = P && P.dots ? Object.keys(P.dots) : [];
+    var show = keys.length > 0 && st && st.phase !== "pre";
+    idle.setAttribute("visibility", show ? "hidden" : "visible");
+    dotsG.setAttribute("visibility", show ? "visible" : "hidden");
+    ring.setAttribute("visibility", show && P.holder ? "visible" : "hidden");
+    if (show) {
+      keys.forEach(function (k) {
+        var e = P.dots[k], c = dots[k];
+        if (!c) { c = dots[k] = document.createElementNS(NS, "circle"); c.setAttribute("r", "1.5"); c.setAttribute("stroke", "#000"); c.setAttribute("stroke-width", ".2"); dotsG.appendChild(c); }
+        c.setAttribute("fill", DOT[e.team] || "#eee");
+        c.setAttribute("cx", e.x.toFixed(2)); c.setAttribute("cy", e.y.toFixed(2));
+      });
+      if (!dots.ball) { dots.ball = document.createElementNS(NS, "circle"); dots.ball.setAttribute("r", "1.1"); dots.ball.setAttribute("fill", "#fd0"); dots.ball.setAttribute("stroke", "#000"); dots.ball.setAttribute("stroke-width", ".2"); }
+      dotsG.appendChild(dots.ball);  // keep the ball on top
+      dots.ball.setAttribute("cx", P.ball.x.toFixed(2)); dots.ball.setAttribute("cy", P.ball.y.toFixed(2));
+      ring.setAttribute("cx", P.ring.x.toFixed(2)); ring.setAttribute("cy", P.ring.y.toFixed(2));
+    }
+    requestAnimationFrame(mirror);
+  }
+  requestAnimationFrame(mirror);
+
+  // ▶ Play starts the match on the phone (its START PLAYING action); pitch and chart follow it.
+  // Without the phone (page opened as a file), it replays the chart at 4 match seconds per second.
+  slider.oninput = function () { cur = +slider.value; draw(); };
+  play.onclick = function () {
+    var w = phone();
+    if (!timer && w && w.app && typeof w.app.start === "function") { w.app.start(); return; }
+    if (timer) { clearInterval(timer); timer = null; this.textContent = "▶ Play"; return; }
+    this.textContent = "⏸ Pause";
+    timer = setInterval(function () { cur = (cur + 1) % N; draw(); }, 250);
+  };
+  draw();
+})();
+</script>
+</body>
+</html>

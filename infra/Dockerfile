@@ -22,6 +22,7 @@ COPY backend/ backend/
 COPY frontend/fan-app/ frontend/fan-app/
 COPY frontend/premier-x/ frontend/premier-x/
 COPY frontend/ops-dashboard/ frontend/ops-dashboard/
+COPY frontend/director/ frontend/director/
 
 EXPOSE 8000
 
