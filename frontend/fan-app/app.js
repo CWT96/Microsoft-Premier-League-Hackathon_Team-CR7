@@ -3,7 +3,7 @@
 "use strict";
 
 const $ = (id) => document.getElementById(id);
-const TEAM_NAMES = { ARS: "Arsenal", CHE: "Chelsea" };
+const TEAM_NAMES = { NBR: "Northbridge", CAL: "Calder" };
 const POP_MS = 1600;      // points pop-up over the pitch
 const GOAL_MS = 2600;     // goal banner
 const JUMP_MS = 2000;     // jump card (JUMP_CARD_S on the server)
@@ -16,7 +16,7 @@ const ZERO_ROW_MS = 700;  // a row worth 0 points lands quickly
 const SIGNUP_WAIT_MS = 6000; // no signup reply by then = let the user try again
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-let team = null;          // ARS or CHE, picked on screen 2
+let team = null;          // NBR or CAL, picked on screen 2
 let backed = [];          // up to 2 player ids from GET /demo/squads; kept for Play again
 let squads = null;        // GET /demo/squads reply; null = not loaded (team-only pick)
 let squadsBusy = false;
@@ -172,7 +172,7 @@ function renderPick() {
   });
 }
 
-// HUD line under the total: "Backing Saka & Rice", else "Backing Arsenal".
+// HUD line under the total: "Backing Mensah & Okafor", else "Backing Northbridge".
 function setBacking(names) {
   $("backing").textContent = "Backing " + (names.length ? names.join(" & ") : TEAM_NAMES[team] || "");
 }
@@ -616,7 +616,7 @@ function nextPop() {
 
 // ............................................................ forecasts
 
-const FT_NAMES = { ars: "an Arsenal win", draw: "a draw", che: "a Chelsea win" };
+const FT_NAMES = { ars: "a Northbridge win", draw: "a draw", che: "a Calder win" };
 const fmt = (n) => (Number(n) || 0).toLocaleString("en-US");
 const resultOf = (hs, aw) => (hs > aw ? "ars" : hs === aw ? "draw" : "che");
 

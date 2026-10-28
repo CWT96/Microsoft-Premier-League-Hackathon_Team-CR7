@@ -60,7 +60,7 @@ def squads() -> dict:
         teams[code] = {"name": TEAMS[internal]["name"], "popular": popular, "players": [
             {"id": pid, "name": PLAYERS[pid][0], "num": PLAYERS[pid][1], "pos": pos,
              "starter": starter} for pid, pos, starter in rows]}
-    # the other matches on the pick screen: browsable squads, the run plays Arsenal v Chelsea
+    # the other matches on the pick screen: browsable squads, the run plays Northbridge v Calder
     return {"teams": teams, "scoring": SCORING, "matches": MATCHES, "other_teams": other_teams()}
 
 

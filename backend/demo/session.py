@@ -76,7 +76,7 @@ class DemoSession:
     def __init__(self, timeline: Timeline, team: str, code: str | None = None,
                  players: Any = None, stats: bonus.Stats | None = None) -> None:
         self.timeline = timeline
-        self.team = team  # display code, ARS or CHE
+        self.team = team  # display code, NBR or CAL
         self.players = bonus.sanitise(team, players)  # backed player ids, at most 2
         self._stats = stats
         self.bonus_points = 0  # player bonus added to the total so far

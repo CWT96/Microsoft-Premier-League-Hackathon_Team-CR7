@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** A judge opens the deployed URL on a phone, picks Arsenal or Chelsea, and plays a ~3-minute highlights cut of match `nbr-cal-seed42` (relabelled Arsenal 2–1 Chelsea) with live PASS / SHOOT / DRIBBLE calls and live points, all driven by the backend.
+**Goal:** A judge opens the deployed URL on a phone, picks Northbridge or Calder, and plays a ~3-minute highlights cut of match `nbr-cal-seed42` (relabelled Northbridge 2–1 Calder) with live PASS / SHOOT / DRIBBLE calls and live points, all driven by the backend.
 
 **Architecture:** A new, self-contained `backend/demo/` package sits beside the existing `Room` flow (which stays untouched). Pure functions turn the ingested match into a fixed timeline of cues (clock ticks, on-ball events, jumps, calls, half time, full time); a thin per-socket session plays the timeline over a new WebSocket `/demo/ws` and scores answers. A plain HTML/CSS/JS app in `frontend/fan-app/` is served by FastAPI at `/`.
 
@@ -15,12 +15,12 @@
 - Deadline 2026-10-27 23:59 PT. Every task ends with `pytest` green; Task 7 redeploys.
 - Do not modify `backend/app/replay.py`, `backend/bank/`, `backend/resolve/`, `backend/scoring/` or existing tests. `backend/app/main.py` gets only the router include and the static mount (Task 5, Task 6).
 - No LLM calls. All copy is fixed templates.
-- Match id: `nbr-cal-seed42` (`backend.ingest.loader.load_match`). Internal team codes stay `NBR` (home) / `CAL` (away); display is `ARS` Arsenal / `CHE` Chelsea.
+- Match id: `nbr-cal-seed42` (`backend.ingest.loader.load_match`). Internal team codes stay `NBR` (home) / `CAL` (away); display is `NBR` Northbridge / `CAL` Calder.
 - Options are exactly `"PASS"`, `"SHOOT"`, `"DRIBBLE"`, in that order.
 - Points (spec table): any answered call +10; correct +100; streak of 3+ correct: +50 per step (streak 3 → +50, 4 → +100, …, i.e. `50 * (streak - 2)`). Unanswered = "Too quick!": 0 points, streak unchanged. Never minus.
 - Ball always moves at 1× inside a segment; time passes only by visible jumps.
-- Pitch frame: home (NBR/Arsenal) attacks left to right all match. Event coordinates are per acting team on a 105 × 68 pitch; away events convert with `(105 - x, 68 - y)`.
-- Design reference: `git show origin/frontend/demo-ux:frontend/demo-ux/<path>` (screens `Main.dc.html`, `Pick.dc.html`, `Live.dc.html`, `HUD.dc.html`; crests `assets/crests/ars.svg`, `assets/crests/che.svg`). Replicate colours, fonts, spacing, copy; do not copy the canvas runtime.
+- Pitch frame: home (NBR/Northbridge) attacks left to right all match. Event coordinates are per acting team on a 105 × 68 pitch; away events convert with `(105 - x, 68 - y)`.
+- Design reference: `git show origin/frontend/demo-ux:frontend/demo-ux/<path>` (screens `Main.dc.html`, `Pick.dc.html`, `Live.dc.html`, `HUD.dc.html`; crests `assets/crests/nbr.svg`, `assets/crests/cal.svg`). Replicate colours, fonts, spacing, copy; do not copy the canvas runtime.
 - Commits: `[area] Verb thing: description`, ending with `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`. Work on branch `backend/demo-live-calls` (Tasks 1–5) and `frontend/fan-app` (Tasks 6–7) or one branch `demo/live-calls` if executing in one session.
 - Tests run with Python 3.11: `.venv/bin/python -m pytest -q`.
 
@@ -42,7 +42,7 @@
 
 **Interfaces:**
 - Produces:
-  - `TEAMS: dict[str, dict[str, str]]` = `{"NBR": {"code": "ARS", "name": "Arsenal", "crest": "assets/ars.svg"}, "CAL": {"code": "CHE", "name": "Chelsea", "crest": "assets/che.svg"}}`
+  - `TEAMS: dict[str, dict[str, str]]` = `{"NBR": {"code": "NBR", "name": "Northbridge", "crest": "assets/crests/nbr.svg"}, "CAL": {"code": "CAL", "name": "Calder", "crest": "assets/crests/cal.svg"}}`
   - `PLAYERS: dict[str, tuple[str, int]]` — player_id → (display name, shirt number); exact table below.
   - `display_name(player_id: str | None) -> str` — mapped name; unknown or None → `""`.
   - `fixed_xy(team: str, xy: tuple[float, float] | None, home: str = "NBR") -> tuple[float, float] | None` — home unchanged, away `(105 - x, 68 - y)`, None passes through; round to 1 decimal.
@@ -52,21 +52,21 @@ Player table (synthetic id → design name, number). Players not listed stay off
 
 | id | name | # | id | name | # |
 |---|---|---|---|---|---|
-| 910101 | Raya | 1 | 910201 | Sánchez | 1 |
-| 910102 | White | 4 | 910202 | James | 24 |
-| 910105 | Saliba | 2 | 910204 | Fofana | 3 |
-| 910104 | Gabriel | 6 | 910205 | Colwill | 6 |
-| 910103 | Calafiori | 33 | 910203 | Hato | 21 |
-| 910108 | Rice | 41 | 910206 | Caicedo | 25 |
-| 910106 | Zubimendi | 36 | 910208 | Enzo | 8 |
-| 910110 | Ødegaard | 8 | 910210 | Palmer | 10 |
-| 910109 | Saka | 7 | 910207 | Neto | 7 |
-| 910107 | Gyökeres | 14 | 910209 | João Pedro | 9 |
-| 910111 | Eze | 10 | 910211 | Estêvão | 41 |
-| 910119 | Havertz | 29 | 910215 | Gusto | 27 |
-| 910120 | Timber | 12 | 910214 | Delap | 12 |
-| 910115 | Martinelli | 11 | 910223 | Lavia | 45 |
-| 910113 | Merino | 23 | 910219 | Gittens | 11 |
+| 910101 | Lindqvist | 1 | 910201 | Ward | 1 |
+| 910102 | Achterberg | 4 | 910202 | Oyelaran | 24 |
+| 910105 | Hale | 2 | 910204 | Reid | 3 |
+| 910104 | Duarte | 6 | 910205 | Zelek | 6 |
+| 910103 | Fairbanks | 33 | 910203 | Grigg | 21 |
+| 910108 | Okafor | 41 | 910206 | Demir | 25 |
+| 910106 | Pryce | 36 | 910208 | Penhale | 8 |
+| 910110 | Sabatier | 8 | 910210 | Venn | 10 |
+| 910109 | Mensah | 7 | 910207 | Whitcombe | 7 |
+| 910107 | Quintero | 14 | 910209 | Doyle | 9 |
+| 910111 | Rook | 10 | 910211 | Ortega | 41 |
+| 910119 | Raman | 29 | 910215 | Morrow | 27 |
+| 910120 | Thistle | 12 | 910214 | Lindgren | 12 |
+| 910115 | Brandt | 11 | 910223 | Blackwood | 45 |
+| 910113 | Ashdown | 23 | 910219 | Hart | 11 |
 | 910122 | Bruno Guimarães | 39 | | | |
 
 - [ ] **Step 1: Write the failing tests**
@@ -75,15 +75,15 @@ Player table (synthetic id → design name, number). Players not listed stay off
 from backend.demo.names import TEAMS, PLAYERS, display_name, fixed_xy, clock_label
 
 def test_scorers_relabelled():
-    assert display_name("910109") == "Saka"
-    assert display_name("910209") == "João Pedro"
-    assert display_name("910105") == "Saliba"
+    assert display_name("910109") == "Mensah"
+    assert display_name("910209") == "Doyle"
+    assert display_name("910105") == "Hale"
 
 def test_unknown_player_is_blank():
     assert display_name("999") == "" and display_name(None) == ""
 
 def test_teams():
-    assert TEAMS["NBR"]["name"] == "Arsenal" and TEAMS["CAL"]["code"] == "CHE"
+    assert TEAMS["NBR"]["name"] == "Northbridge" and TEAMS["CAL"]["code"] == "CAL"
 
 def test_every_mapped_number_unique_per_team():
     ars = [n for pid, (_, n) in PLAYERS.items() if pid.startswith("9101")]
@@ -105,7 +105,7 @@ def test_clock_label():
 - [ ] **Step 2: Run to verify failure** — `.venv/bin/python -m pytest backend/tests/test_demo_names.py -q` → FAIL (ModuleNotFoundError).
 - [ ] **Step 3: Implement `backend/demo/names.py`** with the table above and the four signatures.
 - [ ] **Step 4: Run** — same command → PASS.
-- [ ] **Step 5: Commit** — `[backend] Add demo relabel: Arsenal vs Chelsea names, fixed pitch frame, clock label`.
+- [ ] **Step 5: Commit** — `[backend] Add demo relabel: Northbridge vs Calder names, fixed pitch frame, clock label`.
 
 ---
 
@@ -221,8 +221,8 @@ def test_streak_bonus_steps():
   - `SCRIPT: tuple[Play | Pause, ...]` — exact values:
     ```
     Play(1, 0, 8, "Kickoff"), Play(1, 88, 115, "Opening minutes"),
-    Play(1, 1400, 1440, "Saka's goal"), Play(1, 2848, 2857, "Half time"),
-    Pause("half_time", 25), Play(2, 3595, 3620, "Chelsea hit back"),
+    Play(1, 1400, 1440, "Mensah's goal"), Play(1, 2848, 2857, "Half time"),
+    Pause("half_time", 25), Play(2, 3595, 3620, "Calder hit back"),
     Play(2, 4775, 4797, "The winner"), Play(2, 5655, 5668, "Full time"),
     Pause("full_time", 0)
     ```
@@ -264,7 +264,7 @@ def test_calls_and_mix():
 
 def test_goals_and_final_score():
     goals = [c.data for c in TL.cues if c.type == "demo.goal"]
-    assert [g["player"] for g in goals] == ["Saka", "João Pedro", "Saliba"]
+    assert [g["player"] for g in goals] == ["Mensah", "Doyle", "Hale"]
     assert goals[-1]["score"] == [2, 1]
     assert [c for c in TL.cues if c.type == "demo.full_time"][0].data["score"] == [2, 1]
 
@@ -300,7 +300,7 @@ def test_cues_sorted_and_jumps():
   - `make_demo_router(*, sleep=asyncio.sleep, load=lambda: load_match("nbr-cal-seed42"), max_sessions: int | None = None) -> APIRouter` — builds the timeline once (lazily, first connect) and serves `WS /demo/ws`. `max_sessions` default from env `MAX_DEMO_SESSIONS` (50).
 
 Wire protocol on `/demo/ws` (envelope `{"type", "data"}`):
-- Client → server first message: `{"type": "start", "data": {"team": "ARS" | "CHE"}}` within 10 s, else close 1008. Then any number of `{"type": "call.answer", "data": {"call_id", "pick"}}`.
+- Client → server first message: `{"type": "start", "data": {"team": "NBR" | "CAL"}}` within 10 s, else close 1008. Then any number of `{"type": "call.answer", "data": {"call_id", "pick"}}`.
 - Server → client: first `{"type": "demo.session", "data": {"teams": …, "you": {"team": code}, "duration": float}}`, then every cue per Task 4, with `call.lock` replaced by `{"type": "call.locked", "data": {"call_id"}}` followed by `{"type": "call.result", "data": {"call_id", "answer", "pick", "too_quick", "correct", "points", "streak_bonus", "total", "streak"}}`. After `demo.full_time` the server closes with 1000.
 
 Session rules: `run` sleeps `cue.at - elapsed` (elapsed = sum of sleeps, not wall clock) before each cue. `call.open` sets `open_call`; `answer` accepts only `call_id == open_call`, only the first time, only picks in `{"PASS","SHOOT","DRIBBLE"}`; `call.lock` clears `open_call` and scores with `score_call`. Router: receive loop runs beside the `run` task; on disconnect or `run` finishing, cancel the other and release the session slot.
@@ -309,7 +309,7 @@ Session rules: `run` sleeps `cue.at - elapsed` (elapsed = sum of sleeps, not wal
 
 ```python
 def test_plays_to_full_time_with_results(client):  # all calls answered "SHOOT"
-    msgs = play(client, team="ARS", pick="SHOOT")
+    msgs = play(client, team="NBR", pick="SHOOT")
     assert msgs[0]["type"] == "demo.session" and msgs[-1]["type"] == "demo.full_time"
     results = [m["data"] for m in msgs if m["type"] == "call.result"]
     assert len(results) == 7 and sum(r["correct"] for r in results) == 3
@@ -317,7 +317,7 @@ def test_plays_to_full_time_with_results(client):  # all calls answered "SHOOT"
     assert results[-1]["total"] == 7 * 10 + 3 * 100 == 370
 
 def test_no_answers_reaches_full_time(client):
-    msgs = play(client, team="CHE", pick=None)
+    msgs = play(client, team="CAL", pick=None)
     results = [m["data"] for m in msgs if m["type"] == "call.result"]
     assert all(r["too_quick"] for r in results) and results[-1]["total"] == 0
 
@@ -340,7 +340,7 @@ def test_disconnect_cancels_session(): ...  # close mid-run → router's active 
 ### Task 6: Fan app frontend, served at `/`
 
 **Files:**
-- Create: `frontend/fan-app/index.html`, `frontend/fan-app/styles.css`, `frontend/fan-app/app.js`, `frontend/fan-app/assets/ars.svg`, `frontend/fan-app/assets/che.svg` (copied from `origin/frontend/demo-ux:frontend/demo-ux/assets/crests/`), `frontend/fan-app/README.md`
+- Create: `frontend/fan-app/index.html`, `frontend/fan-app/styles.css`, `frontend/fan-app/app.js`, `frontend/fan-app/assets/crests/nbr.svg`, `frontend/fan-app/assets/crests/cal.svg` (copied from `origin/frontend/demo-ux:frontend/demo-ux/assets/crests/`), `frontend/fan-app/README.md`
 - Modify: `backend/app/main.py` (end of `create_app`: if `REPO_ROOT / "frontend" / "fan-app"` exists, `app.mount("/", StaticFiles(directory=..., html=True), name="fan-app")` — after all routes so `/api/*`, `/ws`, `/demo/ws` still match first); `infra/Dockerfile` (`COPY frontend/fan-app/ frontend/fan-app/`)
 - Test: `backend/tests/test_demo_static.py`
 
@@ -348,8 +348,8 @@ def test_disconnect_cancels_session(): ...  # close mid-run → router's active 
 - Consumes: Task 5 wire protocol. WebSocket URL: `(location.protocol === "https:" ? "wss://" : "ws://") + location.host + "/demo/ws"`.
 
 Screens (one page, show/hide sections; 390 × 844 first, readable at any phone width):
-1. **Landing** — from `Main.dc.html`: live match card "Arsenal vs Chelsea", "Play this match". Other match cards not shown.
-2. **Pick team** — from `Pick.dc.html`, team choice only (Arsenal / Chelsea crests). Player backing is Step 5; leave it out.
+1. **Landing** — from `Main.dc.html`: live match card "Northbridge vs Calder", "Play this match". Other match cards not shown.
+2. **Pick team** — from `Pick.dc.html`, team choice only (Northbridge / Calder crests). Player backing is Step 5; leave it out.
 3. **Live** — from `Live.dc.html` "Real time" tab: scoreboard (crests, score, `clock`), 2D pitch (SVG 105 × 68, ball animates from `xy` to `end_xy` over the gap to the next event; acting player's name label near the ball), call card with the three option buttons and `prompt`, points pop-ups and running total from `HUD.dc.html` (+10 / +100 / streak), "Too quick!" on `too_quick`, goal banner on `demo.goal`, jump card on `demo.jump` (`title` + `clock`, `JUMP_CARD_S` long). No Forecast tab yet.
 4. **Half time / Full time** — minimal cards for now: score and total, "Play again" on full time (reconnects from kickoff). Step 3 replaces them.
 
@@ -366,7 +366,7 @@ def test_api_still_wins_over_static(client):
 
 - [ ] **Step 2: Run to verify failure** → FAIL (404 at `/`).
 - [ ] **Step 3: Build the three files, copy the crests, add the mount and the Dockerfile line.**
-- [ ] **Step 4: Run** `.venv/bin/python -m pytest -q` → PASS. Then run `uvicorn backend.app.main:app --port 8000`, open `http://localhost:8000` in Chrome at 390 × 844, and play to full time: calls appear and lock, points pop, Saka's goal shows 1–0, jumps show, final 2–1. Record a GIF named `fan_app_live_calls.gif`.
+- [ ] **Step 4: Run** `.venv/bin/python -m pytest -q` → PASS. Then run `uvicorn backend.app.main:app --port 8000`, open `http://localhost:8000` in Chrome at 390 × 844, and play to full time: calls appear and lock, points pop, Mensah's goal shows 1–0, jumps show, final 2–1. Record a GIF named `fan_app_live_calls.gif`.
 - [ ] **Step 5: Commit** — `[frontend] Add fan app: landing, team pick and live calls against /demo/ws`.
 
 ---

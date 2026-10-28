@@ -13,7 +13,7 @@
 
   function fresh() {
     return {
-      team: "ARS", players: [],
+      team: "NBR", players: [],
       phase: "pre",            // pre | live | half | full
       connecting: false, error: "",
       session: null, roomCode: "", friends: [], htBoard: null, callsAtHalf: null,
@@ -34,8 +34,8 @@
   var app = {
     state: fresh(),
     squads: null,
-    names: {},       // "ARS:Saka" -> 7
-    byNum: {},       // "ARS:7" -> "Saka"
+    names: {},       // "NBR:Mensah" -> 7
+    byNum: {},       // "NBR:7" -> "Mensah"
     current: null,   // {name, screen}
     ws: null,
     timers: [],
@@ -51,7 +51,7 @@
     },
     scoreLine: function () { var s = app.state.score; return s[0] + " – " + s[1]; },
     isLive: function () { return app.state.phase === "live" && !app.state.jump; },
-    teamName: function (code) { return code === "CHE" ? "Chelsea" : "Arsenal"; },
+    teamName: function (code) { return code === "CAL" ? "Calder" : "Northbridge"; },
 
     // the fan plus Mia, Dan and Leo: running points during play, the boards at half/full time
     roomBoard: function () {
@@ -123,12 +123,12 @@
     },
     start: function () {
       app.stop();
-      // only Arsenal v Chelsea has match data: a fan browsing another match plays it as the
-      // side in the same place (home -> Arsenal, away -> Chelsea), without backed players
+      // only Northbridge v Calder has match data: a fan browsing another match plays it as the
+      // side in the same place (home -> Northbridge, away -> Calder), without backed players
       var team = app.state.team, players = app.state.players.slice();
-      if (team !== "ARS" && team !== "CHE") {
+      if (team !== "NBR" && team !== "CAL") {
         var m = (app.squads && app.squads.matches || []).filter(function (x) { return x.away === team; })[0];
-        team = m ? "CHE" : "ARS";
+        team = m ? "CAL" : "NBR";
         players = [];
       }
       var keep = { team: team, players: players };
@@ -240,12 +240,12 @@
           // the whistle shows on the pitch first, then the half-time screen fades in
           app.set({ phase: "half", ht: d, total: d.total, score: d.score, htBoard: d.room.players,
                     callsAtHalf: s.lastCallId, htEndsAt: now + d.seconds * 1000, call: null, jump: null,
-                    endCard: { title: "Half time", label: "ARS " + d.score[0] + " – " + d.score[1] + " CHE" } });
+                    endCard: { title: "Half time", label: "NBR " + d.score[0] + " – " + d.score[1] + " CAL" } });
           app.later(1600, function () { if (app.state.phase === "half") { app.go("HalfTime"); } });
           break;
         case "demo.full_time":
           app.set({ phase: "full", ft: d, total: d.total, score: d.score, call: null, jump: null, saved: d.saved,
-                    endCard: { title: "Full time", label: "ARS " + d.score[0] + " – " + d.score[1] + " CHE" } });
+                    endCard: { title: "Full time", label: "NBR " + d.score[0] + " – " + d.score[1] + " CAL" } });
           app.later(2600, function () { app.go("Result"); });
           break;
         case "forecast.locked":

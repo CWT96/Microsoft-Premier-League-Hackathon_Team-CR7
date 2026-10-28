@@ -155,8 +155,8 @@ class Component extends DCLogic {
     var base = "flex: 1; min-width: 0; height: 52px; padding: 0 10px; border-radius: 12px; display: flex; align-items: center; gap: 8px; font-family: inherit; color: #F3F6F9; ";
     var on = base + "background: rgba(0,255,133,0.14); border: 2px solid #00FF85;";
     var off = base + "background: #4A0E52; border: 2px solid #4A0E52;";
-    // Arsenal v Chelsea is the playable demo; the other two are the design's matchday, browsable
-    var defs = sq && sq.matches ? sq.matches : [{ id: "m1", home: "ARS", away: "CHE", status: "LIVE", meta: "Matchday 9", score: null, playable: true }];
+    // Northbridge v Calder is the playable demo; the other two are the design's matchday, browsable
+    var defs = sq && sq.matches ? sq.matches : [{ id: "m1", home: "NBR", away: "CAL", status: "LIVE", meta: "Matchday 9", score: null, playable: true }];
     var current = defs.filter(function (m) { return m.home === team || m.away === team; })[0] || defs[0];
     var matches = defs.map(function (m) {
       var live = m.status.indexOf("LIVE") === 0;

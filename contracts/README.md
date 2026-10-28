@@ -193,31 +193,31 @@ During the match the UI shows only ✓/coin animations. It never shows point num
 
 ## Demo mode: /demo/ws and /demo/squads
 
-This is the protocol of the judged fan app, The Premier X (`frontend/premier-x/`, served at `/`; the earlier `frontend/fan-app/` is at `/classic/`). Code: `backend/demo/router.py` (socket, close codes) and `backend/demo/session.py` (messages, scoring). One socket plays one fan's ~100 s highlights run of `nbr-cal-seed42` (each side has its own cut, and calls only ask about the fan's own team), shown as Arsenal (`ARS`, home) vs Chelsea (`CHE`, away). Every run is private to that socket; there is no shared room state. The examples below are real payloads from a local cache-mode run, trimmed with `…`. They are prose, not schema-validated.
+This is the protocol of the judged fan app, The Premier X (`frontend/premier-x/`, served at `/`; the earlier `frontend/fan-app/` is at `/classic/`). Code: `backend/demo/router.py` (socket, close codes) and `backend/demo/session.py` (messages, scoring). One socket plays one fan's ~100 s highlights run of `nbr-cal-seed42` (each side has its own cut, and calls only ask about the fan's own team), shown as Northbridge (`NBR`, home) vs Calder (`CAL`, away). Every run is private to that socket; there is no shared room state. The examples below are real payloads from a local cache-mode run, trimmed with `…`. They are prose, not schema-validated.
 
 Endpoint: `GET /demo/ws` (`wss://` on the deployed https site). Same envelope as `/ws`: `{"type": "...", "data": {...}}`. Frames over 4096 bytes or that are not JSON are skipped (before `start` they close the socket with 1008).
 
 ### Lifecycle and close codes
 
 1. Client connects. If `MAX_DEMO_SESSIONS` sockets (default 50) are already open, the server accepts and closes at once with **1013** (try again later).
-2. Client sends `start` within **10 s**. A missing, late or malformed `start`, or a team other than `ARS`/`CHE`, closes with **1008**. Bad `players` never close the socket; they are dropped.
+2. Client sends `start` within **10 s**. A missing, late or malformed `start`, or a team other than `NBR`/`CAL`, closes with **1008**. Bad `players` never close the socket; they are dropped.
 3. Server sends `demo.session`, then the timed cues of the highlights run, ending with `demo.full_time`.
 4. After `demo.full_time` the socket stays open for up to **600 s** (`POST_MATCH_S`) so the fan can still `signup`. Then the server closes with **1000**. It also closes with 1000 whenever the client leaves.
 
-Clock values: `t` is match seconds (same convention as `/ws`), `clock` is the display label (`MM:SS`, or `45+M:SS` / `90+M:SS`), `score` is `[home, away]`. Pitch coordinates are metres in a fixed frame: Arsenal attack left to right (105 × 68), Chelsea's are rotated 180°.
+Clock values: `t` is match seconds (same convention as `/ws`), `clock` is the display label (`MM:SS`, or `45+M:SS` / `90+M:SS`), `score` is `[home, away]`. Pitch coordinates are metres in a fixed frame: Northbridge attack left to right (105 × 68), Calder's are rotated 180°.
 
 ### Client → server
 
 | `type` | `data` | Reply |
 |---|---|---|
-| `start` | `{team: "ARS" \| "CHE", players?: [id, id]}` | `demo.session`. `players`: up to 2 ids from that team's squad in `GET /demo/squads`; unknown, other-team or duplicate ids are dropped. |
+| `start` | `{team: "NBR" \| "CAL", players?: [id, id]}` | `demo.session`. `players`: up to 2 ids from that team's squad in `GET /demo/squads`; unknown, other-team or duplicate ids are dropped. |
 | `call.answer` | `{call_id, pick: "PASS" \| "SHOOT" \| "DRIBBLE"}` | None. Accepted only for the open call, once per call. Anything else is ignored silently. The result arrives in `call.result`. |
 | `forecast.pick` | `{key: "f5" \| "f10" \| "f15", pick}` | `forecast.locked` or `forecast.rejected`. Picks: `ars`/`che` for `f5` and `f10`, `goal`/`nogoal` for `f15`. |
 | `forecast.final` | `{result: "ars" \| "draw" \| "che", home, away}` | `forecast.final_saved` or `forecast.rejected` (`key: "final"`). Goals are integers 0–9, must agree with `result`, and cannot be below the current score. Can be changed until it locks at the start of the second half. |
 | `signup` | `{email}` | `signup.saved` or `signup.rejected`. The email is only checked for shape; it is never stored, logged, sent or echoed. |
 
 ```json
-{"type": "start", "data": {"team": "ARS", "players": ["910101", "910102"]}}
+{"type": "start", "data": {"team": "NBR", "players": ["910101", "910102"]}}
 {"type": "call.answer", "data": {"call_id": "c-ed3e2846-9efa-4407-b2ed-cab03e3869e2", "pick": "PASS"}}
 {"type": "forecast.pick", "data": {"key": "f5", "pick": "ars"}}
 {"type": "forecast.final", "data": {"result": "ars", "home": 2, "away": 1}}
@@ -243,17 +243,17 @@ Clock values: `t` is match seconds (same convention as `/ws`), `clock` is the di
 `total` is the fan's running total in every message that carries it: calls, forecasts, player bonus (first half added before `demo.half_time`, the rest before `demo.full_time`) and the signup bonus. `room.players` is the fan plus three simulated friends (Mia, Dan, Leo), sorted by points.
 
 ```json
-{"type": "demo.session", "data": {"teams": {"home": {"code": "ARS", "name": "Arsenal", "crest": "assets/ars.svg"}, "away": {"code": "CHE", "name": "Chelsea", "crest": "assets/che.svg"}}, "you": {"team": "ARS", "players": [{"id": "910101", "name": "Raya", "num": 1, "pos": "GK"}]}, "duration": 93.0, "ai_lines": true, "forecasts": {"windows": [{"key": "f5", "label": "NEXT 5 MIN", "minutes": 5, "points": 500, "question": "Who has more of the ball?", "options": [{"id": "ars", "label": "ARSENAL"}, {"id": "che", "label": "CHELSEA"}]}, "…f10, f15"], "final": {"points": 3000, "exact_points": 2000, "options": [{"id": "ars", "label": "ARSENAL"}, {"id": "draw", "label": "DRAW"}, {"id": "che", "label": "CHELSEA"}]}}}}
-{"type": "demo.jump", "data": {"title": "Arsenal on the attack", "clock": "11:31"}}
+{"type": "demo.session", "data": {"teams": {"home": {"code": "NBR", "name": "Northbridge", "crest": "assets/crests/nbr.svg"}, "away": {"code": "CAL", "name": "Calder", "crest": "assets/crests/cal.svg"}}, "you": {"team": "NBR", "players": [{"id": "910101", "name": "Lindqvist", "num": 1, "pos": "GK"}]}, "duration": 93.0, "ai_lines": true, "forecasts": {"windows": [{"key": "f5", "label": "NEXT 5 MIN", "minutes": 5, "points": 500, "question": "Who has more of the ball?", "options": [{"id": "ars", "label": "NORTHBRIDGE"}, {"id": "che", "label": "CALDER"}]}, "…f10, f15"], "final": {"points": 3000, "exact_points": 2000, "options": [{"id": "ars", "label": "NORTHBRIDGE"}, {"id": "draw", "label": "DRAW"}, {"id": "che", "label": "CALDER"}]}}}}
+{"type": "demo.jump", "data": {"title": "Northbridge on the attack", "clock": "11:31"}}
 {"type": "demo.clock", "data": {"half": 1, "clock": "11:31", "score": [0, 0], "t": 691.0}}
-{"type": "demo.event", "data": {"type": "pass", "team": "ARS", "player": "Raya", "xy": [5.2, 25.6], "end_xy": [9.6, 23.8]}}
-{"type": "demo.shape", "data": {"players": [{"team": "ARS", "num": 1, "x": 5.0, "y": 33.2}, {"team": "CHE", "num": 9, "x": 19.7, "y": 31.9}, "…20 more"]}}
-{"type": "demo.goal", "data": {"team": "ARS", "player": "Saka", "clock": "23:54", "score": [1, 0]}}
-{"type": "call.open", "data": {"call_id": "c-ed3e2846-9efa-4407-b2ed-cab03e3869e2", "player": "Gabriel", "team": "ARS", "prompt": "Gabriel has the ball in his own half for Arsenal. What will he do next?", "options": ["PASS", "SHOOT", "DRIBBLE"]}}
+{"type": "demo.event", "data": {"type": "pass", "team": "NBR", "player": "Lindqvist", "xy": [5.2, 25.6], "end_xy": [9.6, 23.8]}}
+{"type": "demo.shape", "data": {"players": [{"team": "NBR", "num": 1, "x": 5.0, "y": 33.2}, {"team": "CAL", "num": 9, "x": 19.7, "y": 31.9}, "…20 more"]}}
+{"type": "demo.goal", "data": {"team": "NBR", "player": "Mensah", "clock": "23:54", "score": [1, 0]}}
+{"type": "call.open", "data": {"call_id": "c-ed3e2846-9efa-4407-b2ed-cab03e3869e2", "player": "Duarte", "team": "NBR", "prompt": "Duarte has the ball in his own half for Northbridge. What will he do next?", "options": ["PASS", "SHOOT", "DRIBBLE"]}}
 {"type": "call.locked", "data": {"call_id": "c-ed3e2846-9efa-4407-b2ed-cab03e3869e2"}}
-{"type": "call.result", "data": {"call_id": "c-ed3e2846-9efa-4407-b2ed-cab03e3869e2", "answer": "PASS", "pick": "PASS", "too_quick": false, "correct": true, "points": 110, "streak_bonus": 0, "total": 110, "streak": 1, "explain": "Gabriel passed the ball to a teammate, helping Arsenal keep their move going."}}
-{"type": "demo.half_time", "data": {"score": [1, 0], "seconds": 10, "room": {"code": "MXTZ", "players": [{"name": "You", "pts": 2370, "saved": false, "me": true}, {"name": "Mia", "pts": 1890, "saved": true, "me": false}, "…Leo, Dan"]}, "breakdown": {"calls": 140, "forecasts": 2000, "players": 230}, "players": [{"id": "910101", "name": "Raya", "num": 1, "pos": "GK", "points": 190, "stats": [{"what": "Save", "count": 4, "pts": 160}, {"what": "Claimed cross", "count": 3, "pts": 30}]}], "you": {"rank": 1}, "total": 2370, "saved": false}}
-{"type": "demo.full_time", "data": {"score": [2, 1], "seconds": 0, "rows": [{"key": "rt", "label": "REAL-TIME CALLS", "points": 260, "detail": "2 correct calls · best streak of 1"}, {"key": "fc", "label": "FORECAST", "detail": "2 forecasts hit · full-time result nailed", "points": 7000}, {"key": "pb", "label": "PLAYER BONUS", "detail": "Earned by the 2 players you backed", "points": 400}], "badges": [{"title": "ORACLE", "text": "Called the full-time result"}, {"title": "GOOD EYE", "text": "You called João Pedro's goal"}], "stamp": "#1 IN ROOM MXTZ · TOP 19% TONIGHT", "room": {"code": "MXTZ", "players": ["…"]}, "players": ["…full-match bonus cards"], "total": 8160, "saved": true}}
+{"type": "call.result", "data": {"call_id": "c-ed3e2846-9efa-4407-b2ed-cab03e3869e2", "answer": "PASS", "pick": "PASS", "too_quick": false, "correct": true, "points": 110, "streak_bonus": 0, "total": 110, "streak": 1, "explain": "Duarte passed the ball to a teammate, helping Northbridge keep their move going."}}
+{"type": "demo.half_time", "data": {"score": [1, 0], "seconds": 10, "room": {"code": "MXTZ", "players": [{"name": "You", "pts": 2370, "saved": false, "me": true}, {"name": "Mia", "pts": 1890, "saved": true, "me": false}, "…Leo, Dan"]}, "breakdown": {"calls": 140, "forecasts": 2000, "players": 230}, "players": [{"id": "910101", "name": "Lindqvist", "num": 1, "pos": "GK", "points": 190, "stats": [{"what": "Save", "count": 4, "pts": 160}, {"what": "Claimed cross", "count": 3, "pts": 30}]}], "you": {"rank": 1}, "total": 2370, "saved": false}}
+{"type": "demo.full_time", "data": {"score": [2, 1], "seconds": 0, "rows": [{"key": "rt", "label": "REAL-TIME CALLS", "points": 260, "detail": "2 correct calls · best streak of 1"}, {"key": "fc", "label": "FORECAST", "detail": "2 forecasts hit · full-time result nailed", "points": 7000}, {"key": "pb", "label": "PLAYER BONUS", "detail": "Earned by the 2 players you backed", "points": 400}], "badges": [{"title": "ORACLE", "text": "Called the full-time result"}, {"title": "GOOD EYE", "text": "You called Doyle's goal"}], "stamp": "#1 IN ROOM MXTZ · TOP 19% TONIGHT", "room": {"code": "MXTZ", "players": ["…"]}, "players": ["…full-match bonus cards"], "total": 8160, "saved": true}}
 ```
 
 ### Server → client: forecasts and signup
@@ -282,11 +282,11 @@ Clock values: `t` is match seconds (same convention as `/ws`), `clock` is the di
 
 ### GET /demo/squads
 
-Both squads and the player-bonus scoring table, for the "back up to 2 players" screen. `matches` lists the pick screen's three matches (`playable` only for ARS v CHE; `fans` is the number shown as calling the match) and `other_teams` the squads of the display-only teams (LIV, MCI, NEW, TOT; ids `<CODE>-<num>`), same shape as `teams`. `popular` is the id of the player the app offers as a one-tap quick pick; `pos` ∈ `GK`, `DEF`, `MID`, `FWD`; `rules` are `[stat, points]` pairs. Code: `backend/demo/bonus.py` (`squads`).
+Both squads and the player-bonus scoring table, for the "back up to 2 players" screen. `matches` lists the pick screen's three matches (`playable` only for NBR v CAL; `fans` is the number shown as calling the match) and `other_teams` the squads of the display-only teams (WEX, HAR, ASH, KGM; ids `<CODE>-<num>`), same shape as `teams`. `popular` is the id of the player the app offers as a one-tap quick pick; `pos` ∈ `GK`, `DEF`, `MID`, `FWD`; `rules` are `[stat, points]` pairs. Code: `backend/demo/bonus.py` (`squads`).
 
 ```json
-{"teams": {"ARS": {"name": "Arsenal", "popular": "910109", "players": [{"id": "910101", "name": "Raya", "num": 1, "pos": "GK", "starter": true}, "…"]},
-           "CHE": {"name": "Chelsea", "popular": "910210", "players": [{"id": "910201", "name": "Sánchez", "num": 1, "pos": "GK", "starter": true}, "…"]}},
+{"teams": {"NBR": {"name": "Northbridge", "popular": "910109", "players": [{"id": "910101", "name": "Lindqvist", "num": 1, "pos": "GK", "starter": true}, "…"]},
+           "CAL": {"name": "Calder", "popular": "910210", "players": [{"id": "910201", "name": "Ward", "num": 1, "pos": "GK", "starter": true}, "…"]}},
  "scoring": {"GK": {"label": "Goalkeeper", "earns": "saves, clean sheets", "rules": [["Penalty save", 400], ["Clean sheet", 300], ["Save", 40], ["Claimed cross", 10]]},
              "DEF": {"…": "…"}, "MID": {"…": "…"}, "FWD": {"…": "…"}}}
 ```

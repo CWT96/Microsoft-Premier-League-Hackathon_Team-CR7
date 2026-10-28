@@ -26,7 +26,7 @@ Subscription "Azure subscription 1" (free trial), resource group `rg-matchday-ca
 - **After deploy:**
   - `/healthz` returns 200.
   - `/` shows The Premier X.
-  - Play one full match as Arsenal and one as Chelsea at phone size.
+  - Play one full match as Northbridge and one as Calder at phone size.
 
 Redeploy a new image (from the repo root):
 

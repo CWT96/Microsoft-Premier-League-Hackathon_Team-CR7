@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development. Steps use checkbox (`- [ ]`) syntax.
 
-**Goal:** The live pitch shows all 22 players (11 Arsenal, 11 Chelsea), each at their formation spot, with both teams sliding as a block toward the ball, and the player on the ball exactly where the data puts him.
+**Goal:** The live pitch shows all 22 players (11 Northbridge, 11 Calder), each at their formation spot, with both teams sliding as a block toward the ball, and the player on the ball exactly where the data puts him.
 
 **Architecture:** The dataset has no tracking, only the on-ball player's location per event. A new pure module `backend/demo/shape.py` estimates every on-pitch player's position from (a) their named lineup position (e.g. "Left Back"), (b) the ball's position. `build_timeline` adds a `demo.shape` cue next to every `demo.event` and at each Play's start. The frontend draws 22 shirt-number dots and animates them with CSS transitions.
 
@@ -12,7 +12,7 @@
 
 ## Global Constraints
 
-- Match `nbr-cal-seed42`; NBR = home = Arsenal (`ARS`), CAL = away = Chelsea (`CHE`). Fixed pitch frame 105 × 68: Arsenal attacks left → right all match; away coordinates convert with `(105 - x, 68 - y)` (use `names.fixed_xy`).
+- Match `nbr-cal-seed42`; NBR = home = Northbridge (`NBR`), CAL = away = Calder (`CAL`). Fixed pitch frame 105 × 68: Northbridge attacks left → right all match; away coordinates convert with `(105 - x, 68 - y)` (use `names.fixed_xy`).
 - Do not change: call selection, points, the 7 calls, duration (181 s), existing cue types or their data, `/demo/ws` protocol other than the new additive cue `demo.shape`. All existing tests stay green; do not edit existing tests except adding new ones.
 - Do not modify `backend/app/replay.py`, `backend/bank/`, `backend/resolve/`, `backend/scoring/`, `backend/ingest/`.
 - Commits: `[area] Verb thing: description` + blank line + `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`. Branch `backend/demo-live-calls`.
@@ -86,7 +86,7 @@ def test_every_shape_has_eleven_a_side():
     assert SHAPES
     for c in SHAPES:
         teams = [p["team"] for p in c.data["players"]]
-        assert teams.count("ARS") == 11 and teams.count("CHE") == 11
+        assert teams.count("NBR") == 11 and teams.count("CAL") == 11
 
 def test_all_inside_pitch():
     for c in SHAPES:
@@ -95,14 +95,14 @@ def test_all_inside_pitch():
 def test_holder_is_on_the_ball():
     events = [c for c in TL.cues if c.type == "demo.event" and c.data["xy"]]
     shapes = {c.at: c for c in SHAPES}
-    saka = next(e for e in events if e.data["player"] == "Saka" and e.data["type"] == "shot")
-    dot = next(p for p in shapes[saka.at].data["players"] if p["num"] == 7 and p["team"] == "ARS")
+    saka = next(e for e in events if e.data["player"] == "Mensah" and e.data["type"] == "shot")
+    dot = next(p for p in shapes[saka.at].data["players"] if p["num"] == 7 and p["team"] == "NBR")
     assert [dot["x"], dot["y"]] == saka.data["xy"]
 
 def test_goalkeepers_stay_home():
     for c in SHAPES:
         gks = {p["team"]: p for p in c.data["players"] if p["num"] == 1}
-        assert gks["ARS"]["x"] < 20 and gks["CHE"]["x"] > 85
+        assert gks["NBR"]["x"] < 20 and gks["CAL"]["x"] > 85
 
 def test_substitute_replaces_player():
     slots = load_slots()
@@ -132,10 +132,10 @@ def test_shape_payload_small():
 - Modify: `frontend/fan-app/app.js`, `frontend/fan-app/styles.css`, `frontend/fan-app/index.html` (only if a layer is needed in the SVG)
 
 **Interfaces:**
-- Consumes: `demo.shape {players: [{id, team: "ARS"|"CHE", num, x, y}]}` in the same 105 × 68 SVG frame the ball uses; arrives at the same moment as the matching `demo.event` (after it).
+- Consumes: `demo.shape {players: [{id, team: "NBR"|"CAL", num, x, y}]}` in the same 105 × 68 SVG frame the ball uses; arrives at the same moment as the matching `demo.event` (after it).
 
 Behaviour:
-- One SVG group per player id (created on first sight, reused): a circle r ≈ 1.6 with the shirt number centred (font ~1.6 units, bold). Arsenal: red fill `#EF0107`, white number; Chelsea: blue fill `#034694`, white number. Thin dark outline so dots read on the green pitch.
+- One SVG group per player id (created on first sight, reused): a circle r ≈ 1.6 with the shirt number centred (font ~1.6 units, bold). Northbridge: red fill `#EF0107`, white number; Calder: blue fill `#034694`, white number. Thin dark outline so dots read on the green pitch.
 - Position updates move the group with a CSS transform transition (~0.8 s ease-out, same feel as the ball glide). Players not in the latest `demo.shape` are hidden (handles substitutions).
 - Layer order: pitch lines < players < ball < name label. The existing ball, glide and name label behaviour stays as is.
 - Reset all player dots on "Play again" (new socket) — no dots from the previous run.
