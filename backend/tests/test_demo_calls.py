@@ -16,7 +16,7 @@ def test_saka_goal_is_a_shoot_call():
 
 
 def test_first_segment_keeps_the_dribble():
-    # Saka's blocked shot (11:51.7) would open before the dribble's result has shown; the rarer
+    # Mensah's blocked shot (11:51.7) would open before the dribble's result has shown; the rarer
     # dribble wins, and the demo's shot comes from the next segment instead
     calls = select_calls(MOMENTS, 1, 694, 716)
     assert [c.answer for c in calls] == ["PASS", "DRIBBLE"]

@@ -33,9 +33,9 @@ a{color:#04F5FF}a:hover{color:#8AFAFF}
         <span>{{liveLabel}}</span>
       </div>
       <div style="display: flex; align-items: center; gap: 6px; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 22px; line-height: 1">
-        <span style="width: 24px; height: 24px; border-radius: 7px; background: #FFFFFF; display: flex; align-items: center; justify-content: center; flex: none"><img src="../assets/crests/ars.svg" alt="Arsenal" style="width: 18px; height: 18px; object-fit: contain"></span>
-        <span>ARS</span><span>{{scoreLine}}</span><span>CHE</span>
-        <span style="width: 24px; height: 24px; border-radius: 7px; background: #FFFFFF; display: flex; align-items: center; justify-content: center; flex: none"><img src="../assets/crests/che.svg" alt="Chelsea" style="width: 18px; height: 18px; object-fit: contain"></span>
+        <span style="width: 24px; height: 24px; border-radius: 7px; background: #FFFFFF; display: flex; align-items: center; justify-content: center; flex: none"><img src="../assets/crests/nbr.svg" alt="Northbridge" style="width: 18px; height: 18px; object-fit: contain"></span>
+        <span>NBR</span><span>{{scoreLine}}</span><span>CAL</span>
+        <span style="width: 24px; height: 24px; border-radius: 7px; background: #FFFFFF; display: flex; align-items: center; justify-content: center; flex: none"><img src="../assets/crests/cal.svg" alt="Calder" style="width: 18px; height: 18px; object-fit: contain"></span>
       </div>
     </div>
     <div style="position: relative; display: flex; flex-direction: column; align-items: flex-end">
@@ -144,17 +144,17 @@ a{color:#04F5FF}a:hover{color:#8AFAFF}
         </div>
         <div style="display: flex; align-items: center; gap: 6px; opacity: {{scoreOpacity}}">
           <div style="display: flex; flex-direction: column; align-items: center; gap: 4px">
-            <button class="mc-step" onClick="{{hsUp}}" disabled="{{hsMax}}" aria-label="Arsenal goals up" style="width: 36px; height: 26px; border-radius: 8px; border: 1px solid #5C2A63; background: #4A0E52; color: #F3F6F9; font-family: inherit; font-size: 16px; line-height: 1">+</button>
+            <button class="mc-step" onClick="{{hsUp}}" disabled="{{hsMax}}" aria-label="Northbridge goals up" style="width: 36px; height: 26px; border-radius: 8px; border: 1px solid #5C2A63; background: #4A0E52; color: #F3F6F9; font-family: inherit; font-size: 16px; line-height: 1">+</button>
             <span style="font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 32px; line-height: 1">{{hs}}</span>
-            <button class="mc-step" onClick="{{hsDown}}" disabled="{{hsMin}}" aria-label="Arsenal goals down" style="width: 36px; height: 26px; border-radius: 8px; border: 1px solid #5C2A63; background: #4A0E52; color: #F3F6F9; font-family: inherit; font-size: 16px; line-height: 1">−</button>
-            <span style="font-size: 10px; font-weight: 700; color: #CDB8D1">ARS</span>
+            <button class="mc-step" onClick="{{hsDown}}" disabled="{{hsMin}}" aria-label="Northbridge goals down" style="width: 36px; height: 26px; border-radius: 8px; border: 1px solid #5C2A63; background: #4A0E52; color: #F3F6F9; font-family: inherit; font-size: 16px; line-height: 1">−</button>
+            <span style="font-size: 10px; font-weight: 700; color: #CDB8D1">NBR</span>
           </div>
           <span style="font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 28px; color: #CDB8D1; padding-bottom: 14px">–</span>
           <div style="display: flex; flex-direction: column; align-items: center; gap: 4px">
-            <button class="mc-step" onClick="{{awUp}}" disabled="{{awMax}}" aria-label="Chelsea goals up" style="width: 36px; height: 26px; border-radius: 8px; border: 1px solid #5C2A63; background: #4A0E52; color: #F3F6F9; font-family: inherit; font-size: 16px; line-height: 1">+</button>
+            <button class="mc-step" onClick="{{awUp}}" disabled="{{awMax}}" aria-label="Calder goals up" style="width: 36px; height: 26px; border-radius: 8px; border: 1px solid #5C2A63; background: #4A0E52; color: #F3F6F9; font-family: inherit; font-size: 16px; line-height: 1">+</button>
             <span style="font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 32px; line-height: 1">{{aw}}</span>
-            <button class="mc-step" onClick="{{awDown}}" disabled="{{awMin}}" aria-label="Chelsea goals down" style="width: 36px; height: 26px; border-radius: 8px; border: 1px solid #5C2A63; background: #4A0E52; color: #F3F6F9; font-family: inherit; font-size: 16px; line-height: 1">−</button>
-            <span style="font-size: 10px; font-weight: 700; color: #CDB8D1">CHE</span>
+            <button class="mc-step" onClick="{{awDown}}" disabled="{{awMin}}" aria-label="Calder goals down" style="width: 36px; height: 26px; border-radius: 8px; border: 1px solid #5C2A63; background: #4A0E52; color: #F3F6F9; font-family: inherit; font-size: 16px; line-height: 1">−</button>
+            <span style="font-size: 10px; font-weight: 700; color: #CDB8D1">CAL</span>
           </div>
         </div>
       </div>
@@ -243,7 +243,7 @@ class Component extends DCLogic {
         })
       };
     });
-    var ftDefs = [ { id: "ars", label: "ARS WIN" }, { id: "draw", label: "DRAW" }, { id: "che", label: "CHE WIN" } ];
+    var ftDefs = [ { id: "ars", label: "NBR WIN" }, { id: "draw", label: "DRAW" }, { id: "che", label: "CAL WIN" } ];
     var ftOpts = ftDefs.map(function (o) {
       var on = s.ft === o.id;
       var st = optStyle(on, !!s.ft);
@@ -251,7 +251,7 @@ class Component extends DCLogic {
       return { label: o.label, on: on, style: st, pick: function () { self.pickResult(o.id); } };
     });
     if (s.ft) { potential += 5000; }
-    var names = { ars: "an Arsenal win", draw: "a draw", che: "a Chelsea win" };
+    var names = { ars: "an Northbridge win", draw: "a draw", che: "a Calder win" };
     var ftHint = this.locked()
       ? (s.ft ? "Locked at the second-half kick-off. Scored at full time." : "Locked at the second-half kick-off.")
       : !s.ft

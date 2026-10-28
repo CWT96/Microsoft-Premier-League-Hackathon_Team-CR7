@@ -19,7 +19,7 @@ from backend.demo.session import DemoSession
 from backend.ingest.loader import load_match
 
 TL = build_timeline(load_match("nbr-cal-seed42"))
-START_ARS = {"type": "start", "data": {"team": "ARS"}}
+START_ARS = {"type": "start", "data": {"team": "NBR"}}
 
 
 async def instant(_: float) -> None:
@@ -85,7 +85,7 @@ def of_type(kind: str):
 
 
 def test_window_settles_after_jump():
-    session = DemoSession(TL, "ARS")
+    session = DemoSession(TL, "NBR")
     msgs = run_with(session, at_clock("11:34", lambda reply: reply(
         session.forecast_pick("f5", "che"))))
     locked = index_of(msgs, of_type("forecast.locked"))
@@ -96,13 +96,13 @@ def test_window_settles_after_jump():
         "key": "f5", "pick": "che", "outcome": "ars", "correct": False, "points": 0,
         "total": msgs[res_i]["data"]["total"], "to_clock": "16:34", "text": "Not this time"}
     jump = index_of(msgs, lambda m: m["type"] == "demo.jump"
-                    and m["data"]["title"] == "Arsenal keep pushing")
+                    and m["data"]["title"] == "Northbridge keep pushing")
     assert jump < res_i and res_i + 1 == index_of(msgs, first_clock("16:51"))
     assert types(msgs).count("forecast.result") == 1
 
 
 def test_hit_adds_to_shared_total():
-    session = DemoSession(TL, "ARS")
+    session = DemoSession(TL, "NBR")
     pick = at_clock("23:48", lambda reply: reply(session.forecast_pick("f10", "ars")))
 
     def hook(env: dict, reply) -> None:
@@ -124,7 +124,7 @@ def test_hit_adds_to_shared_total():
 
 
 def test_pending_settles_at_half_time():
-    session = DemoSession(TL, "ARS")
+    session = DemoSession(TL, "NBR")
     msgs = run_with(session, at_clock("23:56", lambda reply: reply(
         session.forecast_pick("f5", "che"))))
     locked = next(m["data"] for m in msgs if m["type"] == "forecast.locked")
@@ -137,7 +137,7 @@ def test_pending_settles_at_half_time():
 
 
 def test_final_locked_in_second_half():
-    session = DemoSession(TL, "CHE")
+    session = DemoSession(TL, "CAL")
     replies: dict[str, dict] = {}
 
     def hook(env: dict, reply) -> None:
@@ -176,14 +176,14 @@ def test_final_locked_in_second_half():
 
 
 def test_final_locked_empty_and_no_result_without_pick():
-    msgs = run_with(DemoSession(TL, "ARS"), lambda env, reply: None)
+    msgs = run_with(DemoSession(TL, "NBR"), lambda env, reply: None)
     lock = next(m for m in msgs if m["type"] == "forecast.final_locked")
     assert lock["data"] == {}
     assert "forecast.final_result" not in types(msgs) and "forecast.result" not in types(msgs)
 
 
 def test_bad_forecast_messages():
-    session = DemoSession(TL, "ARS")
+    session = DemoSession(TL, "NBR")
     got: dict[str, dict] = {}
 
     def rej(name: str, msg: dict) -> None:
@@ -238,7 +238,7 @@ def test_bad_forecast_messages():
 
 
 def test_settled_key_can_be_picked_again():
-    session = DemoSession(TL, "ARS")
+    session = DemoSession(TL, "NBR")
     replies: list[dict] = []
 
     def hook(env: dict, reply) -> None:
@@ -253,7 +253,7 @@ def test_settled_key_can_be_picked_again():
 
 
 def test_all_settled_by_full_time():
-    session = DemoSession(TL, "ARS")
+    session = DemoSession(TL, "NBR")
 
     def pick_all(reply) -> None:
         for d in WINDOWS:
@@ -275,8 +275,8 @@ def test_all_settled_by_full_time():
 
 
 def test_no_shot_window_text():
-    # 60:14 + 10 min has no shot; it settles after the jump to "Arsenal go again"
-    session = DemoSession(TL, "ARS")
+    # 60:14 + 10 min has no shot; it settles after the jump to "Northbridge go again"
+    session = DemoSession(TL, "NBR")
     msgs = run_with(session, at_clock("60:14", lambda reply: reply(
         session.forecast_pick("f10", "ars"))))
     res_i = index_of(msgs, of_type("forecast.result"))
@@ -298,20 +298,20 @@ def test_demo_clock_has_t():
 
 
 def test_session_message_lists_forecasts():
-    msgs = run_with(DemoSession(TL, "ARS"), lambda env, reply: None)
+    msgs = run_with(DemoSession(TL, "NBR"), lambda env, reply: None)
     fc = msgs[0]["data"]["forecasts"]
     assert [w["key"] for w in fc["windows"]] == ["f5", "f10", "f15"]
     assert fc["windows"][0] == {
         "key": "f5", "label": "NEXT 5 MIN", "minutes": 5, "points": 500,
         "question": "Who has more of the ball?",
-        "options": [{"id": "ars", "label": "ARSENAL"}, {"id": "che", "label": "CHELSEA"}]}
+        "options": [{"id": "ars", "label": "NORTHBRIDGE"}, {"id": "che", "label": "CALDER"}]}
     assert fc["windows"][1] == {
         "key": "f10", "label": "NEXT 10 MIN", "minutes": 10, "points": 1000,
         "question": "Who takes the next shot?",
-        "options": [{"id": "ars", "label": "ARSENAL"}, {"id": "che", "label": "CHELSEA"}]}
+        "options": [{"id": "ars", "label": "NORTHBRIDGE"}, {"id": "che", "label": "CALDER"}]}
     assert fc["final"] == {"points": 3000, "exact_points": 2000, "options": [
-        {"id": "ars", "label": "ARSENAL"}, {"id": "draw", "label": "DRAW"},
-        {"id": "che", "label": "CHELSEA"}]}
+        {"id": "ars", "label": "NORTHBRIDGE"}, {"id": "draw", "label": "DRAW"},
+        {"id": "che", "label": "CALDER"}]}
 
 
 def test_router_routes_forecast_messages():
@@ -338,7 +338,7 @@ def test_router_routes_forecast_messages():
 
 def test_pick_during_final_settlement_is_rejected():
     """A pick arriving while a full-time / half-time result is being sent is not left pending."""
-    session = DemoSession(TL, "ARS")
+    session = DemoSession(TL, "NBR")
     late: list[dict] = []
     picks = {"23:56": "f5", "79:52": "f15"}
 

@@ -1,5 +1,5 @@
 // pitch.js — the live pitch as a small physics loop: players run, the ball flies or rolls at
-// the holder's feet, the holder ring follows. Positions are metres (105 x 68, Arsenal attack
+// the holder's feet, the holder ring follows. Positions are metres (105 x 68, Northbridge attack
 // left to right) and are written to the dots every animation frame.
 //
 // Server cues (see contracts/README.md): a demo.shape is where everyone stands at the NEXT
@@ -35,18 +35,18 @@
   var EASE_SHOT = cubic(0.25, 0.4, 0.5, 1);
 
   var P = {
-    dots: {},      // key "ARS:7" -> {team, num, x, y, vx, vy, tx, ty, arrive, cap}
+    dots: {},      // key "NBR:7" -> {team, num, x, y, vx, vy, tx, ty, arrive, cap}
     ball: { x: 52.5, y: 34, mode: "free", holder: null, flight: null, dir: 1 },
     ring: { x: 52.5, y: 34 },
     holder: null,  // key of the player the ring is on (or the pass is going to)
     last: 0,
-    names: null,   // "ARS:Saka" -> 7 (from app)
+    names: null,   // "NBR:Mensah" -> 7 (from app)
 
     keyOf: function (team, name) {
       var n = P.names ? P.names[team + ":" + name] : undefined;
       return n === undefined ? null : team + ":" + n;
     },
-    dirOf: function (key) { return key && key.indexOf("CHE") === 0 ? -1 : 1; },
+    dirOf: function (key) { return key && key.indexOf("CAL") === 0 ? -1 : 1; },
 
     reset: function () {
       P.dots = {};

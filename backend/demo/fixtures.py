@@ -1,51 +1,51 @@
 """The other matches on the demo's "Pick your side" screen: shown with their squads, not playable.
 
-Only Arsenal v Chelsea has match data (the synthetic match, relabelled). Liverpool v Man City
-and Newcastle v Tottenham come from the design prototype so the screen looks like a real
-matchday: fans can browse them and their squads, and the run itself plays Arsenal v Chelsea.
+Only Northbridge v Calder has match data (the synthetic match, relabelled). Wexmoor v Harrowgate
+and Ashford v Kingsmere come from the design prototype so the screen looks like a real
+matchday: fans can browse them and their squads, and the run itself plays Northbridge v Calder.
 Squads are (num, name, pos) as drawn in the prototype; ids are ``<CODE>-<num>``.
 """
 
 from __future__ import annotations
 
 _XI_BENCH = {
-    "LIV": ("Liverpool", 7,
-            [(1, "Alisson", "GK"), (30, "Frimpong", "DEF"), (4, "van Dijk", "DEF"),
-             (33, "Araújo", "DEF"), (6, "Kerkez", "DEF"), (38, "Gravenberch", "MID"),
-             (10, "Mac Allister", "MID"), (8, "Szoboszlai", "MID"), (7, "Wirtz", "MID"),
-             (18, "Gakpo", "FWD"), (9, "Isak", "FWD")],
-            [(22, "Ekitike", "FWD"), (29, "Barcola", "FWD"), (14, "Chiesa", "FWD"),
-             (12, "Bradley", "DEF")]),
-    "MCI": ("Man City", 9,
-            [(1, "Donnarumma", "GK"), (27, "Nunes", "DEF"), (3, "Dias", "DEF"),
-             (6, "Guéhi", "DEF"), (24, "Gvardiol", "DEF"), (5, "Anderson", "MID"),
-             (47, "Foden", "MID"), (10, "Cherki", "MID"), (11, "Doku", "FWD"),
-             (9, "Haaland", "FWD"), (42, "Semenyo", "FWD")],
-            [(21, "Aït-Nouri", "DEF"), (8, "Kovačić", "MID"), (7, "Ndiaye", "FWD"),
-             (45, "Khusanov", "DEF")]),
-    "NEW": ("Newcastle", 27,
-            [(1, "Pope", "GK"), (2, "Livramento", "DEF"), (12, "Thiaw", "DEF"),
-             (4, "Botman", "DEF"), (3, "Hall", "DEF"), (7, "Joelinton", "MID"),
-             (41, "Ramsey", "MID"), (67, "Miley", "MID"), (19, "Elanga", "FWD"),
-             (27, "Woltemade", "FWD"), (9, "Wissa", "FWD")],
-            [(11, "Barnes", "FWD"), (23, "Murphy", "FWD"), (28, "Willock", "MID"),
-             (33, "Burn", "DEF")]),
-    "TOT": ("Tottenham", 7,
-            [(31, "Kinsky", "GK"), (23, "Porro", "DEF"), (37, "van de Ven", "DEF"),
-             (6, "van Hecke", "DEF"), (13, "Udogie", "DEF"), (16, "Tonali", "MID"),
-             (8, "Gallagher", "MID"), (7, "Simons", "MID"), (20, "Kudus", "FWD"),
-             (19, "Solanke", "FWD"), (11, "Tel", "FWD")],
-            [(9, "Richarlison", "FWD"), (10, "Maddison", "MID"), (15, "Bergvall", "MID"),
-             (3, "Robertson", "DEF")]),
+    "WEX": ("Wexmoor", 7,
+            [(1, "Brennan", "GK"), (30, "Okoye", "DEF"), (4, "Lindahl", "DEF"),
+             (33, "Varga", "DEF"), (6, "Pemberton", "DEF"), (38, "Faure", "MID"),
+             (10, "Hollis", "MID"), (8, "Marchetti", "MID"), (7, "Ashworth", "MID"),
+             (18, "Danso", "FWD"), (9, "Strandberg", "FWD")],
+            [(22, "Oduya", "FWD"), (29, "Leclair", "FWD"), (14, "Rinaldi", "FWD"),
+             (12, "Corrigan", "DEF")]),
+    "HAR": ("Harrowgate", 9,
+            [(1, "Moretti", "GK"), (27, "Quayle", "DEF"), (3, "Halvorsen", "DEF"),
+             (6, "Ebanks", "DEF"), (24, "Novak", "DEF"), (5, "Thorne", "MID"),
+             (47, "Callaghan", "MID"), (10, "Benali", "MID"), (11, "Ferreira", "FWD"),
+             (9, "Magnusson", "FWD"), (42, "Asante", "FWD")],
+            [(21, "Dufresne", "DEF"), (8, "Petrov", "MID"), (7, "Mbeki", "FWD"),
+             (45, "Kurtz", "DEF")]),
+    "ASH": ("Ashford", 27,
+            [(1, "Hollingworth", "GK"), (2, "Abara", "DEF"), (12, "Lindau", "DEF"),
+             (4, "Brookes", "DEF"), (3, "Fenwick", "DEF"), (7, "Moreau", "MID"),
+             (41, "Gately", "MID"), (67, "Harlow", "MID"), (19, "Eklund", "FWD"),
+             (27, "Varela", "FWD"), (9, "Osei", "FWD")],
+            [(11, "Prentice", "FWD"), (23, "Dunmore", "FWD"), (28, "Achebe", "MID"),
+             (33, "Rowntree", "DEF")]),
+    "KGM": ("Kingsmere", 7,
+            [(31, "Vlasak", "GK"), (23, "Rivas", "DEF"), (37, "Holm", "DEF"),
+             (6, "Dekker", "DEF"), (13, "Uwakwe", "DEF"), (16, "Castell", "MID"),
+             (8, "Galloway", "MID"), (7, "Sorensen", "MID"), (20, "Amankwah", "FWD"),
+             (19, "Selby", "FWD"), (11, "Tellier", "FWD")],
+            [(9, "Ribeiro", "FWD"), (10, "Maddox", "MID"), (15, "Berglund", "MID"),
+             (3, "Robb", "DEF")]),
 }
 
 # id, home, away, status line, meta, score, playable, predicted squads, fans calling it in the app
 MATCHES = [
-    {"id": "m1", "home": "ARS", "away": "CHE", "status": "LIVE", "meta": "Matchday 9",
+    {"id": "m1", "home": "NBR", "away": "CAL", "status": "LIVE", "meta": "Matchday 9",
      "score": None, "playable": True, "predicted": False, "fans": 128406},
-    {"id": "m2", "home": "LIV", "away": "MCI", "status": "LIVE 61'", "meta": "Matchday 9",
+    {"id": "m2", "home": "WEX", "away": "HAR", "status": "LIVE 61'", "meta": "Matchday 9",
      "score": "2 – 2", "playable": False, "predicted": False, "fans": 141873},
-    {"id": "m3", "home": "NEW", "away": "TOT", "status": "TODAY", "meta": "Kick-off 17:30",
+    {"id": "m3", "home": "ASH", "away": "KGM", "status": "TODAY", "meta": "Kick-off 17:30",
      "score": "vs", "playable": False, "predicted": True, "fans": 36210},
 ]
 

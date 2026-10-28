@@ -27,7 +27,7 @@ from backend.demo.session import DemoSession
 from backend.ingest.loader import load_match
 
 TL = build_timeline(load_match("nbr-cal-seed42"))
-START_ARS = {"type": "start", "data": {"team": "ARS"}}
+START_ARS = {"type": "start", "data": {"team": "NBR"}}
 EMAIL = "fan.secret+demo@example.org"
 DEFS = {d.key: d for d in WINDOWS}
 
@@ -54,7 +54,7 @@ def run(session: DemoSession, hook=None) -> list[dict]:
 
 
 def perfect(session: DemoSession):
-    """Every call right; at every tick, each free window picked with its true outcome; ARS 2-1."""
+    """Every call right; at every tick, each free window picked with its true outcome; NBR 2-1."""
     def hook(env: dict, reply) -> None:
         kind, data = env["type"], env["data"]
         if kind == "call.open":
@@ -111,7 +111,7 @@ def test_friend_progress_matches_the_call_part_of_the_totals():
 
 
 def test_session_message_has_the_room():
-    session = DemoSession(TL, "ARS", code="K7QX")
+    session = DemoSession(TL, "NBR", code="K7QX")
     data = run(session)[0]["data"]
     assert data["room"]["code"] == "K7QX"
     assert data["room"]["friends"] == room.friend_progress(TL)
@@ -147,24 +147,24 @@ def test_room_code_and_email_rules():
 def test_stamp_and_badges():
     assert room.stamp(1, "K7QX", 3) == "#1 IN ROOM K7QX · TOP 3% TONIGHT"
     assert room.badges(False, 2, None) == []
-    assert room.badges(True, 3, "Saka") == [
+    assert room.badges(True, 3, "Mensah") == [
         {"title": "ORACLE", "text": "Called the full-time result"},
         {"title": "ON FIRE", "text": "3 calls in a row"},
-        {"title": "GOOD EYE", "text": "Your pick Saka scored"}]
+        {"title": "GOOD EYE", "text": "Your pick Mensah scored"}]
 
 
 def test_good_eye_is_a_backed_player_who_scored():
-    saka = {"name": "Saka", "stats": [{"what": "Goal", "count": 1, "pts": 4}]}
-    rice = {"name": "Rice", "stats": [{"what": "Played 60+ minutes", "count": 1, "pts": 2}]}
-    assert room.good_eye([rice, saka]) == "Saka"
+    saka = {"name": "Mensah", "stats": [{"what": "Goal", "count": 1, "pts": 4}]}
+    rice = {"name": "Okafor", "stats": [{"what": "Played 60+ minutes", "count": 1, "pts": 2}]}
+    assert room.good_eye([rice, saka]) == "Mensah"
     assert room.good_eye([rice]) is None and room.good_eye([]) is None
 
 
 def test_backing_saka_earns_good_eye():
-    session = DemoSession(TL, "ARS", code="K7QX", players=["910109"])
+    session = DemoSession(TL, "NBR", code="K7QX", players=["910109"])
     ft = of(run(session), "demo.full_time")
-    assert {"title": "GOOD EYE", "text": "Your pick Saka scored"} in ft["badges"]
-    session = DemoSession(TL, "ARS", code="K7QX", players=["910108"])  # Rice: no goal
+    assert {"title": "GOOD EYE", "text": "Your pick Mensah scored"} in ft["badges"]
+    session = DemoSession(TL, "NBR", code="K7QX", players=["910108"])  # Okafor: no goal
     assert all(b["title"] != "GOOD EYE" for b in of(run(session), "demo.full_time")["badges"])
 
 
@@ -172,7 +172,7 @@ def test_backing_saka_earns_good_eye():
 
 
 def test_perfect_judge_is_first_with_all_badges():
-    session = DemoSession(TL, "ARS", code="K7QX")
+    session = DemoSession(TL, "NBR", code="K7QX")
     msgs = run(session, perfect(session))
     ht, ft = of(msgs, "demo.half_time"), of(msgs, "demo.full_time")
     assert set(ht) == {"score", "seconds", "room", "breakdown", "you", "saved",
@@ -204,7 +204,7 @@ def test_perfect_judge_is_first_with_all_badges():
 
 
 def test_always_shoot_judge():
-    session = DemoSession(TL, "ARS", code="K7QX")
+    session = DemoSession(TL, "NBR", code="K7QX")
     ft = of(run(session, shooter(session)), "demo.full_time")
     assert ft["total"] == 360
     assert ft["rows"][0]["detail"] == "3 correct calls · best streak of 2"
@@ -215,8 +215,8 @@ def test_always_shoot_judge():
 
 
 def test_calls_and_f15_and_final_judge_leads():
-    """Perfect calls, an f15 at each Play start (the pending one is rejected), final ARS 2-1."""
-    session = DemoSession(TL, "ARS", code="K7QX")
+    """Perfect calls, an f15 at each Play start (the pending one is rejected), final NBR 2-1."""
+    session = DemoSession(TL, "NBR", code="K7QX")
     starts = set(room.play_starts(TL))
 
     def hook(env: dict, reply) -> None:
@@ -243,7 +243,7 @@ def test_fan_wins_ties_except_at_zero():
 
 
 def test_silent_judge_is_last():
-    session = DemoSession(TL, "CHE", code="AB23")
+    session = DemoSession(TL, "CAL", code="AB23")
     msgs = run(session)
     ht, ft = of(msgs, "demo.half_time"), of(msgs, "demo.full_time")
     assert ht["you"] == {"rank": 4} and ht["breakdown"] == {"calls": 0, "forecasts": 0, "players": 0}
@@ -256,7 +256,7 @@ def test_silent_judge_is_last():
 
 
 def test_signup_once():
-    session = DemoSession(TL, "ARS")
+    session = DemoSession(TL, "NBR")
     assert session.signup("nope") == {"type": "signup.rejected", "data": {"reason": "bad_email"}}
     assert session.signup(EMAIL) == {"type": "signup.saved", "data": {"bonus": 500, "total": 500}}
     assert session.signup(EMAIL) == {"type": "signup.rejected", "data": {"reason": "already"}}
@@ -266,7 +266,7 @@ def test_signup_once():
 
 
 def test_signup_before_half_time_shows_saved():
-    session = DemoSession(TL, "ARS")
+    session = DemoSession(TL, "NBR")
     session.signup(EMAIL)
     msgs = run(session)
     ht, ft = of(msgs, "demo.half_time"), of(msgs, "demo.full_time")

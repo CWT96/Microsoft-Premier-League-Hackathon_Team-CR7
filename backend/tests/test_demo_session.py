@@ -89,7 +89,7 @@ def client():
         yield c
 
 
-START_ARS = {"type": "start", "data": {"team": "ARS"}}
+START_ARS = {"type": "start", "data": {"team": "NBR"}}
 
 
 @pytest.fixture(autouse=True)
@@ -103,7 +103,7 @@ def short_post_match(monkeypatch):
 
 
 def test_plays_to_full_time_with_results():
-    session = DemoSession(TL, "ARS")
+    session = DemoSession(TL, "NBR")
     msgs = run_session(session, on_open=lambda cid: session.answer(cid, "SHOOT"))
     assert msgs[0]["type"] == "demo.session" and msgs[-1]["type"] == "demo.full_time"
     res = results(msgs)
@@ -116,7 +116,7 @@ def test_plays_to_full_time_with_results():
 
 
 def test_always_pass_scores_less_than_always_shoot():
-    session = DemoSession(TL, "ARS")
+    session = DemoSession(TL, "NBR")
     res = results(run_session(session, on_open=lambda cid: session.answer(cid, "PASS")))
     # correct at call 1 only
     assert [r["correct"] for r in res] == [True, False, False, False, False, False]
@@ -124,9 +124,9 @@ def test_always_pass_scores_less_than_always_shoot():
 
 
 def test_session_message_and_lock_pairs():
-    msgs = run_session(DemoSession(TL, "CHE"))
+    msgs = run_session(DemoSession(TL, "CAL"))
     first = msgs[0]["data"]
-    assert first["you"] == {"team": "CHE", "players": []} and first["duration"] == TL.duration
+    assert first["you"] == {"team": "CAL", "players": []} and first["duration"] == TL.duration
     assert first["teams"] == {"home": TEAMS["NBR"], "away": TEAMS["CAL"]}
     types = [m["type"] for m in msgs]
     assert "call.lock" not in types
@@ -146,12 +146,12 @@ def test_sleeps_sum_to_duration_and_skip_zero():
     async def send(_: dict) -> None:
         pass
 
-    asyncio.run(DemoSession(TL, "ARS").run(send, record))
+    asyncio.run(DemoSession(TL, "NBR").run(send, record))
     assert all(d > 0 for d in slept) and sum(slept) == pytest.approx(TL.duration)
 
 
 def test_double_answer_counts_once():
-    session = DemoSession(TL, "ARS")
+    session = DemoSession(TL, "NBR")
     second: list[bool] = []
 
     def on_open(cid: str) -> None:
@@ -166,7 +166,7 @@ def test_double_answer_counts_once():
 
 
 def test_answer_after_lock_ignored():
-    session = DemoSession(TL, "ARS")
+    session = DemoSession(TL, "NBR")
     late: list[bool] = []
 
     def on_lock(cid: str) -> None:
@@ -178,7 +178,7 @@ def test_answer_after_lock_ignored():
 
 
 def test_answer_rejects_unknown_call_and_bad_pick():
-    session = DemoSession(TL, "ARS")
+    session = DemoSession(TL, "NBR")
     seen: list[bool] = []
 
     def on_open(cid: str) -> None:
@@ -194,9 +194,9 @@ def test_answer_rejects_unknown_call_and_bad_pick():
 
 def test_no_answers_reaches_full_time(client):
     with client.websocket_connect("/demo/ws") as ws:
-        ws.send_json({"type": "start", "data": {"team": "CHE"}})
+        ws.send_json({"type": "start", "data": {"team": "CAL"}})
         msgs, code = drain(ws)
-    assert msgs[0]["type"] == "demo.session" and msgs[0]["data"]["you"] == {"team": "CHE", "players": []}
+    assert msgs[0]["type"] == "demo.session" and msgs[0]["data"]["you"] == {"team": "CAL", "players": []}
     assert msgs[-1]["type"] == "demo.full_time" and code == 1000
     res = results(msgs)
     assert len(res) == 6 and all(r["too_quick"] for r in res) and res[-1]["total"] == 0
@@ -206,7 +206,7 @@ def test_bad_messages():
     client, _ = router_client(sleep=tick)
     with client:
         for first in ("not json", '{"type": "call.answer", "data": {}}',
-                      '{"type": "start", "data": {"team": "NBR"}}', '{"type": "start"}', "[1]"):
+                      '{"type": "start", "data": {"team": "XYZ"}}', '{"type": "start"}', "[1]"):
             with client.websocket_connect("/demo/ws") as ws:
                 ws.send_text(first)
                 msgs, code = drain(ws)

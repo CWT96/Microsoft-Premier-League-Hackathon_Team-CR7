@@ -9,7 +9,7 @@ from backend.core.types import MatchEvent
 
 FINAL_POINTS = 3000
 EXACT_POINTS = 2000
-FINAL_OPTIONS = (("ars", "ARSENAL"), ("draw", "DRAW"), ("che", "CHELSEA"))
+FINAL_OPTIONS = (("ars", "NORTHBRIDGE"), ("draw", "DRAW"), ("che", "CALDER"))
 
 _TEAM_TO_SIDE = {"NBR": "ars", "CAL": "che"}
 
@@ -28,9 +28,9 @@ class ForecastDef:
 
 WINDOWS: tuple[ForecastDef, ...] = (
     ForecastDef("f5", "NEXT 5 MIN", 5, 500, "Who has more of the ball?",
-                (("ars", "ARSENAL"), ("che", "CHELSEA"))),
+                (("ars", "NORTHBRIDGE"), ("che", "CALDER"))),
     ForecastDef("f10", "NEXT 10 MIN", 10, 1000, "Who takes the next shot?",
-                (("ars", "ARSENAL"), ("che", "CHELSEA"))),
+                (("ars", "NORTHBRIDGE"), ("che", "CALDER"))),
     ForecastDef("f15", "NEXT 15 MIN", 15, 1500, "Will anyone score?",
                 (("goal", "GOAL"), ("nogoal", "NO GOAL"))),
 )

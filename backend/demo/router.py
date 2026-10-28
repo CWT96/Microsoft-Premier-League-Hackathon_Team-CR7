@@ -1,7 +1,7 @@
 """WS /demo/ws: one DemoSession per socket, beside a reader that takes the fan's calls.
 
 ``GET /demo/squads`` gives both squads and the scoring table (``bonus.squads``).
-Protocol: first message ``start`` {team: ARS|CHE, players?: [id, id]} within 10 s, else close
+Protocol: first message ``start`` {team: NBR|CAL, players?: [id, id]} within 10 s, else close
 1008 (bad ``players`` are sanitised, never a close). Then any
 number of ``call.answer`` {call_id, pick} (bad input ignored), ``forecast.pick`` {key, pick}
 and ``forecast.final`` {result, home, away} (each answered with the session's reply; bad shapes
@@ -31,7 +31,7 @@ DEFAULT_MAX_SESSIONS = 50
 START_TIMEOUT_S = 10.0
 POST_MATCH_S = 600.0  # how long a finished demo keeps its socket (and slot) for signup
 MAX_FRAME_BYTES = 4096
-TEAM_CODES = frozenset({"ARS", "CHE"})
+TEAM_CODES = frozenset({"NBR", "CAL"})
 WS_CLOSE_NORMAL = 1000
 WS_CLOSE_POLICY = 1008
 WS_CLOSE_TRY_AGAIN = 1013
@@ -73,7 +73,7 @@ def make_demo_router(*, sleep: Sleep = asyncio.sleep, load: Callable[[], Match] 
     router.active = active  # type: ignore[attr-defined]  # exposed for tests and diagnostics
     cache: dict[str, Timeline] = {}
 
-    async def timeline(team: str = "ARS") -> Timeline:
+    async def timeline(team: str = "NBR") -> Timeline:
         """Built once, on first connect, off the event loop."""
         if team not in cache:
             cache[team] = await asyncio.to_thread(lambda: build_timeline(load(), team=team))

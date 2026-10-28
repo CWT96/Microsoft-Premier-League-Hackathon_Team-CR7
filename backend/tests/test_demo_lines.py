@@ -45,14 +45,14 @@ def run(tl) -> list[dict]:
     async def instant(_: float) -> None:
         await asyncio.sleep(0)
 
-    asyncio.run(DemoSession(tl, "ARS").run(send, instant))
+    asyncio.run(DemoSession(tl, "NBR").run(send, instant))
     return sent
 
 
 def test_facts_for_saka_goal(tmp_path):
     tl = build_timeline(M, client=llm.LLMClient(mode="cache", cache_dir=tmp_path))
     f = tl.lines[saka_call(tl).call_id].facts
-    assert f["player"] == "Saka" and f["team"] == "Arsenal"
+    assert f["player"] == "Mensah" and f["team"] == "Northbridge"
     assert f["answer"] == "SHOOT" and f["outcome"] == "goal"
     assert f["zone"] in ("in the box", "attacking third")
     assert f["score"] == [0, 0] and isinstance(f["minute"], str)
@@ -63,18 +63,18 @@ def test_all_facts_have_known_values(tmp_path):
     by_id = {k: v.facts for k, v in tl.lines.items()}
     assert len(by_id) == 6
     for f in by_id.values():
-        assert f["zone"] in lines.ZONES and f["team"] in ("Arsenal", "Chelsea")
+        assert f["zone"] in lines.ZONES and f["team"] in ("Northbridge", "Calder")
     outs = [by_id[k]["outcome"] for k in tl.calls]
-    # Rice's shot misses; Havertz's dribble keeps the move going
+    # Okafor's shot misses; Raman's dribble keeps the move going
     assert outs == ["kept the move going", "kept the move going", "shot missed", "goal",
                     "kept the move going", "goal"]
 
 
 def test_pass_that_sets_up_a_goal_names_the_scorer(tmp_path):
-    che = build_timeline(M, client=llm.LLMClient(mode="cache", cache_dir=tmp_path), team="CHE")
+    che = build_timeline(M, client=llm.LLMClient(mode="cache", cache_dir=tmp_path), team="CAL")
     by_player = {ln.facts["player"]: ln.facts for ln in che.lines.values()}
-    assert by_player["Estêvão"]["outcome"] == "set up a goal"
-    assert by_player["Estêvão"]["scorer"] == "João Pedro"
+    assert by_player["Ortega"]["outcome"] == "set up a goal"
+    assert by_player["Ortega"]["scorer"] == "Doyle"
     tl = build_timeline(M, client=llm.LLMClient(mode="cache", cache_dir=tmp_path))
     saka = tl.lines[saka_call(tl).call_id].facts
     assert saka["outcome"] == "goal" and "scorer" not in saka
@@ -82,24 +82,24 @@ def test_pass_that_sets_up_a_goal_names_the_scorer(tmp_path):
 
 @pytest.mark.parametrize("setup", ["He will shoot", "Time for a PASS?", "A shot is on",
                                    "Dribbling past them?", "Will he dribble?",
-                                   "Saka can pass it"])
+                                   "Mensah can pass it"])
 def test_leaking_setup_uses_template(tmp_path, setup):
-    fake = lambda _a, _p: {"setup": setup, "explain": "Saka shot and it went in for a goal."}
+    fake = lambda _a, _p: {"setup": setup, "explain": "Mensah shot and it went in for a goal."}
     tl = build_timeline(M, client=llm.LLMClient(mode="fake", cache_dir=tmp_path, fake=fake))
     call = saka_call(tl)
     prompt = next(o["prompt"] for o in opens(tl) if o["call_id"] == call.call_id)
-    assert prompt == "Saka is about to get the ball. What will he do?"
-    assert tl.lines[call.call_id].explain == "Saka shot and it went in for a goal."
+    assert prompt == "Mensah is about to get the ball. What will he do?"
+    assert tl.lines[call.call_id].explain == "Mensah shot and it went in for a goal."
     assert tl.ai_lines is False
 
 
 def test_number_and_length_guard_use_template(tmp_path):
-    fake = lambda _a, _p: {"setup": "Saka is near goal. What now?" + "!" * 90,
-                           "explain": "Saka scored in minute 99."}
+    fake = lambda _a, _p: {"setup": "Mensah is near goal. What now?" + "!" * 90,
+                           "explain": "Mensah scored in minute 99."}
     tl = build_timeline(M, client=llm.LLMClient(mode="fake", cache_dir=tmp_path, fake=fake))
     ln = tl.lines[saka_call(tl).call_id]
-    assert ln.setup == "Saka is about to get the ball. What will he do?"
-    assert ln.explain == "Saka chose to shoot."
+    assert ln.setup == "Mensah is about to get the ball. What will he do?"
+    assert ln.explain == "Mensah chose to shoot."
 
 
 def test_empty_cache_runs_on_templates(tmp_path):
@@ -151,12 +151,12 @@ def test_cached_lines_are_used(tmp_path):
 
 def test_check_setup_rejects_answer_words():
     facts = {"answer": "SHOOT", "score": [0, 0]}
-    assert lines.check_setup("Saka is in space. What will he do?", facts)
+    assert lines.check_setup("Mensah is in space. What will he do?", facts)
     for bad in ("Passing lane open?", "SHOOTING chance", "Big shot", "dribble time",
                 "Can he strike?", "Striking range!", "Will he fire?", "Can he score?",
                 "Scoring chance here", "Time to finish it?", "A cross is on", "Crossing time",
                 "A teammate is free", "Teammates are open", "Will he run?", "Running at them?"):
         assert not lines.check_setup(bad, facts), bad
     for ok in ("First touch in the box. What now?", "He is in a brunt of pressure. What now?",
-               "Arsenal are level at the moment. What will he do?"):
+               "Northbridge are level at the moment. What will he do?"):
         assert lines.check_setup(ok, facts), ok
