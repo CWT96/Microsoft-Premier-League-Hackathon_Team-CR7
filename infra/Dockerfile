@@ -21,6 +21,7 @@ COPY data/source/ data/source/
 COPY backend/ backend/
 COPY frontend/fan-app/ frontend/fan-app/
 COPY frontend/premier-x/ frontend/premier-x/
+COPY frontend/ops-dashboard/ frontend/ops-dashboard/
 
 EXPOSE 8000
 

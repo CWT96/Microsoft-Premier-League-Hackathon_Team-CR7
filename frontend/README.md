@@ -19,7 +19,7 @@ The frontend talks to the backend only through `../contracts/` (WebSocket `/ws` 
 | Catch-up card: 2D replay of 3–5 actions + one line | P1 | WS `catchup.card` + cached `match.event`s |
 | Room QR (create/share) | P2 | `POST /api/rooms` |
 | Email sign-up → web wallet card with QR + "Add to Wallet" button (mock) | P2 | `POST /api/signup`, `GET /api/card/{id}` |
-| Ops funnel dashboard | P2, may be built by backend as a static page | `GET /api/ops/funnel` |
+| Ops funnel dashboard | P2, built as a static page in [`ops-dashboard/`](ops-dashboard/README.md) on simulated data | `GET /api/ops/funnel` (not wired yet) |
 
 ## UI rules from the design
 - Never show point numbers or a running total during the match. Only ✓ and coin animations.

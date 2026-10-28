@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Matchday Call — Partner report</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="wrap topbar-inner">
+    <div class="brand"><span class="brand-dot"></span><strong>Matchday Call</strong><span class="brand-sub">Partner console</span></div>
+    <nav aria-label="Sections" class="nav">
+      <a href="#overview" class="nav-on">Match report</a>
+      <a href="#channels">Channels</a>
+    </nav>
+  </div>
+</header>
+
+<main id="overview" class="wrap main">
+  <section class="titlebar">
+    <div class="match">
+      <div class="crests">
+        <span class="crest"><img src="assets/arsenal.svg" alt="Arsenal"></span>
+        <span class="crest"><img src="assets/chelsea.svg" alt="Chelsea"></span>
+      </div>
+      <div>
+        <h1>Arsenal 2–1 Chelsea</h1>
+        <span class="sub">Matchweek 9 · Fan acquisition report</span>
+      </div>
+    </div>
+    <div class="actions">
+      <span class="tag" id="demo-tag">Simulated data</span>
+      <span class="sub">Showing data as of <strong id="clock">—</strong></span>
+      <button class="btn" id="play" type="button">
+        <svg id="icon-play" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4.5v15l13-7.5z"></path></svg>
+        <svg id="icon-pause" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" style="display: none"><rect x="6" y="5" width="4" height="14" rx="1"></rect><rect x="14" y="5" width="4" height="14" rx="1"></rect></svg>
+        <span id="play-label">Replay match</span>
+      </button>
+    </div>
+  </section>
+
+  <section aria-label="Key numbers" class="kpis">
+    <div class="card kpi"><span class="kpi-label">QR scans</span><span class="kpi-value" id="k-scans">—</span><span class="sub small">Across 4 channels</span></div>
+    <div class="card kpi"><span class="kpi-label">Players</span><span class="kpi-value" id="k-players">—</span><span class="sub small"><span id="k-playrate">—</span> of scans started a game</span></div>
+    <div class="card kpi"><span class="kpi-label">Peak players online</span><span class="kpi-value" id="k-peak">—</span><span class="sub small">at <span id="k-peakclock">—</span></span></div>
+    <div class="card kpi"><span class="kpi-label">Calls made</span><span class="kpi-value" id="k-calls">—</span><span class="sub small"><span id="k-perplayer">—</span> per player</span></div>
+    <div class="card kpi kpi-goal">
+      <span class="kpi-label green-ink"><span>Sign-ups</span><span class="badge">Goal metric</span></span>
+      <span class="kpi-value green-ink" id="k-signups">—</span>
+      <span class="sub small"><span id="k-conv">—</span> of players · <span id="new-share">—</span> new to PL</span>
+    </div>
+  </section>
+
+  <section class="row-main">
+    <div class="card chart-card">
+      <div class="card-head">
+        <div>
+          <h2>Engagement during the match</h2>
+          <span class="sub" id="readout">—</span>
+        </div>
+        <div class="seg" role="group" aria-label="Metric">
+          <button type="button" id="seg-players" aria-pressed="true">Players online</button>
+          <button type="button" id="seg-calls" aria-pressed="false">Calls per minute</button>
+        </div>
+      </div>
+      <div class="chart-scroll">
+        <div class="chart-inner">
+          <svg id="chart-a" viewBox="0 0 1200 220" width="100%" role="img" aria-label="Players online across the match, with goals, half-time and full time marked"></svg>
+          <div class="chart-b-head"><span>Sign-ups per minute</span><span class="sub small" id="wave-note">—</span></div>
+          <svg id="chart-b" viewBox="0 0 1200 170" width="100%" role="img" aria-label="Sign-ups per minute: near zero during play, a peak in the half-time save window, and a larger spike in the minutes after full time"></svg>
+        </div>
+      </div>
+    </div>
+
+    <div class="card findings">
+      <h2>Key findings</h2>
+      <div class="finding"><span class="f-num green-ink" id="i-ht">—</span><span>of sign-ups came from the half-time save window. <strong id="i-ht-left">—</strong> of those people left before full time, so the full-time screen would never have reached them.</span></div>
+      <div class="finding"><span class="f-num green-ink" id="i-post">—</span><span>came from the full-time screen, almost all within 10 minutes of the final whistle.</span></div>
+      <div class="finding"><span class="f-num purple" id="i-room">—</span><span>Friends invited into a room sign up at this rate compared with people who scanned on their own.</span></div>
+      <div class="finding"><span class="f-num pink-ink" id="i-goal">—</span><span>Calls per minute right after a goal, compared with the 3 minutes before.</span></div>
+    </div>
+  </section>
+
+  <section id="channels" class="row-tables">
+    <div class="card">
+      <div class="card-title"><h2>Funnel: scan to sign-up</h2><span class="sub">Final numbers, 20 minutes after full time</span></div>
+      <div class="table-scroll">
+        <table class="tbl" id="funnel">
+          <thead><tr><th>Step</th><th>People</th><th class="r">Of scans</th><th class="r">From prev.</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title"><h2>Channels</h2><span class="sub">Where people scanned the QR code, sorted by sign-up rate</span></div>
+      <div class="table-scroll">
+        <table class="tbl" id="channel-table">
+          <thead><tr><th>Channel</th><th class="r">Scans</th><th class="r">Sign-ups</th><th>Sign-up rate</th></tr></thead>
+          <tbody></tbody>
+          <tfoot><tr><td>All channels</td><td class="r" id="ch-scans">—</td><td class="r" id="ch-signups">—</td><td class="r" id="ch-rate">—</td></tr></tfoot>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <span>Sign-up = player saved their points with an email. Points only, no money, no betting.</span>
+    <span>Matchday Call · Partner console</span>
+  </footer>
+</main>
+<script src="data/data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
